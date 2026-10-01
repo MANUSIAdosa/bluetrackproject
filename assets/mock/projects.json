@@ -1,0 +1,152 @@
+[
+  {
+    "id": "p01",
+    "title": "Peneluruhan Penyu di Pantai Sukamade",
+    "category": "penyu",
+    "orgId": "o01",
+    "orgName": "Yayasan Laut Biru",
+    "orgVerified": true,
+    "location": "Banyuwangi, Jawa Timur",
+    "latitude": -8.5236,
+    "longitude": 114.6131,
+    "raisedAmount": 18750000,
+    "targetAmount": 25000000,
+    "description": "Program peneluruhan dan pemantauan sarang penyu di Pantai Sukamade bersama komunitas pesisir setempat.",
+    "about": [
+      "Sukamade adalah salah satu pantai paling penting sebagai tempat peneluruhan penyu di Jawa Timur. Program ini mendukung patroli sarang sepanjang musim peneluruhan.",
+      "Setiap temuan sarang didokumentasikan, ditandai, dan dipantau hingga tukik menetas secara alami."
+    ],
+    "budget": [
+      {"item": "Patroli dan penjagaan sarang", "amount": 9000000, "percent": 36},
+      {"item": "Pelatihan relawan lokal", "amount": 6500000, "percent": 26},
+      {"item": "Peralatan penandaan dan pencatatan", "amount": 5500000, "percent": 22},
+      {"item": "Pelaporan dan monitoring", "amount": 4000000, "percent": 16}
+    ],
+    "galleryColors": ["#0284C7", "#0EA5E9", "#14B8A6"]
+  },
+  {
+    "id": "p02",
+    "title": "Pemulihan Terumbu Karang Pulau Pramuka",
+    "category": "karang",
+    "orgId": "o01",
+    "orgName": "Yayasan Laut Biru",
+    "orgVerified": true,
+    "location": "Kepulauan Seribu, DKI Jakarta",
+    "latitude": -5.7433,
+    "longitude": 106.5078,
+    "raisedAmount": 32400000,
+    "targetAmount": 40000000,
+    "description": "Transplantasi karang dan pemantauan kesehatan terumbu di sekitar Pulau Pramuka.",
+    "about": [
+      "Program transplantasi karang menggunakan metode rak dan fragmen dari lokasi pemijahan alami.",
+      "Kesehatan terumbu dipantau setiap bulan bersama penyelam lokal dan siswa sekolah pesisir."
+    ],
+    "budget": [
+      {"item": "Rak transplantasi dan fragmen", "amount": 15000000, "percent": 38},
+      {"item": "Operasional penyelaman", "amount": 11000000, "percent": 27},
+      {"item": "Peralatan monitoring", "amount": 8000000, "percent": 20},
+      {"item": "Pelaporan ilmiah", "amount": 6000000, "percent": 15}
+    ],
+    "galleryColors": ["#0284C7", "#14B8A6", "#2DD4BF"]
+  },
+  {
+    "id": "p03",
+    "title": "Konservasi Mangrove Muara Angke",
+    "category": "mangrove",
+    "orgId": "o02",
+    "orgName": "Konsorsium Pesisir Hijau",
+    "orgVerified": true,
+    "location": "Jakarta Utara, DKI Jakarta",
+    "latitude": -6.1047,
+    "longitude": 106.8416,
+    "raisedAmount": 11200000,
+    "targetAmount": 20000000,
+    "description": "Penanaman dan pemeliharaan mangrove sebagai pelindung garis pantai dan habitat ikan.",
+    "about": [
+      "Hutan mangrove Muara Angke berfungsi sebagai penahan abrasi sekaligus tempat berbiaknya ikan kecil.",
+      "Program melibatkan warga pesisir dalam perawatan bibit dan pencatatan pertumbuhan."
+    ],
+    "budget": [
+      {"item": "Bibit dan penanaman", "amount": 8000000, "percent": 40},
+      {"item": "Perawatan rutin", "amount": 6000000, "percent": 30},
+      {"item": "Sosialisasi warga", "amount": 3500000, "percent": 18},
+      {"item": "Monitoring lahan", "amount": 2500000, "percent": 12}
+    ],
+    "galleryColors": ["#14B8A6", "#0D9488", "#0284C7"]
+  },
+  {
+    "id": "p04",
+    "title": "Penyelamatan Paus dan Lumba-lumba Teluk Weda",
+    "category": "mamalia_laut",
+    "orgId": "o02",
+    "orgName": "Konsorsium Pesisir Hijau",
+    "orgVerified": true,
+    "location": "Halmahera, Maluku Utara",
+    "latitude": 0.4536,
+    "longitude": 127.9333,
+    "raisedAmount": 7500000,
+    "targetAmount": 30000000,
+    "description": "Pemantauan populasi paus dan lumba-lumba serta pencegahan interaksi dengan kapal dan alat tangkap.",
+    "about": [
+      "Teluk Weda merupakan jalur migrasi beberapa spesies paus. Program ini memantau keberadaan mereka sepanjang tahun.",
+      "Data digunakan untuk menetapkan area dan waktu penghindaran bagi kapal dan nelayan."
+    ],
+    "budget": [
+      {"item": "Ekspedisi pemantauan", "amount": 13000000, "percent": 43},
+      {"item": "Peralatan akustik", "amount": 8000000, "percent": 27},
+      {"item": "Edukasi nelayan", "amount": 5000000, "percent": 17},
+      {"item": "Analisis data", "amount": 4000000, "percent": 13}
+    ],
+    "galleryColors": ["#075985", "#0284C7", "#14B8A6"]
+  },
+  {
+    "id": "p05",
+    "title": "Restorasi Padang Lamun Kepulauan Anambas",
+    "category": "lamun",
+    "orgId": "o01",
+    "orgName": "Yayasan Laut Biru",
+    "orgVerified": true,
+    "location": "Kepulauan Anambas, Kepulauan Riau",
+    "latitude": 3.2267,
+    "longitude": 105.9131,
+    "raisedAmount": 5600000,
+    "targetAmount": 15000000,
+    "description": "Penanaman ulang lamun untuk memulihkan habitat penyu hijau dan ikan ekonomi penting.",
+    "about": [
+      "Padang lamun rusak akibat jangkar kapal dan praktik penangkapan yang tidak ramahan lingkungan.",
+      "Program ini menanam ulang spesies lamun lokal dan memantau kepadatannya setiap kuartal."
+    ],
+    "budget": [
+      {"item": "Penanaman ulang lamun", "amount": 6000000, "percent": 40},
+      {"item": "Operasional perahu", "amount": 4500000, "percent": 30},
+      {"item": "Pemantauan kuartalan", "amount": 3000000, "percent": 20},
+      {"item": "Koordinasi komunitas", "amount": 1500000, "percent": 10}
+    ],
+    "galleryColors": ["#0D9488", "#14B8A6", "#0284C7"]
+  },
+  {
+    "id": "p06",
+    "title": "Sekolah Sungai dan Pembersihan Pesisir Makassar",
+    "category": "mangrove",
+    "orgId": "o02",
+    "orgName": "Konsorsium Pesisir Hijau",
+    "orgVerified": true,
+    "location": "Makassar, Sulawesi Selatan",
+    "latitude": -5.1477,
+    "longitude": 119.4327,
+    "raisedAmount": 4200000,
+    "targetAmount": 10000000,
+    "description": "Edukasi anak sekolah dan aksi pembersihan pesisir untuk mengurangi sampah plastik di laut.",
+    "about": [
+      "Program bekerja sama dengan sekolah dasar pesisir untuk mengurangi sampah plastik sebelum masuk ke laut.",
+      "Sampah yang terkumpul dicatat jenisnya sebagai bahan edukasi dan data lokal."
+    ],
+    "budget": [
+      {"item": "Materi dan fasilitator", "amount": 4000000, "percent": 40},
+      {"item": "Logistik aksi bersih", "amount": 3000000, "percent": 30},
+      {"item": "Pengangkutan sampah", "amount": 2000000, "percent": 20},
+      {"item": "Pelaporan", "amount": 1000000, "percent": 10}
+    ],
+    "galleryColors": ["#0284C7", "#14B8A6", "#FF6F61"]
+  }
+]

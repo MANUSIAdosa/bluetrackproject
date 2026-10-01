@@ -1,5 +1,5 @@
 name: blue_track
-description: "A new Flutter project."
+description: "BlueTrack — marine conservation and transparent donation platform."
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -9,6 +9,14 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  flutter_secure_storage: ^11.2.0
+  go_router: ^18.0.2
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  intl: ^0.20.3
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_test:
@@ -17,3 +25,18 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/mock/
+  fonts:
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans.ttf
+          weight: 400
+        - asset: assets/fonts/PlusJakartaSans.ttf
+          weight: 500
+        - asset: assets/fonts/PlusJakartaSans.ttf
+          weight: 600
+        - asset: assets/fonts/PlusJakartaSans.ttf
+          weight: 700
+        - asset: assets/fonts/PlusJakartaSans.ttf
+          weight: 800
