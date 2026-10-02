@@ -6,6 +6,7 @@ import '../../../../core/state/app_state.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/progress_ring.dart';
+import '../../../../shared/widgets/verified_badge.dart';
 import '../../domain/project.dart';
 
 /// Explore project card (list mode).
@@ -80,11 +81,7 @@ class ProjectCard extends StatelessWidget {
                         ),
                       ),
                       if (project.orgVerified)
-                        const Icon(
-                          Icons.verified,
-                          size: 16,
-                          color: AppColors.ocean,
-                        ),
+                        const VerifiedBadge(compact: true),
                     ],
                   ),
                   const SizedBox(height: 4),
