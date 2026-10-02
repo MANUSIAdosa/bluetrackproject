@@ -211,7 +211,7 @@ class _ExplorePageState extends State<ExplorePage> {
               ),
             ),
             SizedBox(
-              height: 240,
+              height: 300,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: forYou.length,
