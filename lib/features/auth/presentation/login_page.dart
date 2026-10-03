@@ -406,12 +406,12 @@ class _FooterLinks extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             TextButton(
-              onPressed: () {},
+              onPressed: () => context.push('/legal/privacy'),
               child: Text(context.tr('auth.privacyPolicy')),
             ),
             const Text('•', style: TextStyle(color: AppColors.textSecondary)),
             TextButton(
-              onPressed: () {},
+              onPressed: () => context.push('/legal/terms'),
               child: Text(context.tr('auth.terms')),
             ),
           ],

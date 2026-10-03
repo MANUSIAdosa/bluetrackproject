@@ -5,6 +5,7 @@ import '../../features/auth/presentation/login_page.dart';
 import '../../features/donation/presentation/donate_amount_page.dart';
 import '../../features/explore/presentation/explore_page.dart';
 import '../../features/impact/presentation/impact_page.dart';
+import '../../features/legal/presentation/legal_page.dart';
 import '../../features/onboarding/presentation/onboarding_page.dart';
 import '../../features/organization/presentation/org_profile_page.dart';
 import '../../features/profile/presentation/profile_page.dart';
@@ -41,6 +42,18 @@ GoRouter createRouter({required bool onboardingDone}) {
         parentNavigatorKey: rootKey,
         builder: (context, state) =>
             const PlaceholderPage(titleKey: 'notifications.title'),
+      ),
+      GoRoute(
+        path: '/legal/privacy',
+        parentNavigatorKey: rootKey,
+        builder: (context, state) =>
+            const LegalPage(documentKey: 'privacy'),
+      ),
+      GoRoute(
+        path: '/legal/terms',
+        parentNavigatorKey: rootKey,
+        builder: (context, state) =>
+            const LegalPage(documentKey: 'terms'),
       ),
       GoRoute(
         path: '/project/:id',
