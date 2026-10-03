@@ -21,19 +21,27 @@ class StepIndicator extends StatelessWidget {
     return Row(
       children: [
         for (var i = 0; i < labels.length; i++) ...[
-          _StepDot(index: i, active: i == current, done: i < current),
+          // One unit per step: number + label grouped together.
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _StepDot(index: i, active: i == current, done: i < current),
+              const SizedBox(width: 6),
+              _StepLabel(
+                label: labels[i],
+                active: i == current,
+              ),
+            ],
+          ),
+          // Connector sits between steps, never between a dot and its label.
           if (i < labels.length - 1)
             Expanded(
               child: Container(
                 height: 2,
-                margin: const EdgeInsets.symmetric(horizontal: 6),
+                margin: const EdgeInsets.symmetric(horizontal: 8),
                 color: i < current ? AppColors.ocean : AppColors.border,
               ),
             ),
-          _StepLabel(
-            label: labels[i],
-            active: i == current,
-          ),
         ],
       ],
     );

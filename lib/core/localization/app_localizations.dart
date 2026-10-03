@@ -164,6 +164,70 @@ class AppLocalizations {
       'donate.stepPending':
           'Langkah berikutnya akan tersedia pada subproyek berikutnya.',
 
+      // --- Legal (Privacy Policy / Terms) ---
+      'legal.privacy.title': 'Kebijakan Privasi',
+      'legal.privacy.intro':
+          'Kebijakan ini menjelaskan bagaimana BlueTrack mengumpulkan, '
+          'menggunakan, dan melindungi data Anda selama menggunakan aplikasi.',
+      'legal.privacy.s1.title': 'Data yang Kami Kumpulkan',
+      'legal.privacy.s1.body':
+          'Kami mengumpulkan data yang Anda berikan saat mendaftar (email dan '
+          'nomor telepon), minat konservasi yang dipilih saat onboarding, '
+          'riwayat donasi, serta proyek yang Anda simpan. Informasi kartu '
+          'pembayaran tidak disimpan di dalam aplikasi.',
+      'legal.privacy.s2.title': 'Cara Kami Menggunakan Data',
+      'legal.privacy.s2.body':
+          'Data digunakan untuk memverifikasi akun Anda melalui kode OTP, '
+          'menampilkan riwayat donasi dan dampak, mengurutkan proyek sesuai '
+          'minat, dan mengirimkan notifikasi terkait donasi. Data Anda tidak '
+          'digunakan untuk iklan pihak ketiga.',
+      'legal.privacy.s3.title': 'Keamanan Data',
+      'legal.privacy.s3.body':
+          'Token autentikasi disimpan di penyimpanan aman perangkat, dan data '
+          'proyek serta laporan yang tersimpan tetap dapat diakses tanpa koneksi '
+          'internet. Kami tidak menyimpan kata sandi dalam bentuk teks biasa.',
+      'legal.privacy.s4.title': 'Berbagi dengan Pihak Ketiga',
+      'legal.privacy.s4.body':
+          'Kami tidak menjual atau menyewakan data pribadi Anda. Informasi '
+          'donasi hanya ditampilkan sebagaimana tercantum di halaman '
+          'Transparansi demi akuntabilitas publik. Sponsor tidak memiliki akses '
+          'ke keputusan konservasi atau prioritas proyek.',
+      'legal.privacy.s5.title': 'Hak Anda',
+      'legal.privacy.s5.body':
+          'Anda dapat menghapus data tersimpan dari perangkat melalui halaman '
+          'Pengaturan, dan meminta penutupan akun kapan saja. Untuk pertanyaan '
+          'seputar data pribadi, hubungi: privasi@bluetrack.app.',
+      'legal.terms.title': 'Syarat & Ketentuan',
+      'legal.terms.intro':
+          'Dengan menggunakan BlueTrack, Anda menyetujui ketentuan berikut. '
+          'Harap membacanya sebelum melanjutkan.',
+      'legal.terms.s1.title': 'Penerimaan Ketentuan',
+      'legal.terms.s1.body':
+          'Ketentuan ini berlaku untuk seluruh pengguna aplikasi BlueTrack. '
+          'Jika Anda tidak setuju dengan salah satu ketentuan, mohon tidak '
+          'menggunakan aplikasi ini.',
+      'legal.terms.s2.title': 'Akun dan Verifikasi',
+      'legal.terms.s2.body':
+          'Anda bertanggung jawab atas keamanan perangkat dan akun Anda. '
+          'Verifikasi dilakukan melalui kode sekali pakai yang dikirim ke nomor '
+          'telepon Anda, dengan batas percobaan untuk mencegah penyalahgunaan.',
+      'legal.terms.s3.title': 'Donasi dan Penggunaan Dana',
+      'legal.terms.s3.body':
+          'Donasi program (Dana A) disalurkan 100% ke proyek konservasi, '
+          'sedangkan donasi operasional dan sponsor (Dana B) digunakan untuk '
+          'biaya operasional platform. Kedua dana tidak pernah dicampur. '
+          'Rincian penyaluran ditampilkan di halaman Transparansi.',
+      'legal.terms.s4.title': 'Perilaku Pengguna',
+      'legal.terms.s4.body':
+          'Anda dilarang memberikan informasi yang menyesatkan saat mengajukan '
+          'proposal, menyalahgunakan fitur platform, atau melakukan tindakan '
+          'yang merugikan proyek konservasi dan pengguna lain.',
+      'legal.terms.s5.title': 'Perubahan Ketentuan',
+      'legal.terms.s5.body':
+          'Ketentuan ini dapat diperbarui sewaktu-waktu, dan perubahan penting '
+          'akan diinformasikan melalui aplikasi. Penggunaan lanjutan setelah '
+          'perubahan berlaku berarti Anda menerima ketentuan yang baru.',
+
       // --- Placeholder tab pages ---
       'transparency.title': 'Transparansi',
       'impact.title': 'Dampakku',
@@ -307,6 +371,69 @@ class AppLocalizations {
       'donate.monthly': 'Monthly',
       'donate.stepPending':
           'The next step will be available in the next subproject.',
+
+      // --- Legal (Privacy Policy / Terms) ---
+      'legal.privacy.title': 'Privacy Policy',
+      'legal.privacy.intro':
+          'This policy explains how BlueTrack collects, uses, and protects '
+          'your data while you use the app.',
+      'legal.privacy.s1.title': 'Data We Collect',
+      'legal.privacy.s1.body':
+          'We collect the data you provide when signing up (email and phone '
+          'number), the conservation interests chosen during onboarding, your '
+          'donation history, and the projects you save. Payment card details '
+          'are not stored in the app.',
+      'legal.privacy.s2.title': 'How We Use Data',
+      'legal.privacy.s2.body':
+          'Data is used to verify your account via OTP code, show your '
+          'donation history and impact, sort projects by your interests, and '
+          'send donation-related notifications. Your data is not used for '
+          'third-party advertising.',
+      'legal.privacy.s3.title': 'Data Security',
+      'legal.privacy.s3.body':
+          'Auth tokens are stored in the device\'s secure storage, and saved '
+          'project and report data remains accessible offline. We never store '
+          'passwords in plain text.',
+      'legal.privacy.s4.title': 'Sharing with Third Parties',
+      'legal.privacy.s4.body':
+          'We do not sell or rent your personal data. Donation information is '
+          'only shown as listed on the Transparency page for public '
+          'accountability. Sponsors have no access to conservation decisions '
+          'or project priorities.',
+      'legal.privacy.s5.title': 'Your Rights',
+      'legal.privacy.s5.body':
+          'You can remove saved data from your device via the Settings page '
+          'and request account deletion at any time. For questions about '
+          'personal data, contact: privasi@bluetrack.app.',
+      'legal.terms.title': 'Terms & Conditions',
+      'legal.terms.intro':
+          'By using BlueTrack, you agree to the following terms. Please read '
+          'them before continuing.',
+      'legal.terms.s1.title': 'Acceptance of Terms',
+      'legal.terms.s1.body':
+          'These terms apply to all BlueTrack users. If you do not agree with '
+          'any of them, please do not use this app.',
+      'legal.terms.s2.title': 'Account and Verification',
+      'legal.terms.s2.body':
+          'You are responsible for the security of your device and account. '
+          'Verification is done via a one-time code sent to your phone number, '
+          'with an attempt limit to prevent abuse.',
+      'legal.terms.s3.title': 'Donations and Use of Funds',
+      'legal.terms.s3.body':
+          'Program donations (Fund A) are passed 100% to conservation '
+          'projects, while operational and sponsor donations (Fund B) cover '
+          'platform operating costs. The two funds are never mixed. '
+          'Disbursement details are shown on the Transparency page.',
+      'legal.terms.s4.title': 'User Conduct',
+      'legal.terms.s4.body':
+          'You may not provide misleading information when submitting '
+          'proposals, misuse platform features, or take actions that harm '
+          'conservation projects and other users.',
+      'legal.terms.s5.title': 'Changes to Terms',
+      'legal.terms.s5.body':
+          'These terms may be updated at any time, and significant changes '
+          'will be announced in the app. Continued use after changes take '
+          'effect means you accept the new terms.',
 
       // --- Placeholder tab pages ---
       'transparency.title': 'Transparency',

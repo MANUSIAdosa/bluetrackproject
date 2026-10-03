@@ -320,9 +320,14 @@ class _LoginPageState extends State<LoginPage> {
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
                   ),
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     counterText: '',
                     errorText: null,
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 14,
+                    ),
                   ),
                   onChanged: (value) => _onOtpChanged(i, value),
                 ),
@@ -401,12 +406,12 @@ class _FooterLinks extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             TextButton(
-              onPressed: () {},
+              onPressed: () => context.push('/legal/privacy'),
               child: Text(context.tr('auth.privacyPolicy')),
             ),
             const Text('•', style: TextStyle(color: AppColors.textSecondary)),
             TextButton(
-              onPressed: () {},
+              onPressed: () => context.push('/legal/terms'),
               child: Text(context.tr('auth.terms')),
             ),
           ],
