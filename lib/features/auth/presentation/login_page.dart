@@ -320,9 +320,14 @@ class _LoginPageState extends State<LoginPage> {
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
                   ),
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     counterText: '',
                     errorText: null,
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 14,
+                    ),
                   ),
                   onChanged: (value) => _onOtpChanged(i, value),
                 ),
