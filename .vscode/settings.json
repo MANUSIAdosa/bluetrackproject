@@ -1,0 +1,6 @@
+{
+    // Hot reload otomatis setiap file disimpan (Ctrl+S).
+    // Default extension adalah "manual", artinya save tidak memicu reload.
+    // Opsi lain: "never", "manual", "manualIfDirty", "allIfDirty"
+    "dart.flutterHotReloadOnSave": "all"
+}

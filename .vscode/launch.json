@@ -1,0 +1,34 @@
+{
+    // F5 (Run and Debug) memakai konfigurasi pertama di list.
+    // type "dart" = pakai Flutter SDK untuk build + serve, bukan cuma buka browser.
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "blue_track (Chrome)",
+            "type": "dart",
+            "request": "launch",
+            "deviceId": "chrome",
+            "cwd": "${workspaceFolder}",
+            "flutterMode": "debug"
+        },
+        {
+            "name": "blue_track (Edge)",
+            "type": "dart",
+            "request": "launch",
+            "deviceId": "edge",
+            "cwd": "${workspaceFolder}",
+            "flutterMode": "debug"
+        },
+        {
+            // Port dikunci 8080 supaya URL-nya bisa diprediksi.
+            // Terminal Debug Console akan mencetak URL-nya.
+            "name": "blue_track (web-server, port 8080)",
+            "type": "dart",
+            "request": "launch",
+            "deviceId": "web-server",
+            "cwd": "${workspaceFolder}",
+            "flutterMode": "debug",
+            "toolArgs": ["--web-port", "8080"]
+        }
+    ]
+}
