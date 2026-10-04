@@ -9,6 +9,7 @@ import '../../../shared/widgets/filter_chip_row.dart';
 import '../../../shared/widgets/notification_bell.dart';
 import '../../../shared/widgets/project_card.dart';
 import '../../../shared/widgets/skeleton.dart';
+import '../data/project_repository.dart';
 import '../domain/project.dart';
 import '../../repositories.dart';
 
@@ -19,7 +20,16 @@ import '../../repositories.dart';
 /// - Map mode is a query-param sibling of this page (deferred: see
 ///   [explore.mapUnavailable]).
 class ExplorePage extends StatefulWidget {
-  const ExplorePage({super.key});
+  const ExplorePage({
+    super.key,
+    this.projectRepository,
+    this.filterRepository,
+  });
+
+  /// Test seams — when null the page reads the registry ([Repositories]).
+  /// The router keeps constructing `const ExplorePage()`.
+  final ProjectRepository? projectRepository;
+  final FilterRepository? filterRepository;
 
   @override
   State<ExplorePage> createState() => _ExplorePageState();
@@ -37,6 +47,11 @@ class _ExplorePageState extends State<ExplorePage> {
   bool _loading = true;
   bool _error = false;
   bool _mapMode = false;
+
+  ProjectRepository get _projects =>
+      widget.projectRepository ?? Repositories.projects;
+  FilterRepository get _filters =>
+      widget.filterRepository ?? Repositories.filters;
 
   @override
   void initState() {
@@ -56,8 +71,8 @@ class _ExplorePageState extends State<ExplorePage> {
       _error = false;
     });
     try {
-      final projects = await Repositories.projects.getProjects();
-      final categories = await Repositories.filters.getCategoryIds();
+      final projects = await _projects.getProjects();
+      final categories = await _filters.getCategoryIds();
       final interests = await OnboardingState.readInterests();
       if (!mounted) return;
       setState(() {
@@ -68,8 +83,21 @@ class _ExplorePageState extends State<ExplorePage> {
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _error = true);
+      setState(() {
+        _error = true;
+        _loading = false;
+      });
     }
+  }
+
+  /// Recovery action for an empty search/filter result: clear the query and go
+  /// back to the "Semua" category so the list can recover.
+  void _resetFilters() {
+    _searchController.clear();
+    setState(() {
+      _query = '';
+      _category = 'semua';
+    });
   }
 
   List<Project> get _visible {
@@ -180,10 +208,12 @@ class _ExplorePageState extends State<ExplorePage> {
         message: context.tr(
           savedEmpty ? 'explore.emptySaved.title' : 'explore.empty.title',
         ),
-        actionLabel: savedEmpty ? context.tr('common.retry') : null,
+        actionLabel: context.tr(
+          savedEmpty ? 'explore.viewAll' : 'explore.resetFilter',
+        ),
         onAction: savedEmpty
             ? () => setState(() => _category = 'semua')
-            : null,
+            : _resetFilters,
       );
     }
 

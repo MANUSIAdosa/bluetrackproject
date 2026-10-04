@@ -118,6 +118,8 @@ class AppLocalizations {
       'explore.emptySaved.title': 'Belum ada proyek tersimpan',
       'explore.emptySaved.body':
           'Simpan proyek agar bisa diakses saat offline.',
+      'explore.resetFilter': 'Atur ulang filter',
+      'explore.viewAll': 'Lihat semua proyek',
       'explore.mapUnavailable':
           'Mode peta belum tersedia pada subproyek ini.',
 
@@ -334,6 +336,8 @@ class AppLocalizations {
       'explore.emptySaved.title': 'No saved projects yet',
       'explore.emptySaved.body':
           'Save projects to access them while offline.',
+      'explore.resetFilter': 'Reset filters',
+      'explore.viewAll': 'View all projects',
       'explore.mapUnavailable': 'Map mode is not available in this subproject.',
 
       // --- Project detail (P04) ---
