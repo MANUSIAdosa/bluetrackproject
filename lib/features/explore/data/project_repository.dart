@@ -9,6 +9,9 @@ import '../domain/project.dart';
 abstract interface class ProjectRepository {
   Future<List<Project>> getProjects({String? category});
   Future<Project?> getProjectById(String id);
+
+  /// Projects belonging to one organization (P05 profile).
+  Future<List<Project>> getProjectsByOrgId(String orgId);
 }
 
 /// Mock implementation reading `assets/mock/projects.json`.
@@ -39,6 +42,12 @@ class MockProjectRepository implements ProjectRepository {
       if (project.id == id) return project;
     }
     return null;
+  }
+
+  @override
+  Future<List<Project>> getProjectsByOrgId(String orgId) async {
+    final projects = await _load();
+    return projects.where((p) => p.orgId == orgId).toList();
   }
 }
 
