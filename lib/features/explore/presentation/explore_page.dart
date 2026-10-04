@@ -24,11 +24,7 @@ import '../../repositories.dart';
 /// - Map mode is a query-param sibling of this page (deferred: see
 ///   [explore.mapUnavailable]).
 class ExplorePage extends StatefulWidget {
-  const ExplorePage({
-    super.key,
-    this.projectRepository,
-    this.filterRepository,
-  });
+  const ExplorePage({super.key, this.projectRepository, this.filterRepository});
 
   /// Test seams — when null the page reads the registry ([Repositories]).
   /// The router keeps constructing `const ExplorePage()`.
@@ -162,9 +158,13 @@ class _ExplorePageState extends State<ExplorePage> {
   List<Project> get _visible {
     final saved = SavedProjectsController.instance.ids;
     var list = _all.where((p) {
-      final matchesCategory = _category == 'semua' ||
-          (_category == 'tersimpan' ? saved.contains(p.id) : p.category == _category);
-      final matchesQuery = _query.isEmpty ||
+      final matchesCategory =
+          _category == 'semua' ||
+          (_category == 'tersimpan'
+              ? saved.contains(p.id)
+              : p.category == _category);
+      final matchesQuery =
+          _query.isEmpty ||
           p.title.toLowerCase().contains(_query) ||
           p.orgName.toLowerCase().contains(_query) ||
           p.location.toLowerCase().contains(_query);
@@ -173,7 +173,8 @@ class _ExplorePageState extends State<ExplorePage> {
 
     // Personalized sorting: interest matches first.
     if (_interests.isNotEmpty) {
-      list = [...list]..sort((a, b) {
+      list = [...list]
+        ..sort((a, b) {
           final aRank = _interests.contains(a.category) ? 0 : 1;
           final bRank = _interests.contains(b.category) ? 0 : 1;
           return aRank.compareTo(bRank);
@@ -214,9 +215,7 @@ class _ExplorePageState extends State<ExplorePage> {
               ),
               onChanged: (value) {
                 _resetPaging();
-                setState(
-                  () => _query = value.trim().toLowerCase(),
-                );
+                setState(() => _query = value.trim().toLowerCase());
               },
             ),
           ),
@@ -253,11 +252,7 @@ class _ExplorePageState extends State<ExplorePage> {
     if (_loading) {
       return ListView(
         padding: const EdgeInsets.all(16),
-        children: const [
-          SkeletonCard(),
-          SizedBox(height: 16),
-          SkeletonCard(),
-        ],
+        children: const [SkeletonCard(), SizedBox(height: 16), SkeletonCard()],
       );
     }
     if (_error) {
@@ -288,9 +283,9 @@ class _ExplorePageState extends State<ExplorePage> {
     final forYou = _interests.isEmpty
         ? const <Project>[]
         : visible
-            .where((p) => _interests.contains(p.category))
-            .take(5)
-            .toList();
+              .where((p) => _interests.contains(p.category))
+              .take(5)
+              .toList();
     final page = visible.take(_visibleCount).toList();
 
     return RefreshIndicator(
@@ -328,15 +323,12 @@ class _ExplorePageState extends State<ExplorePage> {
   }
 
   Widget _sectionHeader(String text) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: Text(
+      text,
+      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+    ),
+  );
 }
 
 /// Horizontal "Untuk minatmu" rail.

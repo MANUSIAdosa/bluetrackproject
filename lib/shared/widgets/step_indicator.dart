@@ -4,11 +4,7 @@ import '../../core/theme/app_colors.dart';
 
 /// Numbered step indicator used by auth (P02) and donation (P06).
 class StepIndicator extends StatelessWidget {
-  const StepIndicator({
-    super.key,
-    required this.labels,
-    required this.current,
-  });
+  const StepIndicator({super.key, required this.labels, required this.current});
 
   /// Labels for each step (already localized by the caller).
   final List<String> labels;
@@ -21,17 +17,18 @@ class StepIndicator extends StatelessWidget {
     return Row(
       children: [
         for (var i = 0; i < labels.length; i++) ...[
-          // One unit per step: number + label grouped together.
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _StepDot(index: i, active: i == current, done: i < current),
-              const SizedBox(width: 6),
-              _StepLabel(
-                label: labels[i],
-                active: i == current,
-              ),
-            ],
+          // One unit per step: number + label grouped together. The group is
+          // Flexible so the label receives a bounded width and can ellipsize
+          // on narrow screens; a non-flexible min-size Row would overflow.
+          Flexible(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _StepDot(index: i, active: i == current, done: i < current),
+                const SizedBox(width: 6),
+                _StepLabel(label: labels[i], active: i == current),
+              ],
+            ),
           ),
           // Connector sits between steps, never between a dot and its label.
           if (i < labels.length - 1)
@@ -49,7 +46,11 @@ class StepIndicator extends StatelessWidget {
 }
 
 class _StepDot extends StatelessWidget {
-  const _StepDot({required this.index, required this.active, required this.done});
+  const _StepDot({
+    required this.index,
+    required this.active,
+    required this.done,
+  });
 
   final int index;
   final bool active;

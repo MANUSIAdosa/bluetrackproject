@@ -6,7 +6,8 @@ import '../../core/theme/app_colors.dart';
 /// Verification badge shown next to organizations and projects.
 ///
 /// Tapping opens a bottom sheet explaining what verification means; pass
-/// [onTap] to override that behavior (e.g. to link somewhere else).
+/// [onTap] to override that behavior (e.g. to open the organization's own
+/// verification sheet with its checklist data).
 class VerifiedBadge extends StatelessWidget {
   const VerifiedBadge({super.key, this.compact = false, this.onTap});
 
@@ -18,6 +19,24 @@ class VerifiedBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final badge = _buildBadge(context);
+    if (onTap == null) return badge;
+
+    return Semantics(
+      button: true,
+      label: context.tr('org.verified.explanation'),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: badge,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBadge(BuildContext context) {
     final label = context.tr('org.verified');
     final badge = compact
         ? const Icon(Icons.verified, size: 16, color: AppColors.teal)
@@ -55,7 +74,7 @@ class VerifiedBadge extends StatelessWidget {
             override();
             return;
           }
-          showVerificationSheet(context);
+          showStaticVerificationSheet(context);
         },
         child: badge,
       ),
@@ -65,7 +84,10 @@ class VerifiedBadge extends StatelessWidget {
 
 /// Explains the verification badge: 24dp top corners, centered drag handle,
 /// dismissible by dragging down or tapping the barrier.
-void showVerificationSheet(BuildContext context) {
+///
+/// Private to this widget so it cannot collide with the organization-specific
+/// `showVerificationSheet(context, orgId:)` in `verification_sheet.dart`.
+void showStaticVerificationSheet(BuildContext context) {
   showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,

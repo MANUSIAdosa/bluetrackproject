@@ -130,10 +130,13 @@ class AppLocalizations {
       'project.tab.reviews': 'Ulasan',
       'project.raised': 'Terkumpul',
       'project.target': 'Target',
+      'project.remaining': 'Sisa dana',
       'project.donate': 'Donasi',
+      'project.location': 'Lokasi proyek',
       'project.budget.item': 'Pos anggaran',
       'project.budget.amount': 'Jumlah',
       'project.budget.percent': 'Porsi',
+      'project.budget.total': 'Total',
       'project.reports.empty': 'Belum ada laporan.',
       'project.reviews.empty': 'Belum ada ulasan.',
 
@@ -150,6 +153,14 @@ class AppLocalizations {
       'org.established': 'Berdiri {year}',
       'org.downloadAudit': 'Unduh laporan audit',
       'org.contact': 'Hubungi',
+      'org.contact.email': 'Email',
+      'org.contact.phone': 'Telepon',
+      'org.projects.title': 'Proyek organisasi',
+      'org.projects.empty': 'Belum ada proyek dari organisasi ini.',
+      'common.copy': 'Salin',
+      'common.copied': 'Tersalin',
+      'org.verified.explanation':
+          'Status terverifikasi disertai checklist pemeriksaan organisasi berikut.',
 
       // --- Verification badge sheet ---
       'verify.sheet.title': 'Tentang badge Terverifikasi',
@@ -347,10 +358,13 @@ class AppLocalizations {
       'project.tab.reviews': 'Reviews',
       'project.raised': 'Raised',
       'project.target': 'Target',
+      'project.remaining': 'Remaining',
       'project.donate': 'Donate',
+      'project.location': 'Project location',
       'project.budget.item': 'Budget item',
       'project.budget.amount': 'Amount',
       'project.budget.percent': 'Share',
+      'project.budget.total': 'Total',
       'project.reports.empty': 'No reports yet.',
       'project.reviews.empty': 'No reviews yet.',
 
@@ -367,6 +381,14 @@ class AppLocalizations {
       'org.established': 'Established {year}',
       'org.downloadAudit': 'Download audit report',
       'org.contact': 'Contact',
+      'org.contact.email': 'Email',
+      'org.contact.phone': 'Phone',
+      'org.projects.title': 'Organization projects',
+      'org.projects.empty': 'No projects from this organization yet.',
+      'common.copy': 'Copy',
+      'common.copied': 'Copied',
+      'org.verified.explanation':
+          "Verified status with the organization's verification checklist below.",
 
       // --- Verification badge sheet ---
       'verify.sheet.title': 'About the Verified badge',

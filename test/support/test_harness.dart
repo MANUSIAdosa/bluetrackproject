@@ -51,9 +51,7 @@ Project buildProject({
     targetAmount: targetAmount,
     description: 'Deskripsi proyek konservasi.',
     about: const ['Butuh dukungan'],
-    budget: const [
-      BudgetLine(item: 'Pemantauan', amount: 1000, percent: 100),
-    ],
+    budget: const [BudgetLine(item: 'Pemantauan', amount: 1000, percent: 100)],
     galleryColors: const ['#0EA5E9', '#14B8A6'],
   );
 }
@@ -61,9 +59,9 @@ Project buildProject({
 /// Constrains a widget to a phone-like column width so wide test surfaces
 /// don't distort card layouts (a 16:9 gallery grows with the width).
 Widget phoneSized(Widget child, {double width = 360}) => Align(
-      alignment: Alignment.topLeft,
-      child: SizedBox(width: width, child: child),
-    );
+  alignment: Alignment.topLeft,
+  child: SizedBox(width: width, child: child),
+);
 
 /// Same environment, but hosted by a real router so navigation can be asserted.
 Widget wrapRouter(GoRouter router, {Locale locale = const Locale('id')}) {
@@ -107,6 +105,11 @@ class FakeProjectRepository implements ProjectRepository {
       if (project.id == id) return project;
     }
     return null;
+  }
+
+  @override
+  Future<List<Project>> getProjectsByOrgId(String orgId) async {
+    return projects.where((p) => p.orgId == orgId).toList();
   }
 }
 
