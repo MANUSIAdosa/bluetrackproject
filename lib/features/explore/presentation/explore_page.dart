@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../core/localization/app_localizations.dart';
@@ -17,6 +19,8 @@ import '../../repositories.dart';
 ///
 /// - Search, category chips (incl. "Tersimpan" via Hive), interest sorting,
 ///   loading / empty / error states, notification bell.
+/// - The list is paged: only [_pageSize] projects at a time, the next page
+///   appended when the user scrolls near the bottom.
 /// - Map mode is a query-param sibling of this page (deferred: see
 ///   [explore.mapUnavailable]).
 class ExplorePage extends StatefulWidget {
@@ -36,7 +40,18 @@ class ExplorePage extends StatefulWidget {
 }
 
 class _ExplorePageState extends State<ExplorePage> {
+  /// Projects per page. The product spec says 10; 4 keeps the paging visible
+  /// with the small mock data set.
+  static const int _pageSize = 4;
+
+  /// Mock latency of a page request, so the inline placeholder is visible.
+  static const Duration _pageLatency = Duration(milliseconds: 300);
+
+  /// Distance from the bottom (logical pixels) that requests the next page.
+  static const double _loadMoreThreshold = 200;
+
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
 
   List<Project> _all = const [];
   List<String> _categoryIds = const ['semua'];
@@ -48,6 +63,10 @@ class _ExplorePageState extends State<ExplorePage> {
   bool _error = false;
   bool _mapMode = false;
 
+  /// How many of the filtered projects the list shows (grows by page).
+  int _visibleCount = _pageSize;
+  bool _loadingMore = false;
+
   ProjectRepository get _projects =>
       widget.projectRepository ?? Repositories.projects;
   FilterRepository get _filters =>
@@ -56,19 +75,25 @@ class _ExplorePageState extends State<ExplorePage> {
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _load();
   }
 
   @override
   void dispose() {
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
     _searchController.dispose();
     super.dispose();
   }
 
   Future<void> _load() async {
+    _resetPaging();
     setState(() {
       _loading = true;
       _error = false;
+      _loadingMore = false;
     });
     try {
       final projects = await _projects.getProjects();
@@ -90,10 +115,44 @@ class _ExplorePageState extends State<ExplorePage> {
     }
   }
 
+  /// Requests the next page when the list is scrolled close to the bottom.
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    if (position.pixels >= position.maxScrollExtent - _loadMoreThreshold) {
+      _loadNextPage();
+    }
+  }
+
+  /// Appends the next page of already fetched mock projects after a short
+  /// delay, so the placeholder below the list behaves like a real request.
+  Future<void> _loadNextPage() async {
+    if (_loading || _loadingMore) return;
+    final total = _visible.length;
+    if (_visibleCount >= total) return;
+    setState(() => _loadingMore = true);
+    await Future<void>.delayed(_pageLatency);
+    // A reload (pull to refresh / retry) already reset the paging.
+    if (!mounted || _loading) return;
+    setState(() {
+      _visibleCount = math.min(_visibleCount + _pageSize, total);
+      _loadingMore = false;
+    });
+  }
+
+  /// Back to the first page. The offset also jumps to the top: a shorter
+  /// result set would otherwise leave the viewport near the new bottom and
+  /// immediately ask for the next page.
+  void _resetPaging() {
+    _visibleCount = _pageSize;
+    if (_scrollController.hasClients) _scrollController.jumpTo(0);
+  }
+
   /// Recovery action for an empty search/filter result: clear the query and go
   /// back to the "Semua" category so the list can recover.
   void _resetFilters() {
     _searchController.clear();
+    _resetPaging();
     setState(() {
       _query = '';
       _category = 'semua';
@@ -148,11 +207,17 @@ class _ExplorePageState extends State<ExplorePage> {
                         icon: const Icon(Icons.clear),
                         onPressed: () {
                           _searchController.clear();
+                          _resetPaging();
                           setState(() => _query = '');
                         },
                       ),
               ),
-              onChanged: (value) => setState(() => _query = value.trim().toLowerCase()),
+              onChanged: (value) {
+                _resetPaging();
+                setState(
+                  () => _query = value.trim().toLowerCase(),
+                );
+              },
             ),
           ),
           FilterChipRow(
@@ -167,7 +232,10 @@ class _ExplorePageState extends State<ExplorePage> {
               ),
             ],
             selectedId: _category,
-            onSelected: (id) => setState(() => _category = id),
+            onSelected: (id) {
+              _resetPaging();
+              setState(() => _category = id);
+            },
           ),
           const SizedBox(height: 8),
           _ListMapToggle(
@@ -223,58 +291,91 @@ class _ExplorePageState extends State<ExplorePage> {
             .where((p) => _interests.contains(p.category))
             .take(5)
             .toList();
+    final page = visible.take(_visibleCount).toList();
 
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
+        controller: _scrollController,
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
         children: [
           if (forYou.isNotEmpty && _category == 'semua' && _query.isEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                context.tr('explore.forYou'),
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-            SizedBox(
-              height: 300,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: forYou.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 12),
-                itemBuilder: (context, i) => SizedBox(
-                  width: 260,
-                  child: ProjectCard(
-                    project: forYou[i],
-                    onSavedChanged: () => setState(() {}),
-                  ),
-                ),
-              ),
+            _sectionHeader(context.tr('explore.forYou')),
+            _ForYouRail(
+              key: const ValueKey('explore.forYouRail'),
+              projects: forYou,
+              onSavedChanged: () => setState(() {}),
             ),
             const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                context.tr('explore.projects'),
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
+            _sectionHeader(context.tr('explore.projects')),
           ],
-          for (final project in visible) ...[
+          for (final project in page) ...[
             ProjectCard(
               project: project,
               onSavedChanged: () => setState(() {}),
             ),
             const SizedBox(height: 12),
           ],
+          // Small placeholder while the next page is appended.
+          if (_loadingMore)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Skeleton(height: 72, radius: 12),
+            ),
         ],
+      ),
+    );
+  }
+
+  Widget _sectionHeader(String text) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      );
+}
+
+/// Horizontal "Untuk minatmu" rail.
+///
+/// Its height is measured from the cards themselves ([IntrinsicHeight]) rather
+/// than pinned to a constant, so it can never be shorter than a card: a
+/// one-line or two-line title, a longer location or a large text scale are all
+/// fine. Cards are compact — no donate CTA — and stretched to one height.
+class _ForYouRail extends StatelessWidget {
+  const _ForYouRail({
+    super.key,
+    required this.projects,
+    required this.onSavedChanged,
+  });
+
+  final List<Project> projects;
+  final VoidCallback onSavedChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < projects.length; i++) ...[
+              if (i > 0) const SizedBox(width: 12),
+              SizedBox(
+                width: 260,
+                child: ProjectCard(
+                  project: projects[i],
+                  showDonateButton: false,
+                  onSavedChanged: onSavedChanged,
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
