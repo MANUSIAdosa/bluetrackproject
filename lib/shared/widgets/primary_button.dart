@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_colors.dart';
+
 /// Primary CTA button with a built-in loading state.
+///
+/// Coral is reserved for the single primary action of a screen, so the color is
+/// declared here instead of in the shared theme.
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
     super.key,
@@ -32,6 +37,10 @@ class PrimaryButton extends StatelessWidget {
         : Text(label);
 
     final button = FilledButton(
+      style: FilledButton.styleFrom(
+        backgroundColor: AppColors.coral,
+        foregroundColor: Colors.white,
+      ),
       onPressed: loading ? null : onPressed,
       child: child,
     );
