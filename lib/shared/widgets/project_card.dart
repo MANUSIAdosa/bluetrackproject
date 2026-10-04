@@ -1,20 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/localization/app_localizations.dart';
-import '../../../../core/state/app_state.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/utils/formatters.dart';
-import '../../../../shared/widgets/progress_ring.dart';
-import '../../../../shared/widgets/verified_badge.dart';
-import '../../domain/project.dart';
+import '../../core/localization/app_localizations.dart';
+import '../../core/state/app_state.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/utils/formatters.dart';
+import '../../features/explore/domain/project.dart';
+import 'progress_bar.dart';
+import 'verified_badge.dart';
 
-/// Explore project card (list mode).
+/// Project card used by Explore (list + "for you" rail).
+///
+/// The card sizes itself from its content; hosts that need a fixed height
+/// (the horizontal rail) must measure it instead of guessing — see
+/// `ExplorePage`.
 class ProjectCard extends StatelessWidget {
-  const ProjectCard({super.key, required this.project, this.onSavedChanged});
+  const ProjectCard({
+    super.key,
+    required this.project,
+    this.onSavedChanged,
+    this.showDonateButton = true,
+  });
 
   final Project project;
   final VoidCallback? onSavedChanged;
+
+  /// The donate CTA is an outlined button (the coral primary belongs to one
+  /// button per screen). Horizontal cards hide it to stay compact.
+  final bool showDonateButton;
 
   @override
   Widget build(BuildContext context) {
@@ -26,35 +39,37 @@ class ProjectCard extends StatelessWidget {
       child: InkWell(
         onTap: () => context.push('/project/${project.id}'),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Gallery placeholder (mock data has colors, not images).
-            Container(
-              height: 120,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors:
-                      project.galleryColors.map(_hexToColor).toList(),
-                ),
-              ),
-              child: Align(
-                alignment: Alignment.topRight,
-                child: IconButton(
-                  icon: Icon(
-                    saved ? Icons.bookmark : Icons.bookmark_outline,
-                    color: Colors.white,
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: project.galleryColors.map(_hexToColor).toList(),
                   ),
-                  onPressed: () async {
-                    await SavedProjectsController.instance.toggle(project.id);
-                    onSavedChanged?.call();
-                  },
+                ),
+                child: Align(
+                  alignment: Alignment.topRight,
+                  child: IconButton(
+                    icon: Icon(
+                      saved ? Icons.bookmark : Icons.bookmark_outline,
+                      color: Colors.white,
+                    ),
+                    onPressed: () async {
+                      await SavedProjectsController.instance.toggle(project.id);
+                      onSavedChanged?.call();
+                    },
+                  ),
                 ),
               ),
             ),
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -107,12 +122,13 @@ class ProjectCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
+                  ProgressBar(value: project.progress),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
-                      ProgressRing(value: project.progress, size: 40),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
@@ -134,6 +150,10 @@ class ProjectCard extends StatelessWidget {
                           ],
                         ),
                       ),
+                      if (showDonateButton) ...[
+                        const SizedBox(width: 12),
+                        _DonateButton(projectId: project.id),
+                      ],
                     ],
                   ),
                 ],
@@ -142,6 +162,25 @@ class ProjectCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Outlined donate CTA → the existing donation route for that project.
+class _DonateButton extends StatelessWidget {
+  const _DonateButton({required this.projectId});
+
+  final String projectId;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(0, 40),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+      ),
+      onPressed: () => context.push('/donate/$projectId'),
+      child: Text(context.tr('project.donate')),
     );
   }
 }

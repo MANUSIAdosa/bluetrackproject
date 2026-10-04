@@ -7,10 +7,10 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_state.dart';
 import '../../../shared/widgets/filter_chip_row.dart';
 import '../../../shared/widgets/notification_bell.dart';
+import '../../../shared/widgets/project_card.dart';
 import '../../../shared/widgets/skeleton.dart';
 import '../domain/project.dart';
 import '../../repositories.dart';
-import 'widgets/project_card.dart';
 
 /// P03 — Explore (list mode).
 ///
