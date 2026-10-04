@@ -1,0 +1,40 @@
+[
+  {
+    "id": "o01",
+    "name": "Yayasan Laut Biru",
+    "verified": true,
+    "location": "Banyuwangi, Jawa Timur",
+    "establishedYear": 2015,
+    "totalProjects": 12,
+    "totalDisbursed": 485000000,
+    "communitiesServed": 9,
+    "color": "#0284C7",
+    "email": "halo@lautbiru.or.id",
+    "phone": "+62 812-0000-0000",
+    "checklist": [
+      {"key": "legal", "done": true},
+      {"key": "audit", "done": true},
+      {"key": "field", "done": true},
+      {"key": "finance", "done": false}
+    ]
+  },
+  {
+    "id": "o02",
+    "name": "Konsorsium Pesisir Hijau",
+    "verified": true,
+    "location": "Jakarta Utara, DKI Jakarta",
+    "establishedYear": 2018,
+    "totalProjects": 7,
+    "totalDisbursed": 210000000,
+    "communitiesServed": 5,
+    "color": "#14B8A6",
+    "email": "kontak@pesisirhijau.or.id",
+    "phone": "+62 813-0000-0000",
+    "checklist": [
+      {"key": "legal", "done": true},
+      {"key": "audit", "done": true},
+      {"key": "field", "done": false},
+      {"key": "finance", "done": true}
+    ]
+  }
+]
