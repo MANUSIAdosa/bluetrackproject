@@ -4,11 +4,7 @@ import '../../core/theme/app_colors.dart';
 
 /// Numbered step indicator used by auth (P02) and donation (P06).
 class StepIndicator extends StatelessWidget {
-  const StepIndicator({
-    super.key,
-    required this.labels,
-    required this.current,
-  });
+  const StepIndicator({super.key, required this.labels, required this.current});
 
   /// Labels for each step (already localized by the caller).
   final List<String> labels;
@@ -30,10 +26,7 @@ class StepIndicator extends StatelessWidget {
               children: [
                 _StepDot(index: i, active: i == current, done: i < current),
                 const SizedBox(width: 6),
-                _StepLabel(
-                  label: labels[i],
-                  active: i == current,
-                ),
+                _StepLabel(label: labels[i], active: i == current),
               ],
             ),
           ),
@@ -53,7 +46,11 @@ class StepIndicator extends StatelessWidget {
 }
 
 class _StepDot extends StatelessWidget {
-  const _StepDot({required this.index, required this.active, required this.done});
+  const _StepDot({
+    required this.index,
+    required this.active,
+    required this.done,
+  });
 
   final int index;
   final bool active;

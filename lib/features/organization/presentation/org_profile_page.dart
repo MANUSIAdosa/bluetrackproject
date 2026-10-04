@@ -9,7 +9,7 @@ import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/skeleton.dart';
 import '../../../shared/widgets/verified_badge.dart';
 import '../../explore/domain/project.dart';
-import '../../explore/presentation/widgets/project_card.dart';
+import '../../../shared/widgets/project_card.dart';
 import '../../repositories.dart';
 import '../domain/organization.dart';
 

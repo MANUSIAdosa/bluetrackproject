@@ -118,6 +118,8 @@ class AppLocalizations {
       'explore.emptySaved.title': 'Belum ada proyek tersimpan',
       'explore.emptySaved.body':
           'Simpan proyek agar bisa diakses saat offline.',
+      'explore.resetFilter': 'Atur ulang filter',
+      'explore.viewAll': 'Lihat semua proyek',
       'explore.mapUnavailable':
           'Mode peta belum tersedia pada subproyek ini.',
 
@@ -159,6 +161,13 @@ class AppLocalizations {
       'common.copied': 'Tersalin',
       'org.verified.explanation':
           'Status terverifikasi disertai checklist pemeriksaan organisasi berikut.',
+
+      // --- Verification badge sheet ---
+      'verify.sheet.title': 'Tentang badge Terverifikasi',
+      'verify.sheet.body':
+          'Badge Terverifikasi berarti organisasi telah lolos pemeriksaan '
+          'dokumentasi dan lapangan BlueTrack, sehingga setiap donasi dapat '
+          'dilacak sampai ke laporan kegiatan proyek.',
 
       // --- Donation (P06, amount step) ---
       'donate.title': 'Donasi',
@@ -338,6 +347,8 @@ class AppLocalizations {
       'explore.emptySaved.title': 'No saved projects yet',
       'explore.emptySaved.body':
           'Save projects to access them while offline.',
+      'explore.resetFilter': 'Reset filters',
+      'explore.viewAll': 'View all projects',
       'explore.mapUnavailable': 'Map mode is not available in this subproject.',
 
       // --- Project detail (P04) ---
@@ -378,6 +389,13 @@ class AppLocalizations {
       'common.copied': 'Copied',
       'org.verified.explanation':
           "Verified status with the organization's verification checklist below.",
+
+      // --- Verification badge sheet ---
+      'verify.sheet.title': 'About the Verified badge',
+      'verify.sheet.body':
+          'A Verified badge means the organization passed BlueTrack\'s '
+          'documentation and field checks, so every donation can be traced to '
+          'the project\'s activity reports.',
 
       // --- Donation (P06, amount step) ---
       'donate.title': 'Donate',
