@@ -21,17 +21,21 @@ class StepIndicator extends StatelessWidget {
     return Row(
       children: [
         for (var i = 0; i < labels.length; i++) ...[
-          // One unit per step: number + label grouped together.
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _StepDot(index: i, active: i == current, done: i < current),
-              const SizedBox(width: 6),
-              _StepLabel(
-                label: labels[i],
-                active: i == current,
-              ),
-            ],
+          // One unit per step: number + label grouped together. The group is
+          // Flexible so the label receives a bounded width and can ellipsize
+          // on narrow screens; a non-flexible min-size Row would overflow.
+          Flexible(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _StepDot(index: i, active: i == current, done: i < current),
+                const SizedBox(width: 6),
+                _StepLabel(
+                  label: labels[i],
+                  active: i == current,
+                ),
+              ],
+            ),
           ),
           // Connector sits between steps, never between a dot and its label.
           if (i < labels.length - 1)

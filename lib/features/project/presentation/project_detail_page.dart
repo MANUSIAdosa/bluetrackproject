@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_state.dart';
+import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/progress_bar.dart';
+import '../../../shared/widgets/skeleton.dart';
+import '../../../shared/widgets/verification_sheet.dart';
 import '../../../shared/widgets/verified_badge.dart';
 import '../../explore/domain/project.dart';
 import '../../repositories.dart';
@@ -61,26 +65,29 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
       final project =
           await Repositories.projects.getProjectById(widget.projectId);
       if (!mounted) return;
-      if (project == null) {
-        setState(() => _error = true);
-      } else {
-        setState(() {
+      // `_loading` must always be cleared here, otherwise an unknown id leaves
+      // the spinner on screen forever and ErrorState is never reached.
+      setState(() {
+        _loading = false;
+        if (project == null) {
+          _error = true;
+        } else {
           _project = project;
-          _loading = false;
-        });
-      }
+        }
+      });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _error = true);
+      setState(() {
+        _loading = false;
+        _error = true;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: _ProjectDetailSkeleton());
     }
     if (_error || _project == null) {
       return Scaffold(
@@ -97,7 +104,38 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
           SliverAppBar(
             expandedHeight: 260,
             pinned: true,
-            leading: const BackButton(),
+            leading: _CircleAppBarButton(
+              icon: Icons.arrow_back,
+              tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+              onPressed: () => context.canPop()
+                  ? context.pop()
+                  : context.go('/explore'),
+            ),
+            actions: [
+              _CircleAppBarButton(
+                icon: SavedProjectsController.instance.isSaved(project.id)
+                    ? Icons.bookmark
+                    : Icons.bookmark_outline,
+                onPressed: () async {
+                  await SavedProjectsController.instance.toggle(project.id);
+                  if (!mounted) return;
+                  setState(() {});
+                },
+              ),
+              const SizedBox(width: 8),
+            ],
+            // Title fades in only once the gallery starts scrolling away.
+            title: AnimatedOpacity(
+              opacity: innerBoxIsScrolled ? 1 : 0,
+              duration: const Duration(milliseconds: 180),
+              child: Text(
+                project.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+            ),
             flexibleSpace: FlexibleSpaceBar(
               background: _Gallery(
                 colors: project.galleryColors,
@@ -134,10 +172,10 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
       ),
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.all(16),
-        child: FilledButton.icon(
+        child: PrimaryButton(
+          label: context.tr('project.donate'),
+          icon: Icons.favorite,
           onPressed: () => context.push('/donate/${project.id}'),
-          icon: const Icon(Icons.favorite),
-          label: Text(context.tr('project.donate')),
         ),
       ),
     );
@@ -149,28 +187,6 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Dot indicator.
-          Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (var i = 0; i < project.galleryColors.length; i++)
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    width: _galleryIndex == i ? 18 : 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: _galleryIndex == i
-                          ? AppColors.ocean
-                          : AppColors.border,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
           Align(
             alignment: Alignment.centerLeft,
             child: Chip(
@@ -204,13 +220,55 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
-                if (project.orgVerified) const VerifiedBadge(),
+                if (project.orgVerified)
+                  VerifiedBadge(
+                    onTap: () =>
+                        showVerificationSheet(context, orgId: project.orgId),
+                  ),
               ],
             ),
           ),
           const SizedBox(height: 16),
           _FundingCard(project: project, lang: lang),
           const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+/// Loading placeholder mirroring the real page layout: gallery, category chip,
+/// title, org row, funding card.
+class _ProjectDetailSkeleton extends StatelessWidget {
+  const _ProjectDetailSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const Skeleton(height: 200, radius: 16),
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: const Skeleton(width: 110, height: 26, radius: 13),
+          ),
+          const SizedBox(height: 12),
+          const Skeleton(height: 20),
+          const SizedBox(height: 8),
+          const Skeleton(width: 220, height: 20),
+          const SizedBox(height: 16),
+          const Row(
+            children: [
+              Skeleton(width: 28, height: 28, radius: 14),
+              SizedBox(width: 8),
+              Expanded(child: Skeleton(height: 14)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Skeleton(height: 120, radius: 16),
+          const SizedBox(height: 40),
         ],
       ),
     );
@@ -318,7 +376,81 @@ class _Gallery extends StatelessWidget {
             ),
           ),
         ),
+        // Photo counter (e.g. 1/3).
+        Positioned(
+          right: 12,
+          bottom: 12,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.45),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              '${index + 1}/${colors.length}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+        // Dot indicator overlaid on the image.
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 16,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              for (var i = 0; i < colors.length; i++)
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: index == i ? 18 : 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: index == i ? Colors.white : Colors.white54,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ],
+    );
+  }
+}
+
+/// Circular icon button for the gallery app bar, with a translucent backdrop so
+/// it stays readable over the image.
+class _CircleAppBarButton extends StatelessWidget {
+  const _CircleAppBarButton({
+    required this.icon,
+    required this.onPressed,
+    this.tooltip,
+  });
+
+  final IconData icon;
+  final VoidCallback onPressed;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.35),
+        shape: BoxShape.circle,
+      ),
+      child: IconButton(
+        icon: Icon(icon, color: Colors.white),
+        onPressed: onPressed,
+        tooltip: tooltip,
+        constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+        padding: EdgeInsets.zero,
+      ),
     );
   }
 }

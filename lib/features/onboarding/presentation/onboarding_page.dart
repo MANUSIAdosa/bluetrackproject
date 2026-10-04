@@ -92,7 +92,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     child: Column(
                       children: [
                         // Illustration area ≈ 55% of screen height.
-                        Expanded(
+                        Flexible(
                           flex: 55,
                           child: Container(
                             width: double.infinity,
@@ -115,28 +115,30 @@ class _OnboardingPageState extends State<OnboardingPage> {
                           ),
                         ),
                         const SizedBox(height: 32),
-                        Expanded(
+                        Flexible(
                           flex: 45,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                context.tr(slide.titleKey),
-                                style: const TextStyle(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w800,
+                          child: SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  context.tr(slide.titleKey),
+                                  style: const TextStyle(
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.w800,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                context.tr(slide.bodyKey),
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  height: 1.5,
-                                  color: AppColors.textSecondary,
+                                const SizedBox(height: 12),
+                                Text(
+                                  context.tr(slide.bodyKey),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    height: 1.5,
+                                    color: AppColors.textSecondary,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ],

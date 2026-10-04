@@ -4,6 +4,8 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/error_state.dart';
+import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/widgets/skeleton.dart';
 import '../../../shared/widgets/verified_badge.dart';
 import '../../repositories.dart';
 import '../domain/organization.dart';
@@ -38,20 +40,25 @@ class _OrgProfilePageState extends State<OrgProfilePage> {
       final org = await Repositories.organizations.getById(widget.orgId);
       if (!mounted) return;
       setState(() {
-        _org = org;
         _loading = false;
+        _org = org;
         _error = org == null;
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _error = true);
+      // Must clear `_loading`, otherwise a failed read leaves the spinner on
+      // screen forever and ErrorState is never reached.
+      setState(() {
+        _loading = false;
+        _error = true;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: _OrgProfileSkeleton());
     }
     if (_error || _org == null) {
       return Scaffold(
@@ -170,10 +177,10 @@ class _OrgProfilePageState extends State<OrgProfilePage> {
             label: Text(context.tr('org.downloadAudit')),
           ),
           const SizedBox(height: 12),
-          FilledButton.icon(
+          PrimaryButton(
+            label: context.tr('org.contact'),
+            icon: Icons.mail_outline,
             onPressed: () => _showMockNotice(context),
-            icon: const Icon(Icons.mail_outline),
-            label: Text(context.tr('org.contact')),
           ),
           const SizedBox(height: 32),
         ],
@@ -184,6 +191,44 @@ class _OrgProfilePageState extends State<OrgProfilePage> {
   void _showMockNotice(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(context.tr('common.comingSoon'))),
+    );
+  }
+}
+
+/// Loading placeholder mirroring the real page layout: header row, numeric
+/// summary card, verification checklist.
+class _OrgProfileSkeleton extends StatelessWidget {
+  const _OrgProfileSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const Row(
+            children: [
+              Skeleton(width: 56, height: 56, radius: 28),
+              SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Skeleton(height: 18),
+                    SizedBox(height: 8),
+                    Skeleton(width: 180, height: 13),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Skeleton(height: 96, radius: 16),
+          const SizedBox(height: 16),
+          const Skeleton(height: 180, radius: 16),
+          const SizedBox(height: 32),
+        ],
+      ),
     );
   }
 }

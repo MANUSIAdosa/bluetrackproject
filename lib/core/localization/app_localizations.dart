@@ -148,6 +148,8 @@ class AppLocalizations {
       'org.established': 'Berdiri {year}',
       'org.downloadAudit': 'Unduh laporan audit',
       'org.contact': 'Hubungi',
+      'org.verified.explanation':
+          'Status terverifikasi disertai checklist pemeriksaan organisasi berikut.',
 
       // --- Donation (P06, amount step) ---
       'donate.title': 'Donasi',
@@ -356,6 +358,8 @@ class AppLocalizations {
       'org.established': 'Established {year}',
       'org.downloadAudit': 'Download audit report',
       'org.contact': 'Contact',
+      'org.verified.explanation':
+          "Verified status with the organization's verification checklist below.",
 
       // --- Donation (P06, amount step) ---
       'donate.title': 'Donate',

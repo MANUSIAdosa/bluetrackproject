@@ -8,11 +8,17 @@ class PrimaryButton extends StatelessWidget {
     this.onPressed,
     this.loading = false,
     this.expand = true,
+    this.icon,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final bool loading;
+
+  /// Optional leading icon, replacing `FilledButton.icon` at call sites that
+  /// need one. Null keeps the original label-only button, so existing call
+  /// sites render unchanged.
+  final IconData? icon;
 
   /// When true, stretches to the full width (default FilledButton behavior
     /// from the theme already handles this; kept for clarity at call sites).
@@ -20,21 +26,31 @@ class PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final child = loading
-        ? const SizedBox(
-            width: 22,
-            height: 22,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.5,
-              color: Colors.white,
-            ),
-          )
-        : Text(label);
-
-    final button = FilledButton(
-      onPressed: loading ? null : onPressed,
-      child: child,
-    );
+    final Widget button;
+    if (loading) {
+      button = FilledButton(
+        onPressed: null,
+        child: const SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(
+            strokeWidth: 2.5,
+            color: Colors.white,
+          ),
+        ),
+      );
+    } else if (icon != null) {
+      button = FilledButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon),
+        label: Text(label),
+      );
+    } else {
+      button = FilledButton(
+        onPressed: onPressed,
+        child: Text(label),
+      );
+    }
 
     if (!expand) return button;
     return SizedBox(width: double.infinity, child: button);
