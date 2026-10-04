@@ -149,6 +149,13 @@ class AppLocalizations {
       'org.downloadAudit': 'Unduh laporan audit',
       'org.contact': 'Hubungi',
 
+      // --- Verification badge sheet ---
+      'verify.sheet.title': 'Tentang badge Terverifikasi',
+      'verify.sheet.body':
+          'Badge Terverifikasi berarti organisasi telah lolos pemeriksaan '
+          'dokumentasi dan lapangan BlueTrack, sehingga setiap donasi dapat '
+          'dilacak sampai ke laporan kegiatan proyek.',
+
       // --- Donation (P06, amount step) ---
       'donate.title': 'Donasi',
       'donate.step1': 'Nominal',
@@ -356,6 +363,13 @@ class AppLocalizations {
       'org.established': 'Established {year}',
       'org.downloadAudit': 'Download audit report',
       'org.contact': 'Contact',
+
+      // --- Verification badge sheet ---
+      'verify.sheet.title': 'About the Verified badge',
+      'verify.sheet.body':
+          'A Verified badge means the organization passed BlueTrack\'s '
+          'documentation and field checks, so every donation can be traced to '
+          'the project\'s activity reports.',
 
       // --- Donation (P06, amount step) ---
       'donate.title': 'Donate',
