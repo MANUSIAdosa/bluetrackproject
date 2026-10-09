@@ -19,6 +19,7 @@ Future<void> main() async {
   final onboardingDone = prefs.getBool(AppConfig.onboardingDoneKey) ?? false;
 
   await AuthController.instance.init();
+  await NotificationsController.instance.load();
 
   runApp(BlueTrackApp(onboardingDone: onboardingDone));
 }

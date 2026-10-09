@@ -75,6 +75,7 @@ class AppLocalizations {
 
       // --- Onboarding (P01) ---
       'onboarding.skip': 'Lewati',
+      'onboarding.next': 'Berikutnya',
       'onboarding.chooseInterests': 'Pilih Minat',
       'onboarding.start': 'Mulai',
       'onboarding.slide1.title': 'Laut Menyerap Karbon',
@@ -264,6 +265,8 @@ class AppLocalizations {
       'profile.title': 'Profil',
       'profile.signOut': 'Keluar',
       'notifications.title': 'Notifikasi',
+      'notifications.donationNews':
+          'Kabar tentang donasimu akan muncul di sini.',
     },
     'en': {
       // --- Common ---
@@ -309,6 +312,7 @@ class AppLocalizations {
 
       // --- Onboarding (P01) ---
       'onboarding.skip': 'Skip',
+      'onboarding.next': 'Next',
       'onboarding.chooseInterests': 'Choose Interests',
       'onboarding.start': 'Start',
       'onboarding.slide1.title': 'The Ocean Absorbs Carbon',
@@ -493,6 +497,8 @@ class AppLocalizations {
       'profile.title': 'Profile',
       'profile.signOut': 'Sign out',
       'notifications.title': 'Notifications',
+      'notifications.donationNews':
+          'News about your donations will appear here.',
     },
   };
 }

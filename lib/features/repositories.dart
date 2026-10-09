@@ -1,4 +1,5 @@
 import 'explore/data/project_repository.dart';
+import 'notification/data/notification_repository.dart';
 import 'organization/data/organization_repository.dart';
 
 /// Repository registry.
@@ -10,4 +11,6 @@ abstract final class Repositories {
   static const FilterRepository filters = MockFilterRepository();
   static const OrganizationRepository organizations =
       MockOrganizationRepository();
+  static const NotificationRepository notifications =
+      MockNotificationRepository();
 }

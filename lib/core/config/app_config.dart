@@ -27,8 +27,7 @@ abstract final class AppConfig {
   static const int otpResendSeconds = 60;
 
   // --- Notifications ------------------------------------------------------
-  /// TODO: wire to NotificationRepository once P13 is implemented; 0 hides the badge.
-  static const int unreadNotifications = 0;
+  // The unread count lives in the mock NotificationRepository, not here.
 
   // --- Donation (mock) ----------------------------------------------------
   // TODO(product owner): confirm the preset donation amounts below.
