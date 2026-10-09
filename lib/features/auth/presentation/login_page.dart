@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -9,12 +10,15 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/primary_button.dart';
-import '../../../shared/widgets/step_indicator.dart';
 
 /// P02 — Login and account verification.
 ///
 /// Steps: email → phone (+62) → 6-digit OTP (mock: 123456).
 /// On success returns to the origin page via the `redirect` query parameter.
+///
+/// The three steps are self-explanatory, so the page carries no step
+/// indicator. The app-bar back arrow is the single way out — it steps back
+/// through the flow, and leaves the page when already on the first step.
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key, this.redirect});
 
@@ -163,18 +167,22 @@ class _LoginPageState extends State<LoginPage> {
 
   // --- Shared --------------------------------------------------------------
 
+  /// Steps back through the flow, or leaves the page from the first step.
+  ///
+  /// A deep link straight into `/auth` has nothing to pop, so fall back to the
+  /// origin page the user asked for, or to the app entry point.
   void _goBack() {
     if (_step > 0) {
       setState(() {
         _step--;
         _errorKey = null;
       });
-    } else {
-      context.pop();
+      return;
     }
-  }
-
-  void _skipLogin() {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
     final redirect = widget.redirect;
     context.go(redirect != null && redirect.isNotEmpty ? redirect : '/explore');
   }
@@ -195,15 +203,6 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              StepIndicator(
-                labels: [
-                  context.tr('auth.step.email'),
-                  context.tr('auth.step.phone'),
-                  context.tr('auth.step.otp'),
-                ],
-                current: _step,
-              ),
-              const SizedBox(height: 32),
               if (_step == 0) _buildEmailStep(),
               if (_step == 1) _buildPhoneStep(),
               if (_step == 2) _buildOtpStep(),
@@ -235,7 +234,7 @@ class _LoginPageState extends State<LoginPage> {
           onPressed: _submitEmail,
         ),
         const SizedBox(height: 24),
-        _FooterLinks(onSkip: _skipLogin),
+        const _LegalNotice(),
       ],
     );
   }
@@ -280,7 +279,7 @@ class _LoginPageState extends State<LoginPage> {
           onPressed: _sendCode,
         ),
         const SizedBox(height: 24),
-        _FooterLinks(onSkip: _skipLogin),
+        const _LegalNotice(),
       ],
     );
   }
@@ -381,46 +380,73 @@ class _LoginPageState extends State<LoginPage> {
                 ),
         ),
         const SizedBox(height: 24),
-        _FooterLinks(onSkip: _skipLogin),
+        const _LegalNotice(),
       ],
     );
   }
 }
 
-class _FooterLinks extends StatelessWidget {
-  const _FooterLinks({required this.onSkip});
+/// One sentence of legal copy with both documents as inline links.
+///
+/// This used to be three tappable targets stacked together — two legal
+/// buttons plus "continue without signing in" — which invited misclicks. The
+/// skip action is gone (the app-bar back arrow leaves the page), so the notice
+/// is the only thing left and reads as the sentence it always was.
+class _LegalNotice extends StatefulWidget {
+  const _LegalNotice();
 
-  final VoidCallback onSkip;
+  @override
+  State<_LegalNotice> createState() => _LegalNoticeState();
+}
+
+class _LegalNoticeState extends State<_LegalNotice> {
+  // Held as fields so they outlive a single build and are disposed with the
+  // state; recognizers created inline in `build` would leak on every rebuild.
+  final TapGestureRecognizer _policyTap = TapGestureRecognizer();
+  final TapGestureRecognizer _termsTap = TapGestureRecognizer();
+
+  @override
+  void dispose() {
+    _policyTap.dispose();
+    _termsTap.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          context.tr('auth.privacy'),
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextButton(
-              onPressed: () => context.push('/legal/privacy'),
-              child: Text(context.tr('auth.privacyPolicy')),
-            ),
-            const Text('•', style: TextStyle(color: AppColors.textSecondary)),
-            TextButton(
-              onPressed: () => context.push('/legal/terms'),
-              child: Text(context.tr('auth.terms')),
-            ),
-          ],
-        ),
-        TextButton(
-          onPressed: onSkip,
-          child: Text(context.tr('auth.skipLogin')),
-        ),
-      ],
+    _policyTap.onTap = () => context.push('/legal/privacy');
+    _termsTap.onTap = () => context.push('/legal/terms');
+
+    const base = TextStyle(fontSize: 12, color: AppColors.textSecondary);
+    const link = TextStyle(
+      fontSize: 12,
+      color: AppColors.ocean,
+      decoration: TextDecoration.underline,
+      decorationColor: AppColors.ocean,
+    );
+
+    return Text.rich(
+      TextSpan(
+        style: base,
+        children: [
+          TextSpan(text: '${context.tr('auth.privacy.lead')} '),
+          TextSpan(
+            text: context.tr('auth.privacyPolicy'),
+            style: link,
+            recognizer: _policyTap,
+          ),
+          TextSpan(text: ' ${context.tr('auth.privacy.and')} '),
+          TextSpan(
+            text: context.tr('auth.terms'),
+            style: link,
+            recognizer: _termsTap,
+          ),
+          // Sentence punctuation is identical in both locales, so it stays
+          // out of the localization maps.
+          const TextSpan(text: '.'),
+        ],
+      ),
+      textAlign: TextAlign.center,
     );
   }
 }

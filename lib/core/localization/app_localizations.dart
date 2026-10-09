@@ -92,9 +92,6 @@ class AppLocalizations {
 
       // --- Auth (P02) ---
       'auth.title': 'Masuk ke BlueTrack',
-      'auth.step.email': 'Email',
-      'auth.step.phone': 'Telepon',
-      'auth.step.otp': 'Kode',
       'auth.email.hint': 'nama@email.com',
       'auth.email.invalid': 'Format email tidak valid',
       'auth.phone.hint': '8123456789',
@@ -110,10 +107,12 @@ class AppLocalizations {
       'auth.otp.resend': 'Kirim ulang kode',
       'auth.otp.sent': 'Kode verifikasi terkirim (mock: 123456)',
       'auth.verify': 'Verifikasi',
-      'auth.privacy': 'Dengan melanjutkan, Anda menyetujui Kebijakan Privasi dan Syarat & Ketentuan.',
+      // Split around the two inline document links so each document name stays a
+      // separately tappable span instead of being parsed back out of a string.
+      'auth.privacy.lead': 'Dengan melanjutkan, Anda menyetujui',
       'auth.privacyPolicy': 'Kebijakan Privasi',
+      'auth.privacy.and': 'dan',
       'auth.terms': 'Syarat & Ketentuan',
-      'auth.skipLogin': 'Lanjut tanpa masuk',
 
       // --- Explore (P03) ---
       'explore.title': 'Jelajahi',
@@ -328,9 +327,6 @@ class AppLocalizations {
 
       // --- Auth (P02) ---
       'auth.title': 'Sign in to BlueTrack',
-      'auth.step.email': 'Email',
-      'auth.step.phone': 'Phone',
-      'auth.step.otp': 'Code',
       'auth.email.hint': 'name@email.com',
       'auth.email.invalid': 'Invalid email format',
       'auth.phone.hint': '8123456789',
@@ -345,10 +341,12 @@ class AppLocalizations {
       'auth.otp.resend': 'Resend code',
       'auth.otp.sent': 'Verification code sent (mock: 123456)',
       'auth.verify': 'Verify',
-      'auth.privacy': 'By continuing, you agree to the Privacy Policy and Terms & Conditions.',
+      // Split around the two inline document links so each document name stays a
+      // separately tappable span instead of being parsed back out of a string.
+      'auth.privacy.lead': 'By continuing, you agree to the',
       'auth.privacyPolicy': 'Privacy Policy',
+      'auth.privacy.and': 'and',
       'auth.terms': 'Terms & Conditions',
-      'auth.skipLogin': 'Continue without signing in',
 
       // --- Explore (P03) ---
       'explore.title': 'Explore',
