@@ -10,6 +10,16 @@ import '../../../core/theme/app_colors.dart';
 ///
 /// Completing it sets `onboarding_done = true` and persists selected
 /// interests (used later to sort Explore).
+///
+/// Flow rules:
+/// - One primary button per screen. Slides 1–2 say "Next", slide 3 says
+///   "Choose Interests", the interest screen says "Start". Each label means the
+///   same thing wherever it appears, so it never changes meaning mid-flow.
+/// - "Skip" is a secondary text button that jumps to the interest screen; it
+///   does not finish onboarding. Only "Start" completes it, and only with at
+///   least one interest selected.
+/// - The interest screen has a back arrow returning to the last slide, and the
+///   system back button behaves the same.
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
 
@@ -47,6 +57,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
   Future<void> _finish(List<String> interests) async {
     await OnboardingState.markDone(interests);
     if (!mounted) return;
+    // `go` replaces the stack, so /onboarding is gone: back from /explore
+    // cannot land here again.
     context.go('/explore');
   }
 
@@ -61,6 +73,32 @@ class _OnboardingPageState extends State<OnboardingPage> {
     }
   }
 
+  /// Both "Skip" and the last slide's primary button land here. Skipping must
+  /// not complete onboarding — the interest screen still applies its own
+  /// one-minimum rule.
+  void _showInterestScreen() => setState(() => _showInterests = true);
+
+  /// Returns from the interest screen to the last slide, keeping any interests
+  /// already selected.
+  void _backToSlides() {
+    setState(() => _showInterests = false);
+    // The interest screen replaces the PageView in the tree, so the controller
+    // is detached at this moment and only re-attaches after the next build.
+    // Jumping eagerly would throw; waiting a frame lands on the last slide.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_pageController.hasClients) return;
+      _pageController.jumpToPage(_slides.length - 1);
+    });
+  }
+
+  /// System back on the interest screen steps back to the last slide instead of
+  /// leaving onboarding. On a slide it is a no-op (canPop stays true) so the
+  /// platform's own behavior is untouched.
+  void _handleSystemBack(bool didPop) {
+    if (didPop) return;
+    _backToSlides();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_showInterests) return _buildInterests(context);
@@ -73,10 +111,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
       body: SafeArea(
         child: Column(
           children: [
+            // Secondary text button, deliberately not the screen's primary action.
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: () => _finish(const []),
+                onPressed: _showInterestScreen,
                 child: Text(context.tr('onboarding.skip')),
               ),
             ),
@@ -186,74 +225,91 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   Widget _buildInterests(BuildContext context) {
     final canStart = _selectedInterests.isNotEmpty;
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                context.tr('onboarding.interests.title'),
-                style: const TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
+    return PopScope<Object?>(
+      // On this screen back means "one step back in the flow", so the route
+      // itself must not pop.
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) => _handleSystemBack(didPop),
+      child: Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Secondary control, not a second primary button.
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    tooltip: MaterialLocalizations.of(context)
+                        .backButtonTooltip,
+                    icon: const Icon(Icons.arrow_back),
+                    color: AppColors.ocean,
+                    onPressed: _backToSlides,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                context.tr('onboarding.interests.subtitle'),
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: AppColors.textSecondary,
+                Text(
+                  context.tr('onboarding.interests.title'),
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              Expanded(
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 1.4,
-                  children: [
-                    for (final id in AppConfig.interestIds)
-                      _InterestCard(
-                        label: context.tr('cat.$id'),
-                        icon: _interestIcons[id] ?? Icons.spa,
-                        selected: _selectedInterests.contains(id),
-                        onTap: () => setState(() {
-                          _selectedInterests.contains(id)
-                              ? _selectedInterests.remove(id)
-                              : _selectedInterests.add(id);
-                        }),
-                      ),
-                  ],
+                const SizedBox(height: 8),
+                Text(
+                  context.tr('onboarding.interests.subtitle'),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
-              ),
-              if (!canStart) ...[
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Text(
-                      context.tr('onboarding.minOne'),
-                      style: const TextStyle(
-                        color: AppColors.coral,
-                        fontWeight: FontWeight.w600,
+                const SizedBox(height: 24),
+                Expanded(
+                  child: GridView.count(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 1.4,
+                    children: [
+                      for (final id in AppConfig.interestIds)
+                        _InterestCard(
+                          label: context.tr('cat.$id'),
+                          icon: _interestIcons[id] ?? Icons.spa,
+                          selected: _selectedInterests.contains(id),
+                          onTap: () => setState(() {
+                            _selectedInterests.contains(id)
+                                ? _selectedInterests.remove(id)
+                                : _selectedInterests.add(id);
+                          }),
+                        ),
+                    ],
+                  ),
+                ),
+                if (!canStart) ...[
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        context.tr('onboarding.minOne'),
+                        style: const TextStyle(
+                          color: AppColors.coral,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
+                ],
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: canStart
+                        ? () => _finish(_selectedInterests.toList())
+                        : null,
+                    child: Text(context.tr('onboarding.start')),
+                  ),
                 ),
               ],
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: canStart
-                      ? () => _finish(_selectedInterests.toList())
-                      : null,
-                  child: Text(context.tr('onboarding.start')),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

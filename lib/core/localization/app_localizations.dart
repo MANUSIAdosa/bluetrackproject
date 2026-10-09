@@ -75,6 +75,7 @@ class AppLocalizations {
 
       // --- Onboarding (P01) ---
       'onboarding.skip': 'Lewati',
+      'onboarding.next': 'Berikutnya',
       'onboarding.chooseInterests': 'Pilih Minat',
       'onboarding.start': 'Mulai',
       'onboarding.slide1.title': 'Laut Menyerap Karbon',
@@ -311,6 +312,7 @@ class AppLocalizations {
 
       // --- Onboarding (P01) ---
       'onboarding.skip': 'Skip',
+      'onboarding.next': 'Next',
       'onboarding.chooseInterests': 'Choose Interests',
       'onboarding.start': 'Start',
       'onboarding.slide1.title': 'The Ocean Absorbs Carbon',
