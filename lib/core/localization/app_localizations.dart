@@ -91,12 +91,18 @@ class AppLocalizations {
       'onboarding.minOne': 'Pilih minimal satu',
 
       // --- Auth (P02) ---
-      'auth.title': 'Masuk ke BlueTrack',
-      'auth.step.email': 'Email',
-      'auth.step.phone': 'Telepon',
-      'auth.step.otp': 'Kode',
+      // The title lives in the body heading, not the app bar, so there is one
+      // clear anchor per step instead of two competing ones.
+      'auth.email.title': 'Selamat datang kembali',
+      'auth.email.subtitle':
+          'Masuk untuk melihat proyek dan donasi yang Anda dukung.',
+      'auth.email.label': 'Email',
       'auth.email.hint': 'nama@email.com',
       'auth.email.invalid': 'Format email tidak valid',
+      'auth.phone.title': 'Nomor telepon Anda',
+      'auth.phone.subtitle':
+          'Kami akan mengirim kode verifikasi ke nomor ini.',
+      'auth.phone.label': 'Nomor telepon',
       'auth.phone.hint': '8123456789',
       'auth.phone.invalid': 'Nomor telepon tidak valid',
       'auth.sendCode': 'Kirim Kode',
@@ -110,10 +116,12 @@ class AppLocalizations {
       'auth.otp.resend': 'Kirim ulang kode',
       'auth.otp.sent': 'Kode verifikasi terkirim (mock: 123456)',
       'auth.verify': 'Verifikasi',
-      'auth.privacy': 'Dengan melanjutkan, Anda menyetujui Kebijakan Privasi dan Syarat & Ketentuan.',
+      // Split around the two inline document links so each document name stays a
+      // separately tappable span instead of being parsed back out of a string.
+      'auth.privacy.lead': 'Dengan melanjutkan, Anda menyetujui',
       'auth.privacyPolicy': 'Kebijakan Privasi',
+      'auth.privacy.and': 'dan',
       'auth.terms': 'Syarat & Ketentuan',
-      'auth.skipLogin': 'Lanjut tanpa masuk',
 
       // --- Explore (P03) ---
       'explore.title': 'Jelajahi',
@@ -327,12 +335,18 @@ class AppLocalizations {
       'onboarding.minOne': 'Pick at least one',
 
       // --- Auth (P02) ---
-      'auth.title': 'Sign in to BlueTrack',
-      'auth.step.email': 'Email',
-      'auth.step.phone': 'Phone',
-      'auth.step.otp': 'Code',
+      // The title lives in the body heading, not the app bar, so there is one
+      // clear anchor per step instead of two competing ones.
+      'auth.email.title': 'Welcome back',
+      'auth.email.subtitle':
+          'Sign in to see the projects and donations you support.',
+      'auth.email.label': 'Email',
       'auth.email.hint': 'name@email.com',
       'auth.email.invalid': 'Invalid email format',
+      'auth.phone.title': 'Your phone number',
+      'auth.phone.subtitle':
+          "We'll send a verification code to this number.",
+      'auth.phone.label': 'Phone number',
       'auth.phone.hint': '8123456789',
       'auth.phone.invalid': 'Invalid phone number',
       'auth.sendCode': 'Send Code',
@@ -345,10 +359,12 @@ class AppLocalizations {
       'auth.otp.resend': 'Resend code',
       'auth.otp.sent': 'Verification code sent (mock: 123456)',
       'auth.verify': 'Verify',
-      'auth.privacy': 'By continuing, you agree to the Privacy Policy and Terms & Conditions.',
+      // Split around the two inline document links so each document name stays a
+      // separately tappable span instead of being parsed back out of a string.
+      'auth.privacy.lead': 'By continuing, you agree to the',
       'auth.privacyPolicy': 'Privacy Policy',
+      'auth.privacy.and': 'and',
       'auth.terms': 'Terms & Conditions',
-      'auth.skipLogin': 'Continue without signing in',
 
       // --- Explore (P03) ---
       'explore.title': 'Explore',

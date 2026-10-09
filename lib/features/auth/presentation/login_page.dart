@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -9,12 +10,33 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/primary_button.dart';
-import '../../../shared/widgets/step_indicator.dart';
+
+/// Wider side margins than the app's 16dp base: this page has a single narrow
+/// column, so extra breathing room at the edges keeps the form from filling
+/// the width on a large phone.
+const double _sidePadding = 24;
+
+/// Clearance under the app bar, so the heading does not crowd it.
+const double _topPadding = 32;
+
+const double _bottomPadding = 24;
+
+/// Gap between a field and its button. Wider than the usual 20 so the form
+/// does not read as one solid block.
+const double _fieldToButtonGap = 28;
+
+/// Distance from the button down to the legal notice — near enough to belong
+/// to the form, far enough not to look glued to the button.
+const double _noticeGap = 32;
 
 /// P02 — Login and account verification.
 ///
 /// Steps: email → phone (+62) → 6-digit OTP (mock: 123456).
 /// On success returns to the origin page via the `redirect` query parameter.
+///
+/// The three steps are self-explanatory, so the page carries no step
+/// indicator. The app-bar back arrow is the single way out — it steps back
+/// through the flow, and leaves the page when already on the first step.
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key, this.redirect});
 
@@ -163,18 +185,22 @@ class _LoginPageState extends State<LoginPage> {
 
   // --- Shared --------------------------------------------------------------
 
+  /// Steps back through the flow, or leaves the page from the first step.
+  ///
+  /// A deep link straight into `/auth` has nothing to pop, so fall back to the
+  /// origin page the user asked for, or to the app entry point.
   void _goBack() {
     if (_step > 0) {
       setState(() {
         _step--;
         _errorKey = null;
       });
-    } else {
-      context.pop();
+      return;
     }
-  }
-
-  void _skipLogin() {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
     final redirect = widget.redirect;
     context.go(redirect != null && redirect.isNotEmpty ? redirect : '/explore');
   }
@@ -187,26 +213,27 @@ class _LoginPageState extends State<LoginPage> {
           icon: const Icon(Icons.arrow_back),
           onPressed: _goBack,
         ),
-        title: Text(context.tr('auth.title')),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.only(
+            left: _sidePadding,
+            right: _sidePadding,
+            top: _topPadding,
+            bottom: _bottomPadding,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              StepIndicator(
-                labels: [
-                  context.tr('auth.step.email'),
-                  context.tr('auth.step.phone'),
-                  context.tr('auth.step.otp'),
-                ],
-                current: _step,
-              ),
-              const SizedBox(height: 32),
+              // Top-aligned on purpose. A vertically centred field is what the
+              // mobile keyboard covers once it opens, so the form stays in the
+              // upper part of the screen and the page scrolls only when the
+              // form genuinely outgrows the viewport.
               if (_step == 0) _buildEmailStep(),
               if (_step == 1) _buildPhoneStep(),
               if (_step == 2) _buildOtpStep(),
+              const SizedBox(height: _noticeGap),
+              const _LegalNotice(),
             ],
           ),
         ),
@@ -218,24 +245,29 @@ class _LoginPageState extends State<LoginPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _StepHeading(
+          title: context.tr('auth.email.title'),
+          subtitle: context.tr('auth.email.subtitle'),
+        ),
+        const SizedBox(height: 32),
         TextField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
           autofillHints: const [AutofillHints.email],
           decoration: InputDecoration(
+            labelText: context.tr('auth.email.label'),
             hintText: context.tr('auth.email.hint'),
             errorText: _errorKey == null ? null : context.tr(_errorKey!),
           ),
           onSubmitted: (_) => _submitEmail(),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: _fieldToButtonGap),
         PrimaryButton(
           label: context.tr('common.continue'),
           loading: _loading,
           onPressed: _submitEmail,
+          color: AppColors.ocean,
         ),
-        const SizedBox(height: 24),
-        _FooterLinks(onSkip: _skipLogin),
       ],
     );
   }
@@ -244,13 +276,21 @@ class _LoginPageState extends State<LoginPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _StepHeading(
+          title: context.tr('auth.phone.title'),
+          subtitle: context.tr('auth.phone.subtitle'),
+        ),
+        const SizedBox(height: 32),
         Row(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimens.padding,
+                vertical: 14,
+              ),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(AppDimens.cardRadius),
                 border: Border.all(color: AppColors.border),
               ),
               child: const Text(
@@ -265,6 +305,7 @@ class _LoginPageState extends State<LoginPage> {
                 keyboardType: TextInputType.phone,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: InputDecoration(
+                  labelText: context.tr('auth.phone.label'),
                   hintText: context.tr('auth.phone.hint'),
                   errorText: _errorKey == null ? null : context.tr(_errorKey!),
                 ),
@@ -273,14 +314,13 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ],
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: _fieldToButtonGap),
         PrimaryButton(
           label: context.tr('auth.sendCode'),
           loading: _loading,
           onPressed: _sendCode,
+          color: AppColors.ocean,
         ),
-        const SizedBox(height: 24),
-        _FooterLinks(onSkip: _skipLogin),
       ],
     );
   }
@@ -289,19 +329,11 @@ class _LoginPageState extends State<LoginPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          context.tr('auth.otp.title'),
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+        _StepHeading(
+          title: context.tr('auth.otp.title'),
+          subtitle: context.tr('auth.otp.subtitle', {'phone': _fullPhone}),
         ),
-        const SizedBox(height: 4),
-        Text(
-          context.tr('auth.otp.subtitle', {'phone': _fullPhone}),
-          style: const TextStyle(
-            fontSize: 14,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 32),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -339,6 +371,7 @@ class _LoginPageState extends State<LoginPage> {
           Text(
             context.tr(_errorKey!),
             style: const TextStyle(
+              fontSize: 13,
               color: AppColors.danger,
               fontWeight: FontWeight.w600,
             ),
@@ -354,20 +387,27 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ],
         ],
-        const SizedBox(height: 24),
+        const SizedBox(height: _fieldToButtonGap),
         PrimaryButton(
           label: context.tr('auth.verify'),
           loading: _loading,
           onPressed: (_otpCode.length == 6 && !_otpLocked) ? _verify : null,
+          color: AppColors.ocean,
         ),
-        const SizedBox(height: 12),
-        Center(
-          child: _resendSeconds > 0
-              ? Text(
-                  context.tr('auth.otp.resendIn', {'s': '$_resendSeconds'}),
-                  style: const TextStyle(color: AppColors.textSecondary),
-                )
-              : TextButton(
+        const SizedBox(height: 8),
+        // Left-aligned like the rest of the column; centred here read as a
+        // separate block floating under the button.
+        _resendSeconds > 0
+            ? Text(
+                context.tr('auth.otp.resendIn', {'s': '$_resendSeconds'}),
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
+              )
+            : Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
                   onPressed: () {
                     if (_otpLocked) {
                       setState(() {
@@ -379,48 +419,110 @@ class _LoginPageState extends State<LoginPage> {
                   },
                   child: Text(context.tr('auth.otp.resend')),
                 ),
-        ),
-        const SizedBox(height: 24),
-        _FooterLinks(onSkip: _skipLogin),
+              ),
       ],
     );
   }
 }
 
-class _FooterLinks extends StatelessWidget {
-  const _FooterLinks({required this.onSkip});
+/// Title and supporting line shared by all three steps.
+///
+/// Gives every step the same anchor, so moving through the flow swaps the
+/// words rather than swapping between a titled block and a bare field.
+class _StepHeading extends StatelessWidget {
+  const _StepHeading({required this.title, required this.subtitle});
 
-  final VoidCallback onSkip;
+  final String title;
+  final String subtitle;
 
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          context.tr('auth.privacy'),
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          title,
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            height: 1.2,
+          ),
         ),
         const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextButton(
-              onPressed: () => context.push('/legal/privacy'),
-              child: Text(context.tr('auth.privacyPolicy')),
-            ),
-            const Text('•', style: TextStyle(color: AppColors.textSecondary)),
-            TextButton(
-              onPressed: () => context.push('/legal/terms'),
-              child: Text(context.tr('auth.terms')),
-            ),
-          ],
-        ),
-        TextButton(
-          onPressed: onSkip,
-          child: Text(context.tr('auth.skipLogin')),
+        Text(
+          subtitle,
+          style: const TextStyle(
+            fontSize: 14,
+            height: 1.5,
+            color: AppColors.textSecondary,
+          ),
         ),
       ],
+    );
+  }
+}
+
+/// One sentence of legal copy with both documents as inline links.
+///
+/// This used to be three tappable targets stacked together — two legal
+/// buttons plus "continue without signing in" — which invited misclicks. The
+/// skip action is gone (the app-bar back arrow leaves the page), so the notice
+/// is the only thing left and reads as the sentence it always was.
+class _LegalNotice extends StatefulWidget {
+  const _LegalNotice();
+
+  @override
+  State<_LegalNotice> createState() => _LegalNoticeState();
+}
+
+class _LegalNoticeState extends State<_LegalNotice> {
+  // Held as fields so they outlive a single build and are disposed with the
+  // state; recognizers created inline in `build` would leak on every rebuild.
+  final TapGestureRecognizer _policyTap = TapGestureRecognizer();
+  final TapGestureRecognizer _termsTap = TapGestureRecognizer();
+
+  @override
+  void dispose() {
+    _policyTap.dispose();
+    _termsTap.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    _policyTap.onTap = () => context.push('/legal/privacy');
+    _termsTap.onTap = () => context.push('/legal/terms');
+
+    const base = TextStyle(fontSize: 12, color: AppColors.textSecondary);
+    const link = TextStyle(
+      fontSize: 12,
+      color: AppColors.ocean,
+      decoration: TextDecoration.underline,
+      decorationColor: AppColors.ocean,
+    );
+
+    return Text.rich(
+      TextSpan(
+        style: base,
+        children: [
+          TextSpan(text: '${context.tr('auth.privacy.lead')} '),
+          TextSpan(
+            text: context.tr('auth.privacyPolicy'),
+            style: link,
+            recognizer: _policyTap,
+          ),
+          TextSpan(text: ' ${context.tr('auth.privacy.and')} '),
+          TextSpan(
+            text: context.tr('auth.terms'),
+            style: link,
+            recognizer: _termsTap,
+          ),
+          // Sentence punctuation is identical in both locales, so it stays
+          // out of the localization maps.
+          const TextSpan(text: '.'),
+        ],
+      ),
+      textAlign: TextAlign.center,
     );
   }
 }
