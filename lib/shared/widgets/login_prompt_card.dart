@@ -60,6 +60,9 @@ class LoginPromptCard extends StatelessWidget {
             PrimaryButton(
               label: context.tr('login.prompt.button'),
               onPressed: () => context.push('/auth?redirect=$returnLocation'),
+              // Ocean blue to match P02's sign-in buttons and the icon above,
+              // so the whole sign-in affordance reads as one thing.
+              color: AppColors.ocean,
             ),
           ],
         ),
