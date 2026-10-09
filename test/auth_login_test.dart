@@ -85,6 +85,108 @@ void main() {
     FlutterSecureStorage.setMockInitialValues({});
   });
 
+  testWidgets('form di bagian atas, catatan hukum tidak di dasar layar', (
+    tester,
+  ) async {
+    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+    await tester.pumpAndSettle();
+
+    // Dead centring put the field at 261, then 296 — a vertically centred field
+    // is what the mobile keyboard covers. Top alignment puts it at 199.
+    final fieldTop = tester.getTopLeft(find.byType(TextField)).dy;
+    expect(fieldTop, greaterThan(100));
+    expect(fieldTop, lessThan(240));
+
+    // The notice stays near the form instead of being pinned to the bottom.
+    expect(600 - tester.getBottomLeft(legalNotice()).dy, greaterThan(100));
+  });
+
+  testWidgets('field dan tombol muat di layar pendek tanpa scroll', (
+    tester,
+  ) async {
+    // A 390-wide phone once the keyboard opens leaves roughly this much height.
+    tester.view.devicePixelRatio = 3;
+    tester.view.physicalSize = const Size(1170, 1000);
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+    await tester.pumpAndSettle();
+
+    // Top alignment is what puts both controls above the keyboard line. A
+    // centred form pushed them into the lower half, where the keyboard covers
+    // the very field the user is typing into.
+    expect(tester.getBottomLeft(find.byType(TextField)).dy, lessThan(333));
+    expect(tester.getTopLeft(find.byType(FilledButton)).dy, lessThan(333));
+  });
+
+  testWidgets('ada jarak longgar antara field dan tombol', (tester) async {
+    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+    await tester.pumpAndSettle();
+
+    final fieldBottom = tester.getBottomLeft(find.byType(TextField)).dy;
+    // Measure the button widget, not its label — the label sits centred inside
+    // it and would hide roughly 18dp of the gap.
+    final buttonTop = tester.getTopLeft(find.byType(FilledButton)).dy;
+    expect(buttonTop - fieldBottom, greaterThanOrEqualTo(28));
+  });
+
+  testWidgets('setiap langkah punya judul dan subjudul', (tester) async {
+    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+    await tester.pumpAndSettle();
+    expect(find.text('Selamat datang kembali'), findsOneWidget);
+    expect(find.text('Nomor telepon Anda'), findsNothing);
+
+    await tester.enterText(find.byType(TextField), 'penyayang@contoh.id');
+    await tester.tap(find.text('Lanjut'));
+    await tester.pumpAndSettle();
+    expect(find.text('Selamat datang kembali'), findsNothing);
+    expect(find.text('Nomor telepon Anda'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), '8123456789');
+    await tester.tap(find.text('Kirim Kode'));
+    await pumpFrames(tester);
+    expect(find.text('Masukkan kode verifikasi'), findsOneWidget);
+  });
+
+  testWidgets('field punya label yang bertahan setelah diisi', (tester) async {
+    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Email'), findsOneWidget);
+
+    await tester.tap(find.byType(TextField));
+    await tester.enterText(find.byType(TextField), 'penyayang@contoh.id');
+    await tester.pumpAndSettle();
+
+    // The label floats up and stays put once the field has content. The hint
+    // widget lingers in the tree at zero opacity, so only the label is
+    // asserted here.
+    expect(find.text('Email'), findsOneWidget);
+  });
+
+  testWidgets('di layar pendek halaman tetap bisa di-scroll tanpa overflow', (
+    tester,
+  ) async {
+    // Short and narrow: the legal notice wraps to several lines, so the block
+    // no longer fits and the page has to scroll.
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(360, 280);
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+
+    await tester.scrollUntilVisible(
+      find.text('Lanjut'),
+      60,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Lanjut'), findsOneWidget);
+  });
+
   testWidgets('layar sign-in tidak menampilkan step indicator', (tester) async {
     await tester.pumpWidget(wrapRouter(buildLoginRouter()));
     await tester.pumpAndSettle();

@@ -91,9 +91,18 @@ class AppLocalizations {
       'onboarding.minOne': 'Pilih minimal satu',
 
       // --- Auth (P02) ---
-      'auth.title': 'Masuk ke BlueTrack',
+      // The title lives in the body heading, not the app bar, so there is one
+      // clear anchor per step instead of two competing ones.
+      'auth.email.title': 'Selamat datang kembali',
+      'auth.email.subtitle':
+          'Masuk untuk melihat proyek dan donasi yang Anda dukung.',
+      'auth.email.label': 'Email',
       'auth.email.hint': 'nama@email.com',
       'auth.email.invalid': 'Format email tidak valid',
+      'auth.phone.title': 'Nomor telepon Anda',
+      'auth.phone.subtitle':
+          'Kami akan mengirim kode verifikasi ke nomor ini.',
+      'auth.phone.label': 'Nomor telepon',
       'auth.phone.hint': '8123456789',
       'auth.phone.invalid': 'Nomor telepon tidak valid',
       'auth.sendCode': 'Kirim Kode',
@@ -326,9 +335,18 @@ class AppLocalizations {
       'onboarding.minOne': 'Pick at least one',
 
       // --- Auth (P02) ---
-      'auth.title': 'Sign in to BlueTrack',
+      // The title lives in the body heading, not the app bar, so there is one
+      // clear anchor per step instead of two competing ones.
+      'auth.email.title': 'Welcome back',
+      'auth.email.subtitle':
+          'Sign in to see the projects and donations you support.',
+      'auth.email.label': 'Email',
       'auth.email.hint': 'name@email.com',
       'auth.email.invalid': 'Invalid email format',
+      'auth.phone.title': 'Your phone number',
+      'auth.phone.subtitle':
+          "We'll send a verification code to this number.",
+      'auth.phone.label': 'Phone number',
       'auth.phone.hint': '8123456789',
       'auth.phone.invalid': 'Invalid phone number',
       'auth.sendCode': 'Send Code',
