@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/state/app_state.dart';
-import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/login_prompt_card.dart';
 import '../../../shared/widgets/notification_bell.dart';
+import '../../shell/tab_placeholder.dart';
 
 /// P09 My Impact — tab shell.
 ///
@@ -17,7 +17,7 @@ class ImpactPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(context.tr('impact.title')),
+        title: Text(context.tr('nav.impact')),
         actions: const [NotificationBell(), SizedBox(width: 8)],
       ),
       body: ListenableBuilder(
@@ -29,10 +29,7 @@ class ImpactPage extends StatelessWidget {
               child: LoginPromptCard(returnLocation: '/impact'),
             );
           }
-          return EmptyState(
-            icon: Icons.favorite_outline,
-            message: context.tr('impact.empty'),
-          );
+          return const TabPlaceholder(location: '/impact');
         },
       ),
     );
