@@ -4,8 +4,10 @@ import '../../core/theme/app_colors.dart';
 
 /// Primary CTA button with a built-in loading state.
 ///
-/// Coral is reserved for the single primary action of a screen, so the color is
-/// declared here instead of in the shared theme.
+/// Coral is the default fill, reserved for the single primary action of a
+/// screen, so the color is declared here instead of in the shared theme.
+/// Screens that need a different fill — P02's sign-in uses ocean blue — pass
+/// [color] rather than restyling the button at the call site.
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
     super.key,
@@ -14,6 +16,7 @@ class PrimaryButton extends StatelessWidget {
     this.loading = false,
     this.expand = true,
     this.icon,
+    this.color = AppColors.coral,
   });
 
   final String label;
@@ -25,6 +28,9 @@ class PrimaryButton extends StatelessWidget {
   /// sites render unchanged.
   final IconData? icon;
 
+  /// Filled background color. Defaults to coral.
+  final Color color;
+
   /// When true, stretches to the full width (default FilledButton behavior
   /// from the theme already handles this; kept for clarity at call sites).
   final bool expand;
@@ -32,7 +38,7 @@ class PrimaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = FilledButton.styleFrom(
-      backgroundColor: AppColors.coral,
+      backgroundColor: color,
       foregroundColor: Colors.white,
     );
 

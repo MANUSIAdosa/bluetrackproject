@@ -1,4 +1,5 @@
 import 'package:blue_track/core/state/app_state.dart';
+import 'package:blue_track/core/theme/app_colors.dart';
 import 'package:blue_track/features/auth/presentation/login_page.dart';
 import 'package:blue_track/features/legal/presentation/legal_page.dart';
 import 'package:blue_track/shared/widgets/step_indicator.dart';
@@ -61,12 +62,20 @@ Finder legalNotice() => find.byWidgetPredicate(
   description: 'inline legal notice sentence',
 );
 
-/// The OTP resend countdown ticks every second, so `pumpAndSettle` would time
-/// out instead of failing. Pump a fixed number of frames instead.
+/// The login flow ticks the OTP resend countdown every second, so
+/// `pumpAndSettle` would time out instead of failing. Pump a fixed number of
+/// frames instead.
 Future<void> pumpFrames(WidgetTester tester) async {
   for (var i = 0; i < 8; i++) {
     await tester.pump(const Duration(milliseconds: 60));
   }
+}
+
+/// Resolved fill color of the screen's primary CTA.
+Color primaryButtonColor(WidgetTester tester) {
+  final button = tester.widget<FilledButton>(find.byType(FilledButton).first);
+  return button.style?.backgroundColor?.resolve(<WidgetState>{}) ??
+      AppColors.coral;
 }
 
 void main() {
@@ -83,7 +92,25 @@ void main() {
     expect(find.byType(StepIndicator), findsNothing);
   });
 
-  testWidgets('langkah email tidak punya tombol|link di bawah', (
+  testWidgets('tombol utama sign-in diisi biru ocean', (tester) async {
+    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+    await tester.pumpAndSettle();
+
+    expect(primaryButtonColor(tester), AppColors.ocean);
+
+    // The phone and OTP steps carry the same CTA fill.
+    await tester.enterText(find.byType(TextField), 'penyayang@contoh.id');
+    await tester.tap(find.text('Lanjut'));
+    await tester.pumpAndSettle();
+    expect(primaryButtonColor(tester), AppColors.ocean);
+
+    await tester.enterText(find.byType(TextField), '8123456789');
+    await tester.tap(find.text('Kirim Kode'));
+    await pumpFrames(tester);
+    expect(primaryButtonColor(tester), AppColors.ocean);
+  });
+
+  testWidgets('langkah email tidak punya tombol/link di bawah', (
     tester,
   ) async {
     await tester.pumpWidget(wrapRouter(buildLoginRouter()));

@@ -232,6 +232,7 @@ class _LoginPageState extends State<LoginPage> {
           label: context.tr('common.continue'),
           loading: _loading,
           onPressed: _submitEmail,
+          color: AppColors.ocean,
         ),
         const SizedBox(height: 24),
         const _LegalNotice(),
@@ -277,6 +278,7 @@ class _LoginPageState extends State<LoginPage> {
           label: context.tr('auth.sendCode'),
           loading: _loading,
           onPressed: _sendCode,
+          color: AppColors.ocean,
         ),
         const SizedBox(height: 24),
         const _LegalNotice(),
@@ -358,6 +360,7 @@ class _LoginPageState extends State<LoginPage> {
           label: context.tr('auth.verify'),
           loading: _loading,
           onPressed: (_otpCode.length == 6 && !_otpLocked) ? _verify : null,
+          color: AppColors.ocean,
         ),
         const SizedBox(height: 12),
         Center(
