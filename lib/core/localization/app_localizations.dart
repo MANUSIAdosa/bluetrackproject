@@ -18,7 +18,8 @@ class AppLocalizations {
   static const supportedLocales = [Locale('id'), Locale('en')];
 
   String text(String key, [Map<String, String> args = const {}]) {
-    var value = _values[locale.languageCode]?[key] ?? _values['id']![key] ?? key;
+    var value =
+        _values[locale.languageCode]?[key] ?? _values['id']![key] ?? key;
     args.forEach((k, v) => value = value.replaceAll('{$k}', v));
     return value;
   }
@@ -67,14 +68,12 @@ class AppLocalizations {
       'onboarding.chooseInterests': 'Pilih Minat',
       'onboarding.start': 'Mulai',
       'onboarding.slide1.title': 'Laut Menyerap Karbon',
-      'onboarding.slide1.body':
-          'Laut menyerap lebih dari sepertiga karbon yang dilepas manusia setiap tahun.',
+      'onboarding.slide1.body': 'Laut menyerap lebih dari sepertiga karbon yang dilepas manusia setiap tahun.',
       'onboarding.slide2.title': 'Terumbu Karang Rumah Ikan',
       'onboarding.slide2.body':
           'Lima persen dasar laut menampung seperempat spesies laut dunia.',
       'onboarding.slide3.title': 'Penyu Butuh Bantuanmu',
-      'onboarding.slide3.body':
-          'Ribuan tukik gagal mencapai laut karena sampah dan hilangnya habitat.',
+      'onboarding.slide3.body': 'Ribuan tukik gagal mencapai laut karena sampah dan hilangnya habitat.',
       'onboarding.interests.title': 'Pilih Minatmu',
       'onboarding.interests.subtitle':
           'Kami akan mengurutkan proyek sesuai minatmu.',
@@ -100,8 +99,7 @@ class AppLocalizations {
       'auth.otp.resend': 'Kirim ulang kode',
       'auth.otp.sent': 'Kode verifikasi terkirim (mock: 123456)',
       'auth.verify': 'Verifikasi',
-      'auth.privacy':
-          'Dengan melanjutkan, Anda menyetujui Kebijakan Privasi dan Syarat & Ketentuan.',
+      'auth.privacy': 'Dengan melanjutkan, Anda menyetujui Kebijakan Privasi dan Syarat & Ketentuan.',
       'auth.privacyPolicy': 'Kebijakan Privasi',
       'auth.terms': 'Syarat & Ketentuan',
       'auth.skipLogin': 'Lanjut tanpa masuk',
@@ -115,13 +113,18 @@ class AppLocalizations {
       'explore.viewMap': 'Peta',
       'explore.empty.title': 'Tidak ada proyek',
       'explore.empty.body': 'Coba ubah kata kunci atau kategori.',
-      'explore.emptySaved.title': 'Belum ada proyek tersimpan',
+      'explore.emptySaved.title':
+          'Belum ada proyek tersimpan. Simpan lewat ikon bookmark di '
+          'Detail Proyek.',
       'explore.emptySaved.body':
           'Simpan proyek agar bisa diakses saat offline.',
+      'explore.emptySavedFiltered.title':
+          'Tidak ada proyek tersimpan yang cocok',
+      'explore.savedFilter.on': 'Tampilkan proyek tersimpan',
+      'explore.savedFilter.off': 'Tampilkan semua proyek',
       'explore.resetFilter': 'Atur ulang filter',
       'explore.viewAll': 'Lihat semua proyek',
-      'explore.mapUnavailable':
-          'Mode peta belum tersedia pada subproyek ini.',
+      'explore.mapUnavailable': 'Mode peta belum tersedia pada subproyek ini.',
 
       // --- Project detail (P04) ---
       'project.tab.about': 'Tentang',
@@ -159,8 +162,7 @@ class AppLocalizations {
       'org.projects.empty': 'Belum ada proyek dari organisasi ini.',
       'common.copy': 'Salin',
       'common.copied': 'Tersalin',
-      'org.verified.explanation':
-          'Status terverifikasi disertai checklist pemeriksaan organisasi berikut.',
+      'org.verified.explanation': 'Status terverifikasi disertai checklist pemeriksaan organisasi berikut.',
 
       // --- Verification badge sheet ---
       'verify.sheet.title': 'Tentang badge Terverifikasi',
@@ -278,8 +280,7 @@ class AppLocalizations {
 
       // --- Login prompt ---
       'login.prompt.title': 'Sign in required',
-      'login.prompt.body':
-          'Sign in to continue. You will return to this page.',
+      'login.prompt.body': 'Sign in to continue. You will return to this page.',
       'login.prompt.button': 'Sign in',
 
       // --- Categories / interests ---
@@ -296,14 +297,11 @@ class AppLocalizations {
       'onboarding.chooseInterests': 'Choose Interests',
       'onboarding.start': 'Start',
       'onboarding.slide1.title': 'The Ocean Absorbs Carbon',
-      'onboarding.slide1.body':
-          'The ocean absorbs more than a third of the carbon humans emit each year.',
+      'onboarding.slide1.body': 'The ocean absorbs more than a third of the carbon humans emit each year.',
       'onboarding.slide2.title': 'Coral Reefs Are Fish Homes',
-      'onboarding.slide2.body':
-          'Five percent of the seafloor shelters a quarter of all marine species.',
+      'onboarding.slide2.body': 'Five percent of the seafloor shelters a quarter of all marine species.',
       'onboarding.slide3.title': 'Turtles Need Your Help',
-      'onboarding.slide3.body':
-          'Thousands of hatchlings never reach the sea due to waste and habitat loss.',
+      'onboarding.slide3.body': 'Thousands of hatchlings never reach the sea due to waste and habitat loss.',
       'onboarding.interests.title': 'Pick Your Interests',
       'onboarding.interests.subtitle':
           "We'll sort projects to match your interests.",
@@ -323,14 +321,12 @@ class AppLocalizations {
       'auth.otp.subtitle': 'Code sent to {phone}',
       'auth.otp.mismatch': "Code doesn't match",
       'auth.otp.attemptsLeft': 'Attempts left: {n}',
-      'auth.otp.locked':
-          'Too many attempts. Resend the code to continue.',
+      'auth.otp.locked': 'Too many attempts. Resend the code to continue.',
       'auth.otp.resendIn': 'Resend in {s}s',
       'auth.otp.resend': 'Resend code',
       'auth.otp.sent': 'Verification code sent (mock: 123456)',
       'auth.verify': 'Verify',
-      'auth.privacy':
-          'By continuing, you agree to the Privacy Policy and Terms & Conditions.',
+      'auth.privacy': 'By continuing, you agree to the Privacy Policy and Terms & Conditions.',
       'auth.privacyPolicy': 'Privacy Policy',
       'auth.terms': 'Terms & Conditions',
       'auth.skipLogin': 'Continue without signing in',
@@ -344,9 +340,13 @@ class AppLocalizations {
       'explore.viewMap': 'Map',
       'explore.empty.title': 'No projects',
       'explore.empty.body': 'Try a different keyword or category.',
-      'explore.emptySaved.title': 'No saved projects yet',
-      'explore.emptySaved.body':
-          'Save projects to access them while offline.',
+      'explore.emptySaved.title':
+          'No saved projects yet. Save one with the bookmark icon on '
+          'Project Detail.',
+      'explore.emptySaved.body': 'Save projects to access them while offline.',
+      'explore.emptySavedFiltered.title': 'No saved projects match',
+      'explore.savedFilter.on': 'Show saved projects',
+      'explore.savedFilter.off': 'Show all projects',
       'explore.resetFilter': 'Reset filters',
       'explore.viewAll': 'View all projects',
       'explore.mapUnavailable': 'Map mode is not available in this subproject.',
@@ -387,8 +387,7 @@ class AppLocalizations {
       'org.projects.empty': 'No projects from this organization yet.',
       'common.copy': 'Copy',
       'common.copied': 'Copied',
-      'org.verified.explanation':
-          "Verified status with the organization's verification checklist below.",
+      'org.verified.explanation': "Verified status with the organization's verification checklist below.",
 
       // --- Verification badge sheet ---
       'verify.sheet.title': 'About the Verified badge',
@@ -491,8 +490,7 @@ class _AppLocalizationsDelegate
   const _AppLocalizationsDelegate();
 
   @override
-  bool isSupported(Locale locale) =>
-      ['id', 'en'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => ['id', 'en'].contains(locale.languageCode);
 
   @override
   Future<AppLocalizations> load(Locale locale) async =>

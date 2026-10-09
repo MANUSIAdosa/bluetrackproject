@@ -17,8 +17,12 @@ import '../../repositories.dart';
 
 /// P03 — Explore (list mode).
 ///
-/// - Search, category chips (incl. "Tersimpan" via Hive), interest sorting,
-///   loading / empty / error states, notification bell.
+/// - Search, a single-select category chip row, a saved-projects toggle next to
+///   the search field (Hive), interest sorting, loading / empty / error states,
+///   notification bell.
+/// - One control represents one context: the chip row filters by category, the
+///   bookmark button filters the saved collection, and the segmented button
+///   switches the view mode.
 /// - The list is paged: only [_pageSize] projects at a time, the next page
 ///   appended when the user scrolls near the bottom.
 /// - Map mode is a query-param sibling of this page (deferred: see
@@ -58,6 +62,11 @@ class _ExplorePageState extends State<ExplorePage> {
   bool _loading = true;
   bool _error = false;
   bool _mapMode = false;
+
+  /// The saved collection is a context of its own, not a category: it lives in
+  /// [SavedProjectsController], and the bookmark button beside the search field
+  /// switches it on and off.
+  bool _savedOnly = false;
 
   /// How many of the filtered projects the list shows (grows by page).
   int _visibleCount = _pageSize;
@@ -144,31 +153,39 @@ class _ExplorePageState extends State<ExplorePage> {
     if (_scrollController.hasClients) _scrollController.jumpTo(0);
   }
 
-  /// Recovery action for an empty search/filter result: clear the query and go
-  /// back to the "Semua" category so the list can recover.
+  /// Recovery action for an empty search/filter result: clear the query, go back
+  /// to the "Semua" category and leave the saved collection, so the list can
+  /// recover.
   void _resetFilters() {
     _searchController.clear();
     _resetPaging();
     setState(() {
       _query = '';
       _category = 'semua';
+      _savedOnly = false;
     });
   }
 
+  /// Leaves the saved collection without touching the category or the query —
+  /// the other filters stay as the user set them.
+  void _showAllProjects() {
+    _resetPaging();
+    setState(() => _savedOnly = false);
+  }
+
   List<Project> get _visible {
+    // One context per control, applied in that order: the saved collection,
+    // then the category chip, then the search query.
     final saved = SavedProjectsController.instance.ids;
     var list = _all.where((p) {
-      final matchesCategory =
-          _category == 'semua' ||
-          (_category == 'tersimpan'
-              ? saved.contains(p.id)
-              : p.category == _category);
+      final matchesSaved = !_savedOnly || saved.contains(p.id);
+      final matchesCategory = _category == 'semua' || p.category == _category;
       final matchesQuery =
           _query.isEmpty ||
           p.title.toLowerCase().contains(_query) ||
           p.orgName.toLowerCase().contains(_query) ||
           p.location.toLowerCase().contains(_query);
-      return matchesCategory && matchesQuery;
+      return matchesSaved && matchesCategory && matchesQuery;
     }).toList();
 
     // Personalized sorting: interest matches first.
@@ -197,38 +214,49 @@ class _ExplorePageState extends State<ExplorePage> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: context.tr('explore.searchHint'),
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _query.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          _resetPaging();
-                          setState(() => _query = '');
-                        },
-                      ),
-              ),
-              onChanged: (value) {
-                _resetPaging();
-                setState(() => _query = value.trim().toLowerCase());
-              },
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: context.tr('explore.searchHint'),
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _query.isEmpty
+                          ? null
+                          : IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                                _resetPaging();
+                                setState(() => _query = '');
+                              },
+                            ),
+                    ),
+                    onChanged: (value) {
+                      _resetPaging();
+                      setState(() => _query = value.trim().toLowerCase());
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _SavedFilterButton(
+                  key: const ValueKey('explore.savedFilter'),
+                  active: _savedOnly,
+                  savedCount: savedCount,
+                  onChanged: (active) {
+                    _resetPaging();
+                    setState(() => _savedOnly = active);
+                  },
+                ),
+              ],
             ),
           ),
+          // Categories only: the saved collection has its own control above.
           FilterChipRow(
             options: [
               for (final id in _categoryIds)
                 ChipOption(id: id, label: context.tr('cat.$id')),
-              ChipOption(
-                id: 'tersimpan',
-                label: savedCount > 0
-                    ? '${context.tr('cat.tersimpan')} ($savedCount)'
-                    : context.tr('cat.tersimpan'),
-              ),
             ],
             selectedId: _category,
             onSelected: (id) {
@@ -265,22 +293,34 @@ class _ExplorePageState extends State<ExplorePage> {
       );
     }
     if (visible.isEmpty) {
-      final savedEmpty = _category == 'tersimpan';
+      // Two different failures behind the same bookmark toggle: nothing has
+      // been saved yet, or the saved projects do not match the other filters.
+      if (_savedOnly) {
+        final nothingSaved = SavedProjectsController.instance.ids.isEmpty;
+        return EmptyState(
+          icon: nothingSaved ? Icons.bookmark_outline : Icons.search_off,
+          message: context.tr(
+            nothingSaved
+                ? 'explore.emptySaved.title'
+                : 'explore.emptySavedFiltered.title',
+          ),
+          actionLabel: context.tr(
+            nothingSaved ? 'explore.viewAll' : 'explore.resetFilter',
+          ),
+          onAction: nothingSaved ? _showAllProjects : _resetFilters,
+        );
+      }
       return EmptyState(
-        icon: savedEmpty ? Icons.bookmark_outline : Icons.search_off,
-        message: context.tr(
-          savedEmpty ? 'explore.emptySaved.title' : 'explore.empty.title',
-        ),
-        actionLabel: context.tr(
-          savedEmpty ? 'explore.viewAll' : 'explore.resetFilter',
-        ),
-        onAction: savedEmpty
-            ? () => setState(() => _category = 'semua')
-            : _resetFilters,
+        icon: Icons.search_off,
+        message: context.tr('explore.empty.title'),
+        actionLabel: context.tr('explore.resetFilter'),
+        onAction: _resetFilters,
       );
     }
 
-    final forYou = _interests.isEmpty
+    // The saved collection is already a personal selection, so the interest
+    // rail stays out of the way while it is on.
+    final forYou = (_savedOnly || _interests.isEmpty)
         ? const <Project>[]
         : visible
               .where((p) => _interests.contains(p.category))
@@ -383,29 +423,78 @@ class _ListMapToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          SegmentedButton<bool>(
-            segments: [
-              ButtonSegment(
-                value: false,
-                label: Text(context.tr('explore.viewList')),
-                icon: const Icon(Icons.view_list_outlined),
-              ),
-              ButtonSegment(
-                value: true,
-                label: Text(context.tr('explore.viewMap')),
-                icon: const Icon(Icons.map_outlined),
-              ),
-            ],
-            selected: {mapMode},
-            onSelectionChanged: (set) => onChanged(set.first),
-            showSelectedIcon: false,
-          ),
-          const Spacer(),
-          const Icon(Icons.sort, size: 18, color: AppColors.textSecondary),
-        ],
+      // The toggle is narrower than the row, and the surrounding Column centres
+      // its children: without this it would drift away from the search field
+      // and the chips, which both start on the base padding.
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: SegmentedButton<bool>(
+          segments: [
+            ButtonSegment(
+              value: false,
+              label: Text(context.tr('explore.viewList')),
+              icon: const Icon(Icons.view_list_outlined),
+            ),
+            ButtonSegment(
+              value: true,
+              label: Text(context.tr('explore.viewMap')),
+              icon: const Icon(Icons.map_outlined),
+            ),
+          ],
+          selected: {mapMode},
+          onSelectionChanged: (set) => onChanged(set.first),
+          showSelectedIcon: false,
+        ),
       ),
+    );
+  }
+}
+
+/// Bookmark toggle for the saved-projects collection, beside the search field.
+///
+/// The collection is a context of its own, so it is a button and not a chip in
+/// the category row. While it is on, the chip row and the search field keep
+/// narrowing *within* the saved projects.
+class _SavedFilterButton extends StatelessWidget {
+  const _SavedFilterButton({
+    super.key,
+    required this.active,
+    required this.savedCount,
+    required this.onChanged,
+  });
+
+  final bool active;
+
+  /// Number of saved projects, badged on the button when there is any.
+  final int savedCount;
+
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final button = IconButton(
+      // Names the action, so it reads correctly in either state.
+      tooltip: context.tr(
+        active ? 'explore.savedFilter.off' : 'explore.savedFilter.on',
+      ),
+      icon: Icon(active ? Icons.bookmark : Icons.bookmark_outline),
+      color: active ? AppColors.ocean : AppColors.textSecondary,
+      // Material's minimum touch target.
+      style: IconButton.styleFrom(minimumSize: const Size.square(48)),
+      onPressed: () => onChanged(!active),
+    );
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: active
+            ? AppColors.ocean.withValues(alpha: 0.10)
+            : Colors.transparent,
+        border: Border.all(color: active ? AppColors.ocean : AppColors.border),
+        borderRadius: BorderRadius.circular(AppDimens.cardRadius),
+      ),
+      child: savedCount > 0
+          ? Badge(label: Text('$savedCount'), child: button)
+          : button,
     );
   }
 }
