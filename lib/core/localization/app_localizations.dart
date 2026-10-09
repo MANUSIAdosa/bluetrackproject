@@ -41,10 +41,20 @@ class AppLocalizations {
       'common.errorRetry': 'Gagal memuat. Periksa koneksi Anda.',
 
       // --- Shell / navigation ---
+      // `nav.*.description` is the one-line purpose of a tab, owned by the App
+      // Shell tab configuration and reused by placeholder tab pages.
       'nav.jelajahi': 'Jelajahi',
       'nav.transparency': 'Transparansi',
+      'nav.transparency.description':
+          'Lihat ke mana donasi mengalir, terbuka untuk semua tanpa perlu login.',
+      'nav.grants': 'Hibah',
       'nav.impact': 'Dampakku',
+      'nav.impact.description':
+          'Lihat dampak dari donasi yang sudah kamu berikan.',
       'nav.profile': 'Profil',
+      'nav.profile.description':
+          'Kelola akun dan pengaturanmu, serta akses proposal, notifikasi, '
+              'dan materi belajar.',
       'shell.offline': 'Anda sedang offline. Menampilkan data tersimpan.',
       'shell.notifications': 'Notifikasi',
 
@@ -251,9 +261,6 @@ class AppLocalizations {
           'perubahan berlaku berarti Anda menerima ketentuan yang baru.',
 
       // --- Placeholder tab pages ---
-      'transparency.title': 'Transparansi',
-      'impact.title': 'Dampakku',
-      'impact.empty': 'Belum ada data dampak.',
       'profile.title': 'Profil',
       'profile.signOut': 'Keluar',
       'notifications.title': 'Notifikasi',
@@ -273,8 +280,16 @@ class AppLocalizations {
       // --- Shell / navigation ---
       'nav.jelajahi': 'Explore',
       'nav.transparency': 'Transparency',
+      'nav.transparency.description':
+          'See where donations are disbursed, open to everyone without signing in.',
+      'nav.grants': 'Grants',
       'nav.impact': 'My Impact',
+      'nav.impact.description':
+          'See the impact of the donations you have made.',
       'nav.profile': 'Profile',
+      'nav.profile.description':
+          'Manage your account and settings, and access proposals, '
+              'notifications, and learning materials.',
       'shell.offline': "You're offline. Showing saved data.",
       'shell.notifications': 'Notifications',
 
@@ -475,9 +490,6 @@ class AppLocalizations {
           'effect means you accept the new terms.',
 
       // --- Placeholder tab pages ---
-      'transparency.title': 'Transparency',
-      'impact.title': 'My Impact',
-      'impact.empty': 'No impact data yet.',
       'profile.title': 'Profile',
       'profile.signOut': 'Sign out',
       'notifications.title': 'Notifications',

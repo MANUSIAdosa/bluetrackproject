@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/state/app_state.dart';
-import '../../../shared/widgets/empty_state.dart';
+import '../../shell/tab_placeholder.dart';
 
 /// P17 Profile — tab shell.
 ///
 /// Subproject 01 only requires the tab to exist in the App Shell (P00).
 /// Profile content (badges, settings, shortcuts to P11/P12/P13/P16) is not
-/// assigned to Weeks 01–03.
+/// assigned to Weeks 01–03; the placeholder explains the tab from the shell
+/// tab configuration instead.
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
@@ -17,7 +18,7 @@ class ProfilePage extends StatelessWidget {
     final signedIn = AuthController.instance.signedIn;
 
     return Scaffold(
-      appBar: AppBar(title: Text(context.tr('profile.title'))),
+      appBar: AppBar(title: Text(context.tr('nav.profile'))),
       body: ListenableBuilder(
         listenable: AuthController.instance,
         builder: (context, _) {
@@ -40,11 +41,8 @@ class ProfilePage extends StatelessWidget {
                     ),
                   ),
                 ),
-              Expanded(
-                child: EmptyState(
-                  icon: Icons.settings_outlined,
-                  message: context.tr('common.comingSoon'),
-                ),
+              const Expanded(
+                child: TabPlaceholder(location: '/profile'),
               ),
             ],
           );
