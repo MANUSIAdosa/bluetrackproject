@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:blue_track/core/config/app_config.dart';
 import 'package:blue_track/core/state/app_state.dart';
+import 'package:blue_track/core/theme/app_colors.dart';
 import 'package:blue_track/features/explore/domain/project.dart';
 import 'package:blue_track/features/explore/presentation/explore_page.dart';
 import 'package:blue_track/shared/widgets/empty_state.dart';
@@ -269,6 +270,23 @@ void main() {
     final search = tester.widget<TextField>(find.byType(TextField));
     expect(search.controller?.text, isEmpty);
     expect(chipWithLabel(tester, 'Semua').selected, isTrue);
+  });
+
+  testWidgets('the list/map toggle lines up with the search field and the '
+      'first category chip', (tester) async {
+    await pumpExplore(
+      tester,
+      projects: FakeProjectRepository([buildProject()]),
+    );
+
+    final toggle = tester.getTopLeft(find.byType(SegmentedButton<bool>)).dx;
+    final search = tester.getTopLeft(find.byType(TextField)).dx;
+    final chip = tester.getTopLeft(find.byType(ChoiceChip).first).dx;
+
+    expect(toggle, moreOrLessEquals(search));
+    expect(toggle, moreOrLessEquals(chip));
+    // Both of those sit on the base padding, so the toggle has to as well.
+    expect(toggle, moreOrLessEquals(AppDimens.padding));
   });
 
   testWidgets('the category chips hold project categories only, never the '

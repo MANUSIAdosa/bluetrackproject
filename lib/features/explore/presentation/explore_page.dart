@@ -423,22 +423,28 @@ class _ListMapToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: SegmentedButton<bool>(
-        segments: [
-          ButtonSegment(
-            value: false,
-            label: Text(context.tr('explore.viewList')),
-            icon: const Icon(Icons.view_list_outlined),
-          ),
-          ButtonSegment(
-            value: true,
-            label: Text(context.tr('explore.viewMap')),
-            icon: const Icon(Icons.map_outlined),
-          ),
-        ],
-        selected: {mapMode},
-        onSelectionChanged: (set) => onChanged(set.first),
-        showSelectedIcon: false,
+      // The toggle is narrower than the row, and the surrounding Column centres
+      // its children: without this it would drift away from the search field
+      // and the chips, which both start on the base padding.
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: SegmentedButton<bool>(
+          segments: [
+            ButtonSegment(
+              value: false,
+              label: Text(context.tr('explore.viewList')),
+              icon: const Icon(Icons.view_list_outlined),
+            ),
+            ButtonSegment(
+              value: true,
+              label: Text(context.tr('explore.viewMap')),
+              icon: const Icon(Icons.map_outlined),
+            ),
+          ],
+          selected: {mapMode},
+          onSelectionChanged: (set) => onChanged(set.first),
+          showSelectedIcon: false,
+        ),
       ),
     );
   }
