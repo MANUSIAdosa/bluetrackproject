@@ -3,6 +3,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../features/notification/data/notification_repository.dart';
+import '../../features/repositories.dart';
 import '../config/app_config.dart';
 
 /// Application-wide controllers (no external state management package).
@@ -98,6 +100,33 @@ class SavedProjectsController extends ChangeNotifier {
       _ids.add(id);
       await _box.put(id, true);
     }
+    notifyListeners();
+  }
+}
+
+/// Unread notification count, loaded once from [NotificationRepository].
+///
+/// Single source of truth: the app-bar bell and the My Impact nav badge both
+/// read this, so the two can never disagree. Starts at 0, so no badge shows
+/// before [load] resolves.
+class NotificationsController extends ChangeNotifier {
+  NotificationsController._();
+
+  static final NotificationsController instance = NotificationsController._();
+
+  int _unreadCount = 0;
+
+  int get unreadCount => _unreadCount;
+
+  /// True once a count has been read from the repository.
+  bool get loaded => _loaded;
+  bool _loaded = false;
+
+  Future<void> load({NotificationRepository? repository}) async {
+    final count = await (repository ?? Repositories.notifications)
+        .getUnreadCount();
+    _unreadCount = count < 0 ? 0 : count;
+    _loaded = true;
     notifyListeners();
   }
 }

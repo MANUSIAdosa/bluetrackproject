@@ -6,13 +6,13 @@ import '../../features/donation/presentation/donate_amount_page.dart';
 import '../../features/explore/presentation/explore_page.dart';
 import '../../features/impact/presentation/impact_page.dart';
 import '../../features/legal/presentation/legal_page.dart';
+import '../../features/notification/presentation/notifications_page.dart';
 import '../../features/onboarding/presentation/onboarding_page.dart';
 import '../../features/organization/presentation/org_profile_page.dart';
 import '../../features/profile/presentation/profile_page.dart';
 import '../../features/project/presentation/project_detail_page.dart';
 import '../../features/shell/app_shell.dart';
 import '../../features/transparency/presentation/transparency_page.dart';
-import '../../shared/widgets/placeholder_page.dart';
 
 /// Centralized router.
 ///
@@ -40,8 +40,7 @@ GoRouter createRouter({required bool onboardingDone}) {
       GoRoute(
         path: '/notifications',
         parentNavigatorKey: rootKey,
-        builder: (context, state) =>
-            const PlaceholderPage(titleKey: 'notifications.title'),
+        builder: (context, state) => const NotificationsPage(),
       ),
       GoRoute(
         path: '/legal/privacy',

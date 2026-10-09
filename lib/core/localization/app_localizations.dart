@@ -264,6 +264,8 @@ class AppLocalizations {
       'profile.title': 'Profil',
       'profile.signOut': 'Keluar',
       'notifications.title': 'Notifikasi',
+      'notifications.donationNews':
+          'Kabar tentang donasimu akan muncul di sini.',
     },
     'en': {
       // --- Common ---
@@ -493,6 +495,8 @@ class AppLocalizations {
       'profile.title': 'Profile',
       'profile.signOut': 'Sign out',
       'notifications.title': 'Notifications',
+      'notifications.donationNews':
+          'News about your donations will appear here.',
     },
   };
 }
