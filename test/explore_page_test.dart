@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:blue_track/core/config/app_config.dart';
+import 'package:blue_track/core/state/app_state.dart';
+import 'package:blue_track/features/explore/domain/project.dart';
 import 'package:blue_track/features/explore/presentation/explore_page.dart';
 import 'package:blue_track/shared/widgets/empty_state.dart';
 import 'package:blue_track/shared/widgets/error_state.dart';
@@ -6,6 +10,7 @@ import 'package:blue_track/shared/widgets/project_card.dart';
 import 'package:blue_track/shared/widgets/skeleton.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hive/hive.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/test_harness.dart';
@@ -59,35 +64,32 @@ class _TextScale extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MediaQuery(
-        data: MediaQuery.of(context)
-            .copyWith(textScaler: TextScaler.linear(scale)),
-        child: child,
-      );
+    data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
+    child: child,
+  );
 }
 
 /// More than two pages of 4, so paging is observable.
 FakeProjectRepository manyProjects({int count = 9}) => FakeProjectRepository([
-      for (var i = 1; i <= count; i++)
-        buildProject(
-          id: 'p${i.toString().padLeft(2, '0')}',
-          title: 'Pemulihan Terumbu Karang Nomor $i',
-        ),
-    ]);
+  for (var i = 1; i <= count; i++)
+    buildProject(
+      id: 'p${i.toString().padLeft(2, '0')}',
+      title: 'Pemulihan Terumbu Karang Nomor $i',
+    ),
+]);
 
 /// The project list itself — the category chip row is a horizontal ListView
 /// too, so scope the finder to the refreshable list.
 Finder projectList() => find.descendant(
-      of: find.byType(RefreshIndicator),
-      matching: find.byType(ListView),
-    );
+  of: find.byType(RefreshIndicator),
+  matching: find.byType(ListView),
+);
 
 /// Cards in the current page. A lazy ListView only mounts what is near the
 /// viewport, so read the children the page handed to the list.
 int cardCount(WidgetTester tester) {
-  final delegate =
-      tester.widget<ListView>(projectList()).childrenDelegate;
-  return (delegate as SliverChildListDelegate)
-      .children
+  final delegate = tester.widget<ListView>(projectList()).childrenDelegate;
+  return (delegate as SliverChildListDelegate).children
       .whereType<ProjectCard>()
       .length;
 }
@@ -112,10 +114,9 @@ Future<void> settlePageLoad(WidgetTester tester) async {
 }
 
 ScrollPosition listPosition(WidgetTester tester) => tester
-    .state<ScrollableState>(find.descendant(
-      of: projectList(),
-      matching: find.byType(Scrollable),
-    ))
+    .state<ScrollableState>(
+      find.descendant(of: projectList(), matching: find.byType(Scrollable)),
+    )
     .position;
 
 /// Back to the very top, ending without overscroll so this gesture does not
@@ -159,29 +160,76 @@ Future<void> tapChip(WidgetTester tester, String label) async {
   await pumpFrames(tester);
 }
 
+/// Opens the real Hive box behind [SavedProjectsController] in a throwaway
+/// directory, so every test starts from a known, empty saved-projects state.
+Future<void> openSavedProjectsBox() async {
+  _hiveDir = await Directory.systemTemp.createTemp('bluetrack_saved');
+  Hive.init(_hiveDir.path);
+  await Hive.openBox<dynamic>(AppConfig.savedProjectsBox);
+  await SavedProjectsController.instance.load();
+}
+
+/// Writes the saved-projects state a test needs.
+///
+/// Hive touches real files, and the `testWidgets` body runs in a fake-async
+/// zone where that I/O never completes — so this has to go through
+/// [WidgetTester.runAsync].
+Future<void> seedSavedProjects(WidgetTester tester, List<String> ids) async {
+  await tester.runAsync(() async {
+    final box = Hive.box<dynamic>(AppConfig.savedProjectsBox);
+    await box.clear();
+    await box.putAll({for (final id in ids) id: true});
+    await SavedProjectsController.instance.load();
+  });
+}
+
+/// The saved-projects toggle that sits next to the search field.
+Finder savedFilterButton() => find.byKey(const ValueKey('explore.savedFilter'));
+
+Future<void> tapSavedFilter(WidgetTester tester) async {
+  expect(savedFilterButton(), findsOneWidget);
+  await tester.tap(savedFilterButton());
+  await pumpFrames(tester);
+}
+
+/// Two projects in different categories, so a category chip can separate them.
+List<Project> twoCategories() => [
+  buildProject(id: 'p01', title: 'Penyu Hijau', category: 'penyu'),
+  buildProject(id: 'p02', title: 'Pemulihan Karang Razak', category: 'karang'),
+];
+
+/// Temp directory backing the Hive box opened in [openSavedProjectsBox].
+late Directory _hiveDir;
+
 void main() {
-  setUp(() {
+  setUp(() async {
     // No interest matches the fake projects, so the "Untuk minatmu" rail stays
     // out of the way and card counts are predictable.
     SharedPreferences.setMockInitialValues({
       AppConfig.interestsKey: ['mamalia_laut'],
     });
+    await openSavedProjectsBox();
   });
 
-  testWidgets('load failure shows ErrorState instead of endless skeletons',
-      (tester) async {
-    final projects = FakeProjectRepository([buildProject()])
-      ..shouldFail = true;
+  tearDown(() async {
+    await Hive.close();
+    if (_hiveDir.existsSync()) _hiveDir.deleteSync(recursive: true);
+  });
+
+  testWidgets('load failure shows ErrorState instead of endless skeletons', (
+    tester,
+  ) async {
+    final projects = FakeProjectRepository([buildProject()])..shouldFail = true;
     await pumpExplore(tester, projects: projects);
 
     expect(find.byType(SkeletonCard), findsNothing);
     expect(find.byType(ErrorState), findsOneWidget);
   });
 
-  testWidgets('"Coba lagi" reloads the list after a load failure',
-      (tester) async {
-    final projects = FakeProjectRepository([buildProject()])
-      ..shouldFail = true;
+  testWidgets('"Coba lagi" reloads the list after a load failure', (
+    tester,
+  ) async {
+    final projects = FakeProjectRepository([buildProject()])..shouldFail = true;
     await pumpExplore(tester, projects: projects);
     projects.shouldFail = false;
 
@@ -223,28 +271,162 @@ void main() {
     expect(chipWithLabel(tester, 'Semua').selected, isTrue);
   });
 
-  testWidgets('empty "Tersimpan" chip offers "Lihat semua proyek", not a retry',
-      (tester) async {
-    final projects = FakeProjectRepository([buildProject()]);
-    await pumpExplore(tester, projects: projects);
+  testWidgets('the category chips hold project categories only, never the '
+      'saved collection', (tester) async {
+    await pumpExplore(
+      tester,
+      projects: FakeProjectRepository([buildProject()]),
+    );
 
-    await tapChip(tester, 'Tersimpan');
-    await pumpFrames(tester);
+    final labels = tester
+        .widgetList<ChoiceChip>(find.byType(ChoiceChip))
+        .map((chip) => (chip.label as Text).data)
+        .toList();
+    expect(labels, ['Semua', 'Penyu', 'Karang']);
+  });
 
-    expect(find.text('Belum ada proyek tersimpan'), findsOneWidget);
-    expect(find.text('Lihat semua proyek'), findsOneWidget);
+  testWidgets('the saved toggle invites saving a project from Project Detail '
+      'when nothing is saved yet, and "Lihat semua proyek" leaves it', (
+    tester,
+  ) async {
+    await pumpExplore(
+      tester,
+      projects: FakeProjectRepository([buildProject()]),
+    );
+
+    await tapSavedFilter(tester);
+
+    expect(find.byType(EmptyState), findsOneWidget);
+    expect(find.textContaining('Belum ada proyek tersimpan'), findsOneWidget);
+    // The copy has to point at the place where saving actually happens.
+    expect(find.textContaining('Detail Proyek'), findsOneWidget);
     expect(find.text('Coba lagi'), findsNothing);
 
     await tester.tap(find.text('Lihat semua proyek'));
     await pumpFrames(tester);
 
-    expect(find.text('Belum ada proyek tersimpan'), findsNothing);
-    expect(chipWithLabel(tester, 'Semua').selected, isTrue);
+    expect(find.byType(EmptyState), findsNothing);
     expect(find.byType(ProjectCard), findsAtLeastNWidgets(1));
   });
 
-  testWidgets('only the first page of projects is shown after loading',
-      (tester) async {
+  testWidgets('the saved toggle lists only saved projects and hides '
+      '"Untuk minatmu"', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      AppConfig.interestsKey: ['karang'],
+    });
+    await seedSavedProjects(tester, ['p02']);
+    await pumpExplore(tester, projects: FakeProjectRepository(twoCategories()));
+
+    // The rail is up before the toggle, so its absence afterwards is caused by
+    // the saved filter and not by the interests being empty.
+    expect(find.byKey(const ValueKey('explore.forYouRail')), findsOneWidget);
+
+    await tapSavedFilter(tester);
+
+    expect(find.byKey(const ValueKey('explore.forYouRail')), findsNothing);
+    expect(cardCount(tester), 1);
+    expect(
+      find.widgetWithText(ProjectCard, 'Pemulihan Karang Razak'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a category chip narrows the saved projects', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await seedSavedProjects(tester, ['p01', 'p02']);
+    await pumpExplore(tester, projects: FakeProjectRepository(twoCategories()));
+
+    await tapSavedFilter(tester);
+    expect(cardCount(tester), 2);
+
+    await tapChip(tester, 'Karang');
+
+    expect(cardCount(tester), 1);
+    expect(
+      find.widgetWithText(ProjectCard, 'Pemulihan Karang Razak'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('the search narrows the saved projects', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await seedSavedProjects(tester, ['p01', 'p02']);
+    await pumpExplore(tester, projects: FakeProjectRepository(twoCategories()));
+
+    await tapSavedFilter(tester);
+
+    await tester.enterText(find.byType(TextField), 'Penyu Hijau');
+    await pumpFrames(tester);
+
+    expect(cardCount(tester), 1);
+    expect(find.widgetWithText(ProjectCard, 'Penyu Hijau'), findsOneWidget);
+  });
+
+  testWidgets('turning the saved toggle off goes back to the first page', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    // Every project is saved, so switching the toggle off only changes paging.
+    await seedSavedProjects(tester, [
+      for (var i = 1; i <= 9; i++) 'p${i.toString().padLeft(2, '0')}',
+    ]);
+    await pumpExplore(tester, projects: manyProjects());
+
+    await tapSavedFilter(tester);
+    await scrollToNextPage(tester);
+    await settlePageLoad(tester);
+    expect(cardCount(tester), 8);
+
+    await tapSavedFilter(tester);
+
+    expect(cardCount(tester), 4);
+  });
+
+  testWidgets('saved projects that match nothing offer "Atur ulang filter", '
+      'which clears the saved toggle, the category and the query', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await seedSavedProjects(tester, ['p01']);
+    await pumpExplore(tester, projects: FakeProjectRepository(twoCategories()));
+
+    await tapSavedFilter(tester);
+    await tapChip(tester, 'Karang');
+    await tester.enterText(find.byType(TextField), 'Penyu');
+    await pumpFrames(tester);
+
+    expect(find.byType(EmptyState), findsOneWidget);
+    expect(find.text('Atur ulang filter'), findsOneWidget);
+    expect(find.text('Coba lagi'), findsNothing);
+
+    await tester.tap(find.text('Atur ulang filter'));
+    await pumpFrames(tester);
+
+    expect(find.byType(EmptyState), findsNothing);
+    // p02 was never saved, so it is in the list again only because the saved
+    // toggle is off. Counted from the list's children: a second card sits
+    // below the fold, so it is never mounted in this surface.
+    expect(cardCount(tester), 2);
+    expect(find.widgetWithText(ProjectCard, 'Penyu Hijau'), findsOneWidget);
+    expect(chipWithLabel(tester, 'Semua').selected, isTrue);
+    final search = tester.widget<TextField>(find.byType(TextField));
+    expect(search.controller?.text, isEmpty);
+  });
+
+  testWidgets('the saved toggle keeps a 48dp touch target', (tester) async {
+    await pumpExplore(
+      tester,
+      projects: FakeProjectRepository([buildProject()]),
+    );
+
+    final size = tester.getSize(savedFilterButton());
+    expect(size.width, greaterThanOrEqualTo(48));
+    expect(size.height, greaterThanOrEqualTo(48));
+  });
+
+  testWidgets('only the first page of projects is shown after loading', (
+    tester,
+  ) async {
     // No interests at all, so the "Untuk minatmu" rail adds nothing and the
     // card count is the list page.
     SharedPreferences.setMockInitialValues({});
@@ -318,8 +500,9 @@ void main() {
     expect(cardCount(tester), 4);
   });
 
-  testWidgets('changing the category chip goes back to the first page',
-      (tester) async {
+  testWidgets('changing the category chip goes back to the first page', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({});
     await pumpExplore(tester, projects: manyProjects());
     await scrollToNextPage(tester);
