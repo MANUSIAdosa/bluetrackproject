@@ -205,6 +205,86 @@ class AppLocalizations {
       'donate.stepPending':
           'Langkah berikutnya akan tersedia pada subproyek berikutnya.',
 
+      // --- Donation (P06, confirmation & result) ---
+      'p06_confirm_title': 'Konfirmasi Donasi',
+      'p06_confirm_big_text': '{amount} → 100% ke {project}',
+      'p06_confirm_min_hint': 'Minimal donasi {amount}',
+      'p06_confirm_summary_title': 'Ringkasan donasi',
+      'p06_confirm_amount': 'Nominal',
+      'p06_confirm_frequency': 'Frekuensi',
+      'p06_confirm_frequency_once': 'Sekali',
+      'p06_confirm_frequency_monthly': 'Bulanan',
+      'p06_confirm_purpose': 'Tujuan',
+      'p06_confirm_purpose_project': 'Proyek · {name}',
+      'p06_confirm_purpose_org': 'Organisasi · {name}',
+      'p06_confirm_method': 'Metode pembayaran',
+      'p06_confirm_method_va': 'Transfer VA',
+      'p06_confirm_method_ewallet': 'E-wallet',
+      'p06_confirm_method_card': 'Kartu',
+      'p06_confirm_method_empty': 'Belum dipilih',
+      'p06_confirm_method_required': 'Pilih metode pembayaran',
+      'p06_confirm_show_name':
+          'Tampilkan nama saya di laporan tahunan',
+      'p06_confirm_pay_button': 'Bayar Sekarang',
+      'p06_confirm_pay_error':
+          'Pembayaran belum bisa diproses. Coba lagi.',
+      'p06_confirm_login_title': 'Masuk untuk melanjutkan',
+      'p06_confirm_login_body':
+          'Isian donasimu tersimpan. Masuk untuk menyelesaikan pembayaran.',
+      'p06_confirm_empty_title': 'Isian donasi tidak ditemukan',
+      'p06_confirm_empty_body':
+          'Kembali ke langkah nominal untuk memulai donasi.',
+      'p06_confirm_back_to_amount': 'Kembali ke nominal',
+      'p06_confirm_project_error':
+          'Gagal memuat proyek. Periksa koneksi lalu coba lagi.',
+      'p06_confirm_processing': 'Memproses pembayaran...',
+      'p06_result_title': 'Hasil Pembayaran',
+      'p06_result_loading': 'Memuat status donasi...',
+      'p06_result_not_found':
+          'Donasi tidak ditemukan. Periksa tautan atau coba lagi.',
+      'p06_result_load_error':
+          'Gagal memuat status donasi. Periksa koneksi lalu coba lagi.',
+      'p06_result_success_title': 'Donasi Berhasil',
+      'p06_result_success_body':
+          'Terima kasih. Donasimu tercatat dan 100% disalurkan ke proyek.',
+      'p06_result_failed_title': 'Pembayaran Gagal',
+      'p06_result_failed_body':
+          'Isian donasimu aman. Coba lagi tanpa mengisi ulang.',
+      'p06_result_pending_title': 'Menunggu Pembayaran',
+      'p06_result_pending_body':
+          'Selesaikan pembayaran sesuai instruksi. Status akan diperbarui '
+          'setelah terkonfirmasi.',
+      'p06_result_still_pending': 'Status masih menunggu',
+      'p06_result_summary_title': 'Ringkasan donasi',
+      'p06_result_amount': 'Nominal',
+      'p06_result_project': 'Proyek',
+      'p06_result_receipt': 'Nomor donasi',
+      'p06_result_view_trace': 'Lihat Jejak dan E-Receipt',
+      'p06_result_try_again': 'Coba Lagi',
+      'p06_result_check_status': 'Cek Status',
+      'p06_result_back_explore': 'Kembali ke Jelajahi',
+      'p06_result_operational_title': 'Dukung Operasional Platform',
+      'p06_result_operational_body':
+          'Donasi operasional membantu biaya layanan tanpa mengurangi dana '
+          'proyek.',
+      'p06_result_operational_cta': 'Dukung',
+      'p06_operational_card_dismiss': 'Tutup',
+      'p06_result_success_semantics': 'Pembayaran berhasil',
+      'p06_result_failed_semantics': 'Pembayaran gagal',
+      'p06_result_pending_semantics': 'Menunggu pembayaran',
+      'p06_failure_title': 'Kenapa pembayaran gagal?',
+      'p06_failure_solution_label': 'Solusi',
+      'p06_failure_mock_ending_one':
+          'Nominal donasi berakhiran 1. Karena aplikasi masih memakai data '
+          'mock, nominal seperti ini sengaja dibuat gagal untuk pengujian.',
+      'p06_failure_mock_ending_one_solution':
+          'Gunakan nominal lain yang tidak berakhiran 1, misalnya {amount}, '
+          'lalu coba lagi.',
+      'p06_failure_mock_generic':
+          'Pembayaran gagal diproses. Aplikasi masih memakai data mock.',
+      'p06_failure_mock_generic_solution':
+          'Periksa metode pembayaran, lalu coba lagi.',
+
       // --- Legal (Privacy Policy / Terms) ---
       'legal.privacy.title': 'Kebijakan Privasi',
       'legal.privacy.intro':
@@ -445,6 +525,85 @@ class AppLocalizations {
       'donate.monthly': 'Monthly',
       'donate.stepPending':
           'The next step will be available in the next subproject.',
+
+      // --- Donation (P06, confirmation & result) ---
+      'p06_confirm_title': 'Confirm Donation',
+      'p06_confirm_big_text': '{amount} → 100% to {project}',
+      'p06_confirm_min_hint': 'Minimum donation {amount}',
+      'p06_confirm_summary_title': 'Donation summary',
+      'p06_confirm_amount': 'Amount',
+      'p06_confirm_frequency': 'Frequency',
+      'p06_confirm_frequency_once': 'One-time',
+      'p06_confirm_frequency_monthly': 'Monthly',
+      'p06_confirm_purpose': 'Purpose',
+      'p06_confirm_purpose_project': 'Project · {name}',
+      'p06_confirm_purpose_org': 'Organization · {name}',
+      'p06_confirm_method': 'Payment method',
+      'p06_confirm_method_va': 'VA transfer',
+      'p06_confirm_method_ewallet': 'E-wallet',
+      'p06_confirm_method_card': 'Card',
+      'p06_confirm_method_empty': 'Not selected',
+      'p06_confirm_method_required': 'Choose a payment method',
+      'p06_confirm_show_name': 'Show my name in the annual report',
+      'p06_confirm_pay_button': 'Pay Now',
+      'p06_confirm_pay_error':
+          "Payment couldn't be processed. Try again.",
+      'p06_confirm_login_title': 'Sign in to continue',
+      'p06_confirm_login_body':
+          'Your donation details are saved. Sign in to complete the payment.',
+      'p06_confirm_empty_title': 'Donation details not found',
+      'p06_confirm_empty_body':
+          'Go back to the amount step to start a donation.',
+      'p06_confirm_back_to_amount': 'Back to amount',
+      'p06_confirm_project_error':
+          'Could not load the project. Check your connection and try again.',
+      'p06_confirm_processing': 'Processing payment...',
+      'p06_result_title': 'Payment Result',
+      'p06_result_loading': 'Loading donation status...',
+      'p06_result_not_found': 'Donation not found. Check the link or try again.',
+      'p06_result_load_error':
+          'Could not load the donation status. Check your connection and try '
+          'again.',
+      'p06_result_success_title': 'Donation Successful',
+      'p06_result_success_body':
+          'Thank you. Your donation is recorded and 100% goes to the project.',
+      'p06_result_failed_title': 'Payment Failed',
+      'p06_result_failed_body':
+          'Your donation details are safe. Try again without re-entering them.',
+      'p06_result_pending_title': 'Awaiting Payment',
+      'p06_result_pending_body':
+          'Complete the payment as instructed. The status will update once '
+          'confirmed.',
+      'p06_result_still_pending': 'Status is still pending',
+      'p06_result_summary_title': 'Donation summary',
+      'p06_result_amount': 'Amount',
+      'p06_result_project': 'Project',
+      'p06_result_receipt': 'Donation number',
+      'p06_result_view_trace': 'View Trace and E-Receipt',
+      'p06_result_try_again': 'Try Again',
+      'p06_result_check_status': 'Check Status',
+      'p06_result_back_explore': 'Back to Explore',
+      'p06_result_operational_title': 'Support Platform Operations',
+      'p06_result_operational_body':
+          'Operational donations cover platform costs without reducing '
+          'project funds.',
+      'p06_result_operational_cta': 'Support',
+      'p06_operational_card_dismiss': 'Dismiss',
+      'p06_result_success_semantics': 'Payment successful',
+      'p06_result_failed_semantics': 'Payment failed',
+      'p06_result_pending_semantics': 'Awaiting payment',
+      'p06_failure_title': 'Why did the payment fail?',
+      'p06_failure_solution_label': 'Solution',
+      'p06_failure_mock_ending_one':
+          'The donation amount ends in 1. Because the app still uses mock '
+          'data, amounts like this are intentionally failed for testing.',
+      'p06_failure_mock_ending_one_solution':
+          'Use another amount that does not end in 1, for example {amount}, '
+          'then try again.',
+      'p06_failure_mock_generic':
+          'The payment could not be processed. The app still uses mock data.',
+      'p06_failure_mock_generic_solution':
+          'Check the payment method, then try again.',
 
       // --- Legal (Privacy Policy / Terms) ---
       'legal.privacy.title': 'Privacy Policy',
