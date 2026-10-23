@@ -61,6 +61,19 @@ class AppLocalizations {
       'shell.offline': 'Mode offline - menampilkan data tersimpan',
       'shell.notifications': 'Notifikasi',
 
+      // --- Detail placeholders (part 3) ---
+      // Verification pages for routes registered in Part 3; the parameter
+      // label is identical in both locales so tests can lock onto it.
+      'detail.action': 'Detail Aksi',
+      'detail.settings': 'Pengaturan',
+      'detail.learn': 'Belajar',
+      'detail.report': 'Lapor Temuan',
+      'detail.myReports': 'Laporan Saya',
+      'detail.myActions': 'Aksi Saya',
+      'detail.communityApply': 'Ajukan Aksi Komunitas',
+      'detail.donationTrace': 'Jejak Dukungan',
+      'placeholder.paramValue': '{name}: {value}',
+
       // --- Login prompt ---
       'login.prompt.title': 'Fitur ini butuh masuk',
       'login.prompt.body':
@@ -420,6 +433,17 @@ class AppLocalizations {
               'notifications, and learning materials.',
       'shell.offline': 'Offline mode - showing saved data',
       'shell.notifications': 'Notifications',
+
+      // --- Detail placeholders (part 3) ---
+      'detail.action': 'Action Detail',
+      'detail.settings': 'Settings',
+      'detail.learn': 'Learn',
+      'detail.report': 'Report a Finding',
+      'detail.myReports': 'My Reports',
+      'detail.myActions': 'My Actions',
+      'detail.communityApply': 'Propose Community Action',
+      'detail.donationTrace': 'Donation Trace',
+      'placeholder.paramValue': '{name}: {value}',
 
       // --- Login prompt ---
       'login.prompt.title': 'Sign in required',

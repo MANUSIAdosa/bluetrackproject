@@ -151,6 +151,38 @@ class OfflineController extends ChangeNotifier {
   }
 }
 
+/// In-memory mirror of the onboarding completion flag, seeded from
+/// shared_preferences at startup.
+///
+/// The GoRouter redirect reads this synchronously — preferences are async and
+/// the redirect cannot await — so [init] must run before navigation resolves.
+/// [main] already reads the flag once; it passes the same value into
+/// `createRouter`, which seeds this controller. Completing onboarding calls
+/// [markDone]; persistence stays in [OnboardingState.markDone].
+class OnboardingController extends ChangeNotifier {
+  OnboardingController._();
+
+  static final OnboardingController instance = OnboardingController._();
+
+  bool _done = false;
+
+  bool get done => _done;
+
+  /// Seeds the startup value. Idempotent — rerun on every cold start/router
+  /// rebuild so tests can pump the app with either value.
+  void init(bool done) {
+    _done = done;
+  }
+
+  /// Flips the flag so the redirect stops bouncing the user to /onboarding.
+  /// Does not write preferences — [OnboardingState.markDone] owns that.
+  void markDone() {
+    if (_done) return;
+    _done = true;
+    notifyListeners();
+  }
+}
+
 /// Onboarding flags stored in shared_preferences.
 class OnboardingState {
   OnboardingState._();

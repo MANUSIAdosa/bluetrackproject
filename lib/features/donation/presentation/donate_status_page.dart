@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/router/routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/error_state.dart';
@@ -213,9 +214,10 @@ class _DonateStatusPageState extends State<DonateStatusPage> {
     final VoidCallback? primaryAction;
     if (isSuccess) {
       primaryKey = 'p06_result_view_trace';
-      // TODO(router): P08 route, expected from G1.
+      // P08 lands on the Donation Trace placeholder until the real
+      // e-receipt screen (P08) is built.
       primaryAction = () =>
-          context.push('/transparency/trace/${donation.id}');
+          context.push(Routes.donationTraceUrl(donation.id));
     } else if (isFailed) {
       primaryKey = 'p06_result_try_again';
       primaryAction = () => _tryAgain(donation);

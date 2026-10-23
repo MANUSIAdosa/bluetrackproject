@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/router/routes.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_colors.dart';
 
@@ -73,10 +74,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   Future<void> _finish(List<String> interests) async {
     await OnboardingState.markDone(interests);
+    // Keep the in-memory flag in sync, otherwise the router redirect bounces
+    // /explore straight back to /onboarding.
+    OnboardingController.instance.markDone();
     if (!mounted) return;
     // `go` replaces the stack, so /onboarding is gone: back from /explore
     // cannot land here again.
-    context.go('/explore');
+    context.go(Routes.explore);
   }
 
   void _nextSlide() {

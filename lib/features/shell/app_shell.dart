@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/localization/app_localizations.dart';
+import '../../core/router/routes.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/offline_banner.dart';
@@ -125,7 +126,7 @@ class ShellTab {
 /// (icon, label, location); the Release 2 tab stays under [AppConfig.isRelease2].
 abstract final class ShellTabs {
   static const ShellTab explore = ShellTab(
-    location: '/explore',
+    location: Routes.explore,
     labelKey: 'nav.jelajahi',
     icon: Icons.explore_outlined,
     activeIcon: Icons.explore,
@@ -134,7 +135,7 @@ abstract final class ShellTabs {
   /// Aksi tab — replaces the former Transparansi tab (revised concept:
   /// Lapor → Pantau → Aksi → Dukung). TODO(P00-part-2): confirm icon.
   static const ShellTab actions = ShellTab(
-    location: '/actions',
+    location: Routes.actionAgenda,
     labelKey: 'nav.aksi',
     descriptionKey: 'nav.aksi.description',
     icon: Icons.task_alt_outlined,
@@ -150,7 +151,7 @@ abstract final class ShellTabs {
   );
 
   static const ShellTab impact = ShellTab(
-    location: '/impact',
+    location: Routes.impact,
     labelKey: 'nav.impact',
     descriptionKey: 'nav.impact.description',
     icon: Icons.favorite_outline,
@@ -159,7 +160,7 @@ abstract final class ShellTabs {
   );
 
   static const ShellTab profile = ShellTab(
-    location: '/profile',
+    location: Routes.profile,
     labelKey: 'nav.profile',
     descriptionKey: 'nav.profile.description',
     icon: Icons.person_outline,
