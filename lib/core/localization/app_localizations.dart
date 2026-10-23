@@ -44,6 +44,9 @@ class AppLocalizations {
       // `nav.*.description` is the one-line purpose of a tab, owned by the App
       // Shell tab configuration and reused by placeholder tab pages.
       'nav.jelajahi': 'Jelajahi',
+      'nav.aksi': 'Aksi',
+      'nav.aksi.description':
+          'Lapor, pantau, dan dukung aksi bersama untuk laut.',
       'nav.transparency': 'Transparansi',
       'nav.transparency.description':
           'Lihat ke mana donasi mengalir, terbuka untuk semua tanpa perlu login.',
@@ -55,7 +58,7 @@ class AppLocalizations {
       'nav.profile.description':
           'Kelola akun dan pengaturanmu, serta akses proposal, notifikasi, '
               'dan materi belajar.',
-      'shell.offline': 'Anda sedang offline. Menampilkan data tersimpan.',
+      'shell.offline': 'Mode offline - menampilkan data tersimpan',
       'shell.notifications': 'Notifikasi',
 
       // --- Login prompt ---
@@ -401,6 +404,9 @@ class AppLocalizations {
 
       // --- Shell / navigation ---
       'nav.jelajahi': 'Explore',
+      'nav.aksi': 'Action',
+      'nav.aksi.description':
+          'Report, monitor, and support community action for the ocean.',
       'nav.transparency': 'Transparency',
       'nav.transparency.description':
           'See where donations are disbursed, open to everyone without signing in.',
@@ -412,7 +418,7 @@ class AppLocalizations {
       'nav.profile.description':
           'Manage your account and settings, and access proposals, '
               'notifications, and learning materials.',
-      'shell.offline': "You're offline. Showing saved data.",
+      'shell.offline': 'Offline mode - showing saved data',
       'shell.notifications': 'Notifications',
 
       // --- Login prompt ---

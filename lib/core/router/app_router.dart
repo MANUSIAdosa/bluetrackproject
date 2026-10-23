@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/actions/presentation/actions_page.dart';
 import '../../features/auth/presentation/login_page.dart';
 import '../../features/donation/presentation/donate_amount_page.dart';
 import '../../features/donation/presentation/donate_status_page.dart';
@@ -13,7 +14,6 @@ import '../../features/organization/presentation/org_profile_page.dart';
 import '../../features/profile/presentation/profile_page.dart';
 import '../../features/project/presentation/project_detail_page.dart';
 import '../../features/shell/app_shell.dart';
-import '../../features/transparency/presentation/transparency_page.dart';
 
 /// Centralized router.
 ///
@@ -98,8 +98,12 @@ GoRouter createRouter({required bool onboardingDone}) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/transparency',
-                builder: (context, state) => const TransparencyPage(),
+                // TODO(P00-part-2): provisional route name for the Aksi tab
+                // (revised concept: Lapor → Pantau → Aksi → Dukung). The old
+                // Transparansi tab is replaced; transparency_page.dart stays
+                // in the repo but is no longer routed.
+                path: '/actions',
+                builder: (context, state) => const ActionsPage(),
               ),
             ],
           ),

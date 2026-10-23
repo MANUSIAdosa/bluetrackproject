@@ -31,6 +31,9 @@ class AppShell extends StatelessWidget {
         ],
       ),
       // Same unread count as the app-bar bell, read from the one controller.
+      // TODO(P00-part-5): NotificationsController is still a temporary stub
+      // over the mock NotificationRepository — rewire when the real
+      // notification source lands.
       bottomNavigationBar: ListenableBuilder(
         listenable: NotificationsController.instance,
         builder: (context, _) => NavigationBar(
@@ -103,6 +106,9 @@ class ShellTab {
 
   /// Whether this tab shows the unread-notification badge. Only My Impact does
   /// for now: the bell already covers the other tabs' app bars.
+  ///
+  /// TODO(P00-part-2): badge tab carrier kept from the Week-2 decision
+  /// (Dampakku) — confirm with the product owner under the revised concept.
   final bool showsUnreadBadge;
 
   String label(BuildContext context) => context.tr(labelKey);
@@ -125,12 +131,14 @@ abstract final class ShellTabs {
     activeIcon: Icons.explore,
   );
 
-  static const ShellTab transparency = ShellTab(
-    location: '/transparency',
-    labelKey: 'nav.transparency',
-    descriptionKey: 'nav.transparency.description',
-    icon: Icons.account_balance_outlined,
-    activeIcon: Icons.account_balance,
+  /// Aksi tab — replaces the former Transparansi tab (revised concept:
+  /// Lapor → Pantau → Aksi → Dukung). TODO(P00-part-2): confirm icon.
+  static const ShellTab actions = ShellTab(
+    location: '/actions',
+    labelKey: 'nav.aksi',
+    descriptionKey: 'nav.aksi.description',
+    icon: Icons.task_alt_outlined,
+    activeIcon: Icons.task_alt,
   );
 
   /// Release 2 only: Hibah between Transparansi and Dampakku.
@@ -164,9 +172,7 @@ abstract final class ShellTabs {
     // One binding per configured tab id — never a second tab list.
     const byConfigId = <String, ShellTab>{
       'jelajahi': explore,
-      // TODO(P00-part-UI): relabel to 'Aksi'. The config id is already 'aksi';
-      // the visible label (nav.transparency) stays until the UI part.
-      'aksi': transparency,
+      'aksi': actions,
       'dampakku': impact,
       'profil': profile,
     };
