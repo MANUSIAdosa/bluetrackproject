@@ -88,23 +88,24 @@ class AppLocalizations {
       'cat.mamalia_laut': 'Mamalia laut',
       'cat.lamun': 'Lamun',
       'cat.tersimpan': 'Tersimpan',
+      // Revised interest set (P01 part 4). The old categories above stay:
+      // `assets/mock/projects.json` and filters.json still speak them.
+      'cat.sampah_laut': 'Sampah Laut',
+      'cat.terumbu_karang': 'Terumbu Karang',
+      'cat.perikanan': 'Perikanan Berkelanjutan',
+      'cat.satwa_laut': 'Satwa Laut',
 
       // --- Onboarding (P01) ---
-      'onboarding.skip': 'Lewati',
-      'onboarding.next': 'Berikutnya',
-      'onboarding.chooseInterests': 'Pilih Minat',
-      'onboarding.start': 'Mulai',
-      'onboarding.slide1.title': 'Laut Menyerap Karbon',
-      'onboarding.slide1.body': 'Laut menyerap lebih dari sepertiga karbon yang dilepas manusia setiap tahun.',
-      'onboarding.slide2.title': 'Terumbu Karang Rumah Ikan',
-      'onboarding.slide2.body':
-          'Lima persen dasar laut menampung seperempat spesies laut dunia.',
-      'onboarding.slide3.title': 'Penyu Butuh Bantuanmu',
-      'onboarding.slide3.body': 'Ribuan tukik gagal mencapai laut karena sampah dan hilangnya habitat.',
-      'onboarding.interests.title': 'Pilih Minatmu',
-      'onboarding.interests.subtitle':
+      // Slide facts are NOT localized here: their single source is
+      // `assets/mock/ocean_facts.json` (draft copy, see file TODO).
+      'p01.skip': 'Lewati',
+      'p01.next': 'Berikutnya',
+      'p01.chooseInterests': 'Pilih Minat',
+      'p01.start': 'Mulai',
+      'p01.interests.title': 'Pilih Minatmu',
+      'p01.interests.subtitle':
           'Kami akan mengurutkan proyek sesuai minatmu.',
-      'onboarding.minOne': 'Pilih minimal satu',
+      'p01.minOne': 'Pilih minimal satu',
 
       // --- Auth (P02) ---
       // The title lives in the body heading, not the app bar, so there is one
@@ -458,22 +459,24 @@ class AppLocalizations {
       'cat.mamalia_laut': 'Marine mammals',
       'cat.lamun': 'Seagrass',
       'cat.tersimpan': 'Saved',
+      // Revised interest set (P01 part 4). The old categories above stay:
+      // `assets/mock/projects.json` and filters.json still speak them.
+      'cat.sampah_laut': 'Marine Waste',
+      'cat.terumbu_karang': 'Coral Reefs',
+      'cat.perikanan': 'Sustainable Fisheries',
+      'cat.satwa_laut': 'Marine Wildlife',
 
       // --- Onboarding (P01) ---
-      'onboarding.skip': 'Skip',
-      'onboarding.next': 'Next',
-      'onboarding.chooseInterests': 'Choose Interests',
-      'onboarding.start': 'Start',
-      'onboarding.slide1.title': 'The Ocean Absorbs Carbon',
-      'onboarding.slide1.body': 'The ocean absorbs more than a third of the carbon humans emit each year.',
-      'onboarding.slide2.title': 'Coral Reefs Are Fish Homes',
-      'onboarding.slide2.body': 'Five percent of the seafloor shelters a quarter of all marine species.',
-      'onboarding.slide3.title': 'Turtles Need Your Help',
-      'onboarding.slide3.body': 'Thousands of hatchlings never reach the sea due to waste and habitat loss.',
-      'onboarding.interests.title': 'Pick Your Interests',
-      'onboarding.interests.subtitle':
+      // Slide facts are NOT localized here: their single source is
+      // `assets/mock/ocean_facts.json` (draft copy, see file TODO).
+      'p01.skip': 'Skip',
+      'p01.next': 'Next',
+      'p01.chooseInterests': 'Choose Interests',
+      'p01.start': 'Start',
+      'p01.interests.title': 'Pick Your Interests',
+      'p01.interests.subtitle':
           "We'll sort projects to match your interests.",
-      'onboarding.minOne': 'Pick at least one',
+      'p01.minOne': 'Pick at least one',
 
       // --- Auth (P02) ---
       // The title lives in the body heading, not the app bar, so there is one

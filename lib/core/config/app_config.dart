@@ -13,12 +13,17 @@ abstract final class AppConfig {
   static const String savedProjectsBox = 'saved_projects';
 
   // --- Onboarding ---------------------------------------------------------
+  // TODO(P01-part-4): the five interest IDs are the revised set
+  // (Sampah Laut, Terumbu Karang, Mangrove, Perikanan Berkelanjutan,
+  // Satwa Laut). `assets/mock/projects.json` still trains the OLD categories,
+  // so Explore's "Untuk minatmu" sorting only matches `mangrove` until the
+  // mock data is revised in its own part.
   static const List<String> interestIds = [
-    'penyu',
-    'karang',
+    'sampah_laut',
+    'terumbu_karang',
     'mangrove',
-    'mamalia_laut',
-    'lamun',
+    'perikanan',
+    'satwa_laut',
   ];
 
   // --- Auth (mock) --------------------------------------------------------
