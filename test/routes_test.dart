@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive/hive.dart';
@@ -29,7 +30,11 @@ void main() {
     WidgetTester tester, {
     required bool onboardingDone,
   }) async {
-    await tester.pumpWidget(BlueTrackApp(onboardingDone: onboardingDone));
+    // AppShell watches P13 providers (Riverpod): host inside a ProviderScope
+    // like main() does.
+    await tester.pumpWidget(
+      ProviderScope(child: BlueTrackApp(onboardingDone: onboardingDone)),
+    );
     // Fixed pumps, not pumpAndSettle: the explore branch embeds animated
     // content that may never fully settle under the test binding.
     await tester.pump(const Duration(milliseconds: 400));

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 
@@ -25,7 +26,11 @@ void main() {
     'shell shows the 4 configured tabs, Aksi replaces Transparansi, '
     'offline banner toggles',
     (tester) async {
-      await tester.pumpWidget(const BlueTrackApp(onboardingDone: true));
+      // AppShell watches P13 providers (Riverpod): host inside a ProviderScope
+      // like main() does. The real mock repository loads below.
+      await tester.pumpWidget(
+        const ProviderScope(child: BlueTrackApp(onboardingDone: true)),
+      );
       // Fixed pumps, not pumpAndSettle: tab pages contain animations that may
       // never fully settle (e.g. FlutterMap tiles in the explore branch).
       await tester.pump(const Duration(milliseconds: 400));
