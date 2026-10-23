@@ -1,0 +1,56 @@
+[
+  {
+    "id": "p01",
+    "projectId": "p01",
+    "name": "Pantai Sukamade",
+    "region": "Banyuwangi, Jawa Timur",
+    "latitude": -8.5236,
+    "longitude": 114.6131,
+    "habitat": "penyu"
+  },
+  {
+    "id": "p02",
+    "projectId": "p02",
+    "name": "Pulau Pramuka",
+    "region": "Kepulauan Seribu, DKI Jakarta",
+    "latitude": -5.7433,
+    "longitude": 106.5078,
+    "habitat": "karang"
+  },
+  {
+    "id": "p03",
+    "projectId": "p03",
+    "name": "Muara Angke",
+    "region": "Jakarta Utara, DKI Jakarta",
+    "latitude": -6.1047,
+    "longitude": 106.8416,
+    "habitat": "mangrove"
+  },
+  {
+    "id": "p04",
+    "projectId": "p04",
+    "name": "Teluk Weda",
+    "region": "Halmahera, Maluku Utara",
+    "latitude": 0.4536,
+    "longitude": 127.9333,
+    "habitat": "mamalia_laut"
+  },
+  {
+    "id": "p05",
+    "projectId": "p05",
+    "name": "Kepulauan Anambas",
+    "region": "Kepulauan Riau",
+    "latitude": 3.2267,
+    "longitude": 105.9131,
+    "habitat": "lamun"
+  },
+  {
+    "id": "p06",
+    "projectId": "p06",
+    "name": "Pesisir Makassar",
+    "region": "Makassar, Sulawesi Selatan",
+    "latitude": -5.1477,
+    "longitude": 119.4327,
+    "habitat": "mangrove"
+  }
+]
