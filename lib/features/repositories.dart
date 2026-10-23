@@ -11,6 +11,8 @@ abstract final class Repositories {
   static const FilterRepository filters = MockFilterRepository();
   static const OrganizationRepository organizations =
       MockOrganizationRepository();
-  static const NotificationRepository notifications =
+  // Not const: MockNotificationRepository holds in-memory state (P13
+  // mark-read/delete), so the registry entry becomes a final singleton.
+  static final NotificationRepository notifications =
       MockNotificationRepository();
 }

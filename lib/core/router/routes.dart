@@ -51,4 +51,50 @@ abstract final class Routes {
       '/support/trace/$donationId';
 
   static String actionDetailUrl(String actionId) => '/actions/$actionId';
+
+  /// Whether [location] would resolve to a registered route. Segments match
+  /// either literally or when the template segment is a `:param` slot. P13
+  /// notification targets call this before pushing, so a mock row pointing at
+  /// a route that no longer exists shows a fallback message instead of the
+  /// router's raw "page not found" screen.
+  static bool isKnown(String location) {
+    final actual = location.split('/');
+    return allRoutes.any((template) {
+      final segments = template.split('/');
+      if (segments.length != actual.length) return false;
+      for (var i = 0; i < segments.length; i++) {
+        final s = segments[i];
+        if (s.startsWith(':')) continue;
+        if (s != actual[i]) return false;
+      }
+      return true;
+    });
+  }
+
+  /// Every registered route template, kept in one place so [isKnown] can never
+  /// drift from the actual registration list.
+  static const List<String> allRoutes = [
+    onboarding,
+    auth,
+    explore,
+    impact,
+    notifications,
+    learn,
+    profile,
+    settings,
+    projectDetail,
+    orgDetail,
+    donation,
+    donationStatus,
+    actionAgenda,
+    actionDetail,
+    report,
+    myReports,
+    myActions,
+    communityActionApply,
+    donationTrace,
+    legalPrivacy,
+    legalTerms,
+    donatePlatform,
+  ];
 }

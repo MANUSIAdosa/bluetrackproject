@@ -400,9 +400,28 @@ class AppLocalizations {
       // --- Placeholder tab pages ---
       'profile.title': 'Profil',
       'profile.signOut': 'Keluar',
-      'notifications.title': 'Notifikasi',
-      'notifications.donationNews':
-          'Kabar tentang donasimu akan muncul di sini.',
+
+      // --- Notifications (P13) ---
+      // TODO(P13, minggu 12-13): the list, mark-read and delete flows are fed
+      // by mock data only; copy may change once real triggers exist.
+      'p13.title': 'Notifikasi',
+      'p13.markAllRead': 'Tandai semua dibaca',
+      'p13.group.today': 'Hari ini',
+      'p13.group.thisWeek': 'Minggu ini',
+      'p13.group.older': 'Lebih lama',
+      'p13.empty': 'Belum ada notifikasi.',
+      'p13.errorBody': 'Notifikasi gagal dimuat.',
+      'p13.retry': 'Coba lagi',
+      'p13.type.reportStatus': 'Status laporan',
+      'p13.type.actionReminder': 'Pengingat aksi',
+      'p13.type.locationUpdate': 'Update lokasi',
+      'p13.semanticUnread': 'Belum dibaca',
+      'p13.delete': 'Hapus',
+      'p13.targetUnavailable':
+          'Halaman tujuan notifikasi ini belum tersedia.',
+      'p13.loginPrompt.title': 'Lacak notifikasi personal',
+      'p13.loginPrompt.body':
+          'Masuk untuk melihat laporan dan aksi yang terkait akunmu. Notifikasi tetap tampil tanpa masuk.',
     },
     'en': {
       // --- Common ---
@@ -765,9 +784,28 @@ class AppLocalizations {
       // --- Placeholder tab pages ---
       'profile.title': 'Profile',
       'profile.signOut': 'Sign out',
-      'notifications.title': 'Notifications',
-      'notifications.donationNews':
-          'News about your donations will appear here.',
+
+      // --- Notifications (P13) ---
+      // TODO(P13, minggu 12-13): the list, mark-read and delete flows are fed
+      // by mock data only; copy may change once real triggers exist.
+      'p13.title': 'Notifications',
+      'p13.markAllRead': 'Mark all as read',
+      'p13.group.today': 'Today',
+      'p13.group.thisWeek': 'This week',
+      'p13.group.older': 'Older',
+      'p13.empty': 'No notifications yet.',
+      'p13.errorBody': 'Notifications failed to load.',
+      'p13.retry': 'Try again',
+      'p13.type.reportStatus': 'Report status',
+      'p13.type.actionReminder': 'Action reminder',
+      'p13.type.locationUpdate': 'Location update',
+      'p13.semanticUnread': 'Unread',
+      'p13.delete': 'Delete',
+      'p13.targetUnavailable':
+          "This notification's target page is not available yet.",
+      'p13.loginPrompt.title': 'Track personal notifications',
+      'p13.loginPrompt.body':
+          'Sign in to see reports and actions linked to your account. Notifications stay visible without signing in.',
     },
   };
 }

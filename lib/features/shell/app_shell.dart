@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../core/router/routes.dart';
-import '../../core/state/app_state.dart';
 import '../../core/theme/app_colors.dart';
+import '../../features/notification/application/notification_providers.dart';
 import '../../shared/widgets/offline_banner.dart';
 
 /// P00 — App Shell with bottom navigation.
@@ -13,7 +14,11 @@ import '../../shared/widgets/offline_banner.dart';
 /// - Release 1: 4 tabs; the Hibah tab only exists behind [AppConfig.isRelease2].
 /// - Tab count is derived from a single release flag, not duplicated widgets.
 /// - Offline banner sits above tab content.
-class AppShell extends StatelessWidget {
+/// - The unread badge reads [unreadCountProvider] — Riverpod state derived
+///   from the P13 notification list. This shell, built at the single
+///   StatefulShellRoute branch in `core/router/app_router.dart`, is the one
+///   integration point for the navigation badge (P13 part 5/6).
+class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.shell});
 
   final StatefulNavigationShell shell;
@@ -21,8 +26,11 @@ class AppShell extends StatelessWidget {
   List<ShellTab> _tabs() => ShellTabs.active;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tabs = _tabs();
+    // Watching here alone drives every destination's badge; the count is
+    // shared with the app-bar bell through the same provider.
+    final unreadCount = ref.watch(unreadCountProvider);
 
     return Scaffold(
       body: Column(
@@ -31,50 +39,35 @@ class AppShell extends StatelessWidget {
           Expanded(child: shell),
         ],
       ),
-      // Same unread count as the app-bar bell, read from the one controller.
-      // TODO(P00-part-5): NotificationsController is still a temporary stub
-      // over the mock NotificationRepository — rewire when the real
-      // notification source lands.
-      bottomNavigationBar: ListenableBuilder(
-        listenable: NotificationsController.instance,
-        builder: (context, _) => NavigationBar(
-          selectedIndex: shell.currentIndex,
-          onDestinationSelected: (index) => shell.goBranch(
-            index,
-            // Re-tapping the active tab pops it back to its root.
-            initialLocation: index == shell.currentIndex,
-          ),
-          destinations: [
-            for (final tab in tabs)
-              NavigationDestination(
-                icon: _destinationIcon(tab, NotificationsController.instance),
-                selectedIcon: _destinationIcon(
-                  tab,
-                  NotificationsController.instance,
-                  selected: true,
-                ),
-                label: tab.label(context),
-              ),
-          ],
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: shell.currentIndex,
+        onDestinationSelected: (index) => shell.goBranch(
+          index,
+          // Re-tapping the active tab pops it back to its root.
+          initialLocation: index == shell.currentIndex,
         ),
+        destinations: [
+          for (final tab in tabs)
+            NavigationDestination(
+              icon: _destinationIcon(tab, unreadCount),
+              selectedIcon: _destinationIcon(tab, unreadCount, selected: true),
+              label: tab.label(context),
+            ),
+        ],
       ),
     );
   }
 
   /// Wraps the tab icon in the unread badge when the tab opts in
   /// ([ShellTab.showsUnreadBadge]) and the count is above zero.
-  Widget _destinationIcon(
-    ShellTab tab,
-    NotificationsController notifications, {
-    bool selected = false,
-  }) {
+  Widget _destinationIcon(ShellTab tab, int unreadCount, {bool selected = false}) {
     final icon = Icon(selected ? tab.activeIcon : tab.icon);
-    if (!tab.showsUnreadBadge || notifications.unreadCount <= 0) return icon;
+    if (!tab.showsUnreadBadge || unreadCount <= 0) return icon;
 
     return Badge(
       backgroundColor: AppColors.coral,
       textColor: Colors.white,
-      label: Text('${notifications.unreadCount}'),
+      label: Text('$unreadCount'),
       child: icon,
     );
   }
