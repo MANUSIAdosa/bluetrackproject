@@ -111,7 +111,12 @@ class ShellTab {
       descriptionKey == null ? null : context.tr(descriptionKey!);
 }
 
-/// Release-gated tab list — the single source of truth for the bottom nav.
+/// Bottom-nav tab registry (UI binding + Release 2 gate).
+///
+/// WHICH tabs are active comes from `TabConfig` in `core/config/app_config.dart`:
+/// its release flags build the active list and its length — never duplicated
+/// here. This class only binds each configured tab id to its shell UI
+/// (icon, label, location); the Release 2 tab stays under [AppConfig.isRelease2].
 abstract final class ShellTabs {
   static const ShellTab explore = ShellTab(
     location: '/explore',
@@ -153,13 +158,23 @@ abstract final class ShellTabs {
     activeIcon: Icons.person,
   );
 
-  static List<ShellTab> get active => [
-    explore,
-    transparency,
-    if (AppConfig.isRelease2) grants,
-    impact,
-    profile,
-  ];
+  /// Active tabs in configuration order (see [TabConfig.active]) plus the
+  /// Release 2 tab behind its own overall release flag.
+  static List<ShellTab> get active {
+    // One binding per configured tab id — never a second tab list.
+    const byConfigId = <String, ShellTab>{
+      'jelajahi': explore,
+      // TODO(P00-part-UI): relabel to 'Aksi'. The config id is already 'aksi';
+      // the visible label (nav.transparency) stays until the UI part.
+      'aksi': transparency,
+      'dampakku': impact,
+      'profil': profile,
+    };
+    return [
+      for (final configTab in TabConfig.active) byConfigId[configTab.id]!,
+      if (AppConfig.isRelease2) grants,
+    ];
+  }
 
   static ShellTab? byLocation(String location) {
     for (final tab in active) {
