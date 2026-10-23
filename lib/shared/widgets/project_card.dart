@@ -5,6 +5,7 @@ import '../../core/localization/app_localizations.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
+import '../../features/explore/data/saved_project_store.dart';
 import '../../features/explore/domain/project.dart';
 import 'progress_bar.dart';
 import 'verified_badge.dart';
@@ -47,9 +48,7 @@ class ProjectCard extends StatelessWidget {
               aspectRatio: 16 / 9,
               child: Container(
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: project.galleryColors.map(_hexToColor).toList(),
-                  ),
+                  gradient: _galleryGradient(project.galleryColors),
                 ),
                 child: Align(
                   alignment: Alignment.topRight,
@@ -59,7 +58,9 @@ class ProjectCard extends StatelessWidget {
                       color: Colors.white,
                     ),
                     onPressed: () async {
-                      await SavedProjectsController.instance.toggle(project.id);
+                      // One entry point: flips the saved id *and* writes the
+                      // offline snapshot the saved collection reads offline.
+                      await toggleSavedProject(project);
                       onSavedChanged?.call();
                     },
                   ),
@@ -188,4 +189,17 @@ class _DonateButton extends StatelessWidget {
 Color _hexToColor(String hex) {
   final normalized = hex.replaceFirst('#', '');
   return Color(int.parse('FF$normalized', radix: 16));
+}
+
+/// Gallery gradient from the mock colours.
+///
+/// A single colour is a valid mock entry but `LinearGradient` asserts on fewer
+/// than two stops, so the colour is repeated instead of crashing the card.
+LinearGradient _galleryGradient(List<String> colors) {
+  final parsed = colors.isEmpty
+      ? const [AppColors.ocean, AppColors.teal]
+      : colors.map(_hexToColor).toList();
+  return LinearGradient(
+    colors: parsed.length >= 2 ? parsed : [parsed.first, parsed.first],
+  );
 }

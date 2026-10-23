@@ -1,21 +1,29 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart' show TileProvider;
+import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/state/app_state.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_state.dart';
 import '../../../shared/widgets/filter_chip_row.dart';
 import '../../../shared/widgets/notification_bell.dart';
 import '../../../shared/widgets/project_card.dart';
 import '../../../shared/widgets/skeleton.dart';
-import '../data/project_repository.dart';
-import '../domain/project.dart';
 import '../../repositories.dart';
+import '../data/explore_map_repository.dart';
+import '../data/project_repository.dart';
+import '../data/saved_project_store.dart';
+import '../domain/explore_map_data.dart';
+import '../domain/project.dart';
+import 'widgets/explore_list_widgets.dart';
+import 'widgets/explore_map.dart';
+import 'widgets/filter_sheet.dart';
 
-/// P03 — Explore (list mode).
+/// P03 — Explore (P03 map + list).
 ///
 /// - Search, a single-select category chip row, a saved-projects toggle next to
 ///   the search field (Hive), interest sorting, loading / empty / error states,
@@ -25,15 +33,29 @@ import '../../repositories.dart';
 ///   switches the view mode.
 /// - The list is paged: only [_pageSize] projects at a time, the next page
 ///   appended when the user scrolls near the bottom.
-/// - Map mode is a query-param sibling of this page (deferred: see
-///   [explore.mapUnavailable]).
+/// - The filter sheet adds the distance and condition groups; both modes — list
+///   and map — read the same filtered result set, so switching never resets a
+///   filter.
+/// - Offline: the saved snapshots in [SavedProjectStore] replace the repository,
+///   and the shell's banner (P00) explains why the list is short.
 class ExplorePage extends StatefulWidget {
-  const ExplorePage({super.key, this.projectRepository, this.filterRepository});
+  const ExplorePage({
+    super.key,
+    this.projectRepository,
+    this.filterRepository,
+    this.mapRepository,
+    this.mapTileProvider,
+  });
 
   /// Test seams — when null the page reads the registry ([Repositories]).
   /// The router keeps constructing `const ExplorePage()`.
   final ProjectRepository? projectRepository;
   final FilterRepository? filterRepository;
+  final ExploreMapRepository? mapRepository;
+
+  /// Test seam: the map uses OpenStreetMap tiles in the app and a fake provider
+  /// in widget tests.
+  final TileProvider? mapTileProvider;
 
   @override
   State<ExplorePage> createState() => _ExplorePageState();
@@ -56,12 +78,25 @@ class _ExplorePageState extends State<ExplorePage> {
   List<Project> _all = const [];
   List<String> _categoryIds = const ['semua'];
   List<String> _interests = const [];
+  ExploreMapData? _mapData;
+  bool _mapLoading = false;
+  bool _mapError = false;
+
+  /// In-flight map-data read, shared by the map and the filter sheet.
+  Future<void>? _mapLoadFuture;
 
   String _category = 'semua';
   String _query = '';
   bool _loading = true;
   bool _error = false;
   bool _mapMode = false;
+
+  /// Conservation-area layer of the map, off until the user asks for it.
+  bool _conservationLayer = false;
+
+  /// Filter groups owned by the filter sheet.
+  DistanceBand _distance = DistanceBand.semua;
+  ProjectCondition? _condition;
 
   /// The saved collection is a context of its own, not a category: it lives in
   /// [SavedProjectsController], and the bookmark button beside the search field
@@ -76,21 +111,34 @@ class _ExplorePageState extends State<ExplorePage> {
       widget.projectRepository ?? Repositories.projects;
   FilterRepository get _filters =>
       widget.filterRepository ?? Repositories.filters;
+  ExploreMapRepository get _maps =>
+      widget.mapRepository ?? const MockExploreMapRepository();
+
+  bool get _offline => OfflineController.instance.offline;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    OfflineController.instance.addListener(_onOfflineChanged);
     _load();
   }
 
   @override
   void dispose() {
+    OfflineController.instance.removeListener(_onOfflineChanged);
     _scrollController
       ..removeListener(_onScroll)
       ..dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// The offline switch changes *where* the projects come from, so the list has
+  /// to be rebuilt from the other source.
+  void _onOfflineChanged() {
+    if (!mounted) return;
+    _load();
   }
 
   Future<void> _load() async {
@@ -101,7 +149,12 @@ class _ExplorePageState extends State<ExplorePage> {
       _loadingMore = false;
     });
     try {
-      final projects = await _projects.getProjects();
+      // Offline: the mock assets count as "the network", so the list comes from
+      // the saved snapshots only — no repository call at all.
+      final offline = _offline;
+      final projects = offline
+          ? await SavedProjectStore.instance.loadAll()
+          : await _projects.getProjects();
       final categories = await _filters.getCategoryIds();
       final interests = await OnboardingState.readInterests();
       if (!mounted) return;
@@ -163,6 +216,8 @@ class _ExplorePageState extends State<ExplorePage> {
       _query = '';
       _category = 'semua';
       _savedOnly = false;
+      _distance = DistanceBand.semua;
+      _condition = null;
     });
   }
 
@@ -173,10 +228,76 @@ class _ExplorePageState extends State<ExplorePage> {
     setState(() => _savedOnly = false);
   }
 
+  /// Map data is loaded on demand: the list never pays for an asset only the
+  /// map and the filter sheet need.
+  ///
+  /// Concurrent callers share the in-flight read, so opening the filter sheet
+  /// while the map is still loading waits for the reference location instead of
+  /// showing a blank distance label.
+  Future<void> _ensureMapData() {
+    if (_mapData != null) return Future<void>.value();
+    return _mapLoadFuture ??= _loadMapData();
+  }
+
+  Future<void> _loadMapData() async {
+    setState(() {
+      _mapLoading = true;
+      _mapError = false;
+    });
+    try {
+      final data = await _maps.getMapData();
+      if (!mounted) return;
+      setState(() {
+        _mapData = data;
+        _mapLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _mapError = true;
+        _mapLoading = false;
+      });
+    } finally {
+      _mapLoadFuture = null;
+    }
+  }
+
+  void _setMapMode(bool map) {
+    setState(() => _mapMode = map);
+    if (map) _ensureMapData();
+  }
+
+  ExploreFilterSelection get _selection => ExploreFilterSelection(
+    category: _category,
+    distance: _distance,
+    condition: _condition,
+  );
+
+  Future<void> _openFilterSheet() async {
+    // The distance group needs the mock reference location, so make sure the
+    // map data is there before the sheet shows its labels.
+    await _ensureMapData();
+    if (!mounted) return;
+    final selection = await showExploreFilterSheet(
+      context,
+      categoryIds: _categoryIds,
+      selection: _selection,
+      userLocationLabel: _mapData?.userLocationLabel ?? '',
+    );
+    if (selection == null || !mounted) return;
+    _resetPaging();
+    setState(() {
+      _category = selection.category;
+      _distance = selection.distance;
+      _condition = selection.condition;
+    });
+  }
+
   List<Project> get _visible {
     // One context per control, applied in that order: the saved collection,
-    // then the category chip, then the search query.
+    // then the category chip, then the search query, then the sheet groups.
     final saved = SavedProjectsController.instance.ids;
+    final mapData = _mapData;
     var list = _all.where((p) {
       final matchesSaved = !_savedOnly || saved.contains(p.id);
       final matchesCategory = _category == 'semua' || p.category == _category;
@@ -185,7 +306,24 @@ class _ExplorePageState extends State<ExplorePage> {
           p.title.toLowerCase().contains(_query) ||
           p.orgName.toLowerCase().contains(_query) ||
           p.location.toLowerCase().contains(_query);
-      return matchesSaved && matchesCategory && matchesQuery;
+      final matchesCondition =
+          _condition == null ||
+          mapData == null ||
+          mapData.conditionOf(p.id) == _condition;
+      final matchesDistance =
+          _distance == DistanceBand.semua ||
+          mapData == null ||
+          _distance.matches(
+            distanceKm(
+              mapData.userLocation,
+              LatLng(p.latitude, p.longitude),
+            ),
+          );
+      return matchesSaved &&
+          matchesCategory &&
+          matchesQuery &&
+          matchesCondition &&
+          matchesDistance;
     }).toList();
 
     // Personalized sorting: interest matches first.
@@ -240,7 +378,13 @@ class _ExplorePageState extends State<ExplorePage> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                _SavedFilterButton(
+                FilterButton(
+                  key: const ValueKey('explore.filterButton'),
+                  activeCount: _selection.activeCount,
+                  onPressed: _openFilterSheet,
+                ),
+                const SizedBox(width: 8),
+                SavedFilterButton(
                   key: const ValueKey('explore.savedFilter'),
                   active: _savedOnly,
                   savedCount: savedCount,
@@ -265,10 +409,7 @@ class _ExplorePageState extends State<ExplorePage> {
             },
           ),
           const SizedBox(height: 8),
-          _ListMapToggle(
-            mapMode: _mapMode,
-            onChanged: (map) => setState(() => _mapMode = map),
-          ),
+          ListMapToggle(mapMode: _mapMode, onChanged: _setMapMode),
           const SizedBox(height: 4),
           Expanded(child: _buildBody(visible)),
         ],
@@ -287,12 +428,19 @@ class _ExplorePageState extends State<ExplorePage> {
       return ErrorState(onRetry: _load);
     }
     if (_mapMode) {
-      return EmptyState(
-        icon: Icons.map_outlined,
-        message: context.tr('explore.mapUnavailable'),
-      );
+      return _buildMap(visible);
     }
     if (visible.isEmpty) {
+      // The offline list can be empty for its own reason: nothing was saved
+      // before losing the connection.
+      if (_offline) {
+        return EmptyState(
+          icon: Icons.cloud_off,
+          message: context.tr('p03_offline_empty_title'),
+          actionLabel: context.tr('p03_offline_reload'),
+          onAction: _load,
+        );
+      }
       // Two different failures behind the same bookmark toggle: nothing has
       // been saved yet, or the saved projects do not match the other filters.
       if (_savedOnly) {
@@ -335,14 +483,14 @@ class _ExplorePageState extends State<ExplorePage> {
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
         children: [
           if (forYou.isNotEmpty && _category == 'semua' && _query.isEmpty) ...[
-            _sectionHeader(context.tr('explore.forYou')),
-            _ForYouRail(
+            exploreSectionHeader(context.tr('explore.forYou')),
+            ForYouRail(
               key: const ValueKey('explore.forYouRail'),
               projects: forYou,
               onSavedChanged: () => setState(() {}),
             ),
             const SizedBox(height: 8),
-            _sectionHeader(context.tr('explore.projects')),
+            exploreSectionHeader(context.tr('explore.projects')),
           ],
           for (final project in page) ...[
             ProjectCard(
@@ -362,139 +510,48 @@ class _ExplorePageState extends State<ExplorePage> {
     );
   }
 
-  Widget _sectionHeader(String text) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Text(
-      text,
-      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-    ),
-  );
-}
+  Widget _buildMap(List<Project> visible) {
+    if (_mapLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_mapError) return ErrorState(onRetry: _ensureMapData);
+    final mapData = _mapData;
+    if (mapData == null) return ErrorState(onRetry: _ensureMapData);
 
-/// Horizontal "Untuk minatmu" rail.
-///
-/// Its height is measured from the cards themselves ([IntrinsicHeight]) rather
-/// than pinned to a constant, so it can never be shorter than a card: a
-/// one-line or two-line title, a longer location or a large text scale are all
-/// fine. Cards are compact — no donate CTA — and stretched to one height.
-class _ForYouRail extends StatelessWidget {
-  const _ForYouRail({
-    super.key,
-    required this.projects,
-    required this.onSavedChanged,
-  });
-
-  final List<Project> projects;
-  final VoidCallback onSavedChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return IntrinsicHeight(
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (var i = 0; i < projects.length; i++) ...[
-              if (i > 0) const SizedBox(width: 12),
-              SizedBox(
-                width: 260,
-                child: ProjectCard(
-                  project: projects[i],
-                  showDonateButton: false,
-                  onSavedChanged: onSavedChanged,
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: FilterChip(
+              label: Text(context.tr('p03_map_layer_conservation')),
+              selected: _conservationLayer,
+              showCheckmark: false,
+              onSelected: (value) => setState(() => _conservationLayer = value),
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Expanded(
+          child: visible.isEmpty
+              ? EmptyState(
+                  icon: Icons.map_outlined,
+                  message: context.tr('p03_map_empty'),
+                  actionLabel: context.tr('explore.resetFilter'),
+                  onAction: _resetFilters,
+                )
+              : ExploreMap(
+                  projects: visible,
+                  mapData: mapData,
+                  userLocationLabel: mapData.userLocationLabel,
+                  showConservationLayer: _conservationLayer,
+                  offline: _offline,
+                  tileProvider: widget.mapTileProvider,
+                  onOpenProject: (id) => context.push('/project/$id'),
                 ),
-              ),
-            ],
-          ],
         ),
-      ),
-    );
-  }
-}
-
-class _ListMapToggle extends StatelessWidget {
-  const _ListMapToggle({required this.mapMode, required this.onChanged});
-
-  final bool mapMode;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      // The toggle is narrower than the row, and the surrounding Column centres
-      // its children: without this it would drift away from the search field
-      // and the chips, which both start on the base padding.
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: SegmentedButton<bool>(
-          segments: [
-            ButtonSegment(
-              value: false,
-              label: Text(context.tr('explore.viewList')),
-              icon: const Icon(Icons.view_list_outlined),
-            ),
-            ButtonSegment(
-              value: true,
-              label: Text(context.tr('explore.viewMap')),
-              icon: const Icon(Icons.map_outlined),
-            ),
-          ],
-          selected: {mapMode},
-          onSelectionChanged: (set) => onChanged(set.first),
-          showSelectedIcon: false,
-        ),
-      ),
-    );
-  }
-}
-
-/// Bookmark toggle for the saved-projects collection, beside the search field.
-///
-/// The collection is a context of its own, so it is a button and not a chip in
-/// the category row. While it is on, the chip row and the search field keep
-/// narrowing *within* the saved projects.
-class _SavedFilterButton extends StatelessWidget {
-  const _SavedFilterButton({
-    super.key,
-    required this.active,
-    required this.savedCount,
-    required this.onChanged,
-  });
-
-  final bool active;
-
-  /// Number of saved projects, badged on the button when there is any.
-  final int savedCount;
-
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final button = IconButton(
-      // Names the action, so it reads correctly in either state.
-      tooltip: context.tr(
-        active ? 'explore.savedFilter.off' : 'explore.savedFilter.on',
-      ),
-      icon: Icon(active ? Icons.bookmark : Icons.bookmark_outline),
-      color: active ? AppColors.ocean : AppColors.textSecondary,
-      // Material's minimum touch target.
-      style: IconButton.styleFrom(minimumSize: const Size.square(48)),
-      onPressed: () => onChanged(!active),
-    );
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: active
-            ? AppColors.ocean.withValues(alpha: 0.10)
-            : Colors.transparent,
-        border: Border.all(color: active ? AppColors.ocean : AppColors.border),
-        borderRadius: BorderRadius.circular(AppDimens.cardRadius),
-      ),
-      child: savedCount > 0
-          ? Badge(label: Text('$savedCount'), child: button)
-          : button,
+      ],
     );
   }
 }
