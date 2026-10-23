@@ -61,6 +61,28 @@ class Project {
         galleryColors:
             (json['galleryColors'] as List<dynamic>).cast<String>(),
       );
+
+  /// Round-trips [Project.fromJson] — used to cache a project for offline use.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'category': category,
+        'orgId': orgId,
+        'orgName': orgName,
+        'orgVerified': orgVerified,
+        'location': location,
+        'latitude': latitude,
+        'longitude': longitude,
+        'raisedAmount': raisedAmount,
+        'targetAmount': targetAmount,
+        'description': description,
+        'about': about,
+        'budget': [
+          for (final line in budget)
+            {'item': line.item, 'amount': line.amount, 'percent': line.percent},
+        ],
+        'galleryColors': galleryColors,
+      };
 }
 
 class BudgetLine {

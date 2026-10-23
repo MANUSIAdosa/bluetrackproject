@@ -91,12 +91,18 @@ class AppLocalizations {
       'onboarding.minOne': 'Pilih minimal satu',
 
       // --- Auth (P02) ---
-      'auth.title': 'Masuk ke BlueTrack',
-      'auth.step.email': 'Email',
-      'auth.step.phone': 'Telepon',
-      'auth.step.otp': 'Kode',
+      // The title lives in the body heading, not the app bar, so there is one
+      // clear anchor per step instead of two competing ones.
+      'auth.email.title': 'Selamat datang kembali',
+      'auth.email.subtitle':
+          'Masuk untuk melihat proyek dan donasi yang Anda dukung.',
+      'auth.email.label': 'Email',
       'auth.email.hint': 'nama@email.com',
       'auth.email.invalid': 'Format email tidak valid',
+      'auth.phone.title': 'Nomor telepon Anda',
+      'auth.phone.subtitle':
+          'Kami akan mengirim kode verifikasi ke nomor ini.',
+      'auth.phone.label': 'Nomor telepon',
       'auth.phone.hint': '8123456789',
       'auth.phone.invalid': 'Nomor telepon tidak valid',
       'auth.sendCode': 'Kirim Kode',
@@ -110,10 +116,12 @@ class AppLocalizations {
       'auth.otp.resend': 'Kirim ulang kode',
       'auth.otp.sent': 'Kode verifikasi terkirim (mock: 123456)',
       'auth.verify': 'Verifikasi',
-      'auth.privacy': 'Dengan melanjutkan, Anda menyetujui Kebijakan Privasi dan Syarat & Ketentuan.',
+      // Split around the two inline document links so each document name stays a
+      // separately tappable span instead of being parsed back out of a string.
+      'auth.privacy.lead': 'Dengan melanjutkan, Anda menyetujui',
       'auth.privacyPolicy': 'Kebijakan Privasi',
+      'auth.privacy.and': 'dan',
       'auth.terms': 'Syarat & Ketentuan',
-      'auth.skipLogin': 'Lanjut tanpa masuk',
 
       // --- Explore (P03) ---
       'explore.title': 'Jelajahi',
@@ -136,6 +144,37 @@ class AppLocalizations {
       'explore.resetFilter': 'Atur ulang filter',
       'explore.viewAll': 'Lihat semua proyek',
       'explore.mapUnavailable': 'Mode peta belum tersedia pada subproyek ini.',
+
+      // P03 map, filters and offline collection. New keys use the `p03_`
+      // prefix; the `explore.*` keys above stay for the list page.
+      'p03_filter_action': 'Filter',
+      'p03_filter_category': 'Kategori',
+      'p03_filter_distance': 'Jarak',
+      'p03_distance_reference': 'Jarak dari {place} (mock)',
+      'p03_distance_semua': 'Semua',
+      'p03_distance_dekat': '<250 km',
+      'p03_distance_sedang': '250–1000 km',
+      'p03_distance_jauh': '>1000 km',
+      'p03_filter_condition': 'Status kondisi',
+      'p03_condition_baik': 'Baik',
+      'p03_condition_pemantauan': 'Perlu pemantauan',
+      'p03_condition_kritis': 'Kritis',
+      'p03_filter_reset': 'Atur ulang',
+      'p03_filter_apply': 'Terapkan',
+      'p03_filter_active': '{n} filter aktif',
+      'p03_map_layer_conservation': 'Kawasan konservasi',
+      'p03_map_count': '{n} proyek di peta',
+      'p03_map_empty': 'Tidak ada proyek di peta untuk filter ini.',
+      'p03_map_open_project': 'Lihat proyek',
+      'p03_map_zoom_in': 'Perbesar peta',
+      'p03_map_zoom_out': 'Perkecil peta',
+      'p03_map_distance': '{n} km dari {place} (mock)',
+      'p03_save': 'Simpan proyek',
+      'p03_saved': 'Hapus dari tersimpan',
+      'p03_map_condition': 'Kondisi',
+      'p03_offline_empty_title': 'Belum ada proyek tersimpan',
+      'p03_offline_reload': 'Muat ulang daftar tersimpan',
+      'p03_simulate_offline': 'Simulasikan offline',
 
       // --- Project detail (P04) ---
       'project.tab.about': 'Tentang',
@@ -196,6 +235,86 @@ class AppLocalizations {
       'donate.monthly': 'Bulanan',
       'donate.stepPending':
           'Langkah berikutnya akan tersedia pada subproyek berikutnya.',
+
+      // --- Donation (P06, confirmation & result) ---
+      'p06_confirm_title': 'Konfirmasi Donasi',
+      'p06_confirm_big_text': '{amount} → 100% ke {project}',
+      'p06_confirm_min_hint': 'Minimal donasi {amount}',
+      'p06_confirm_summary_title': 'Ringkasan donasi',
+      'p06_confirm_amount': 'Nominal',
+      'p06_confirm_frequency': 'Frekuensi',
+      'p06_confirm_frequency_once': 'Sekali',
+      'p06_confirm_frequency_monthly': 'Bulanan',
+      'p06_confirm_purpose': 'Tujuan',
+      'p06_confirm_purpose_project': 'Proyek · {name}',
+      'p06_confirm_purpose_org': 'Organisasi · {name}',
+      'p06_confirm_method': 'Metode pembayaran',
+      'p06_confirm_method_va': 'Transfer VA',
+      'p06_confirm_method_ewallet': 'E-wallet',
+      'p06_confirm_method_card': 'Kartu',
+      'p06_confirm_method_empty': 'Belum dipilih',
+      'p06_confirm_method_required': 'Pilih metode pembayaran',
+      'p06_confirm_show_name':
+          'Tampilkan nama saya di laporan tahunan',
+      'p06_confirm_pay_button': 'Bayar Sekarang',
+      'p06_confirm_pay_error':
+          'Pembayaran belum bisa diproses. Coba lagi.',
+      'p06_confirm_login_title': 'Masuk untuk melanjutkan',
+      'p06_confirm_login_body':
+          'Isian donasimu tersimpan. Masuk untuk menyelesaikan pembayaran.',
+      'p06_confirm_empty_title': 'Isian donasi tidak ditemukan',
+      'p06_confirm_empty_body':
+          'Kembali ke langkah nominal untuk memulai donasi.',
+      'p06_confirm_back_to_amount': 'Kembali ke nominal',
+      'p06_confirm_project_error':
+          'Gagal memuat proyek. Periksa koneksi lalu coba lagi.',
+      'p06_confirm_processing': 'Memproses pembayaran...',
+      'p06_result_title': 'Hasil Pembayaran',
+      'p06_result_loading': 'Memuat status donasi...',
+      'p06_result_not_found':
+          'Donasi tidak ditemukan. Periksa tautan atau coba lagi.',
+      'p06_result_load_error':
+          'Gagal memuat status donasi. Periksa koneksi lalu coba lagi.',
+      'p06_result_success_title': 'Donasi Berhasil',
+      'p06_result_success_body':
+          'Terima kasih. Donasimu tercatat dan 100% disalurkan ke proyek.',
+      'p06_result_failed_title': 'Pembayaran Gagal',
+      'p06_result_failed_body':
+          'Isian donasimu aman. Coba lagi tanpa mengisi ulang.',
+      'p06_result_pending_title': 'Menunggu Pembayaran',
+      'p06_result_pending_body':
+          'Selesaikan pembayaran sesuai instruksi. Status akan diperbarui '
+          'setelah terkonfirmasi.',
+      'p06_result_still_pending': 'Status masih menunggu',
+      'p06_result_summary_title': 'Ringkasan donasi',
+      'p06_result_amount': 'Nominal',
+      'p06_result_project': 'Proyek',
+      'p06_result_receipt': 'Nomor donasi',
+      'p06_result_view_trace': 'Lihat Jejak dan E-Receipt',
+      'p06_result_try_again': 'Coba Lagi',
+      'p06_result_check_status': 'Cek Status',
+      'p06_result_back_explore': 'Kembali ke Jelajahi',
+      'p06_result_operational_title': 'Dukung Operasional Platform',
+      'p06_result_operational_body':
+          'Donasi operasional membantu biaya layanan tanpa mengurangi dana '
+          'proyek.',
+      'p06_result_operational_cta': 'Dukung',
+      'p06_operational_card_dismiss': 'Tutup',
+      'p06_result_success_semantics': 'Pembayaran berhasil',
+      'p06_result_failed_semantics': 'Pembayaran gagal',
+      'p06_result_pending_semantics': 'Menunggu pembayaran',
+      'p06_failure_title': 'Kenapa pembayaran gagal?',
+      'p06_failure_solution_label': 'Solusi',
+      'p06_failure_mock_ending_one':
+          'Nominal donasi berakhiran 1. Karena aplikasi masih memakai data '
+          'mock, nominal seperti ini sengaja dibuat gagal untuk pengujian.',
+      'p06_failure_mock_ending_one_solution':
+          'Gunakan nominal lain yang tidak berakhiran 1, misalnya {amount}, '
+          'lalu coba lagi.',
+      'p06_failure_mock_generic':
+          'Pembayaran gagal diproses. Aplikasi masih memakai data mock.',
+      'p06_failure_mock_generic_solution':
+          'Periksa metode pembayaran, lalu coba lagi.',
 
       // --- Legal (Privacy Policy / Terms) ---
       'legal.privacy.title': 'Kebijakan Privasi',
@@ -327,12 +446,18 @@ class AppLocalizations {
       'onboarding.minOne': 'Pick at least one',
 
       // --- Auth (P02) ---
-      'auth.title': 'Sign in to BlueTrack',
-      'auth.step.email': 'Email',
-      'auth.step.phone': 'Phone',
-      'auth.step.otp': 'Code',
+      // The title lives in the body heading, not the app bar, so there is one
+      // clear anchor per step instead of two competing ones.
+      'auth.email.title': 'Welcome back',
+      'auth.email.subtitle':
+          'Sign in to see the projects and donations you support.',
+      'auth.email.label': 'Email',
       'auth.email.hint': 'name@email.com',
       'auth.email.invalid': 'Invalid email format',
+      'auth.phone.title': 'Your phone number',
+      'auth.phone.subtitle':
+          "We'll send a verification code to this number.",
+      'auth.phone.label': 'Phone number',
       'auth.phone.hint': '8123456789',
       'auth.phone.invalid': 'Invalid phone number',
       'auth.sendCode': 'Send Code',
@@ -345,10 +470,12 @@ class AppLocalizations {
       'auth.otp.resend': 'Resend code',
       'auth.otp.sent': 'Verification code sent (mock: 123456)',
       'auth.verify': 'Verify',
-      'auth.privacy': 'By continuing, you agree to the Privacy Policy and Terms & Conditions.',
+      // Split around the two inline document links so each document name stays a
+      // separately tappable span instead of being parsed back out of a string.
+      'auth.privacy.lead': 'By continuing, you agree to the',
       'auth.privacyPolicy': 'Privacy Policy',
+      'auth.privacy.and': 'and',
       'auth.terms': 'Terms & Conditions',
-      'auth.skipLogin': 'Continue without signing in',
 
       // --- Explore (P03) ---
       'explore.title': 'Explore',
@@ -369,6 +496,36 @@ class AppLocalizations {
       'explore.resetFilter': 'Reset filters',
       'explore.viewAll': 'View all projects',
       'explore.mapUnavailable': 'Map mode is not available in this subproject.',
+
+      // --- Explore map (P03) ---
+      'p03_filter_action': 'Filter',
+      'p03_filter_category': 'Category',
+      'p03_filter_distance': 'Distance',
+      'p03_distance_reference': 'Distance from {place} (mock)',
+      'p03_distance_semua': 'All',
+      'p03_distance_dekat': '<250 km',
+      'p03_distance_sedang': '250–1000 km',
+      'p03_distance_jauh': '>1000 km',
+      'p03_filter_condition': 'Condition',
+      'p03_condition_baik': 'Good',
+      'p03_condition_pemantauan': 'Needs monitoring',
+      'p03_condition_kritis': 'Critical',
+      'p03_filter_reset': 'Reset',
+      'p03_filter_apply': 'Apply',
+      'p03_filter_active': '{n} filters active',
+      'p03_map_layer_conservation': 'Conservation areas',
+      'p03_map_count': '{n} projects on the map',
+      'p03_map_empty': 'No projects on the map for these filters.',
+      'p03_map_open_project': 'View project',
+      'p03_map_zoom_in': 'Zoom in',
+      'p03_map_zoom_out': 'Zoom out',
+      'p03_map_distance': '{n} km from {place} (mock)',
+      'p03_save': 'Save project',
+      'p03_saved': 'Remove from saved',
+      'p03_map_condition': 'Condition',
+      'p03_offline_empty_title': 'No saved projects yet',
+      'p03_offline_reload': 'Reload saved projects',
+      'p03_simulate_offline': 'Simulate offline',
 
       // --- Project detail (P04) ---
       'project.tab.about': 'About',
@@ -429,6 +586,85 @@ class AppLocalizations {
       'donate.monthly': 'Monthly',
       'donate.stepPending':
           'The next step will be available in the next subproject.',
+
+      // --- Donation (P06, confirmation & result) ---
+      'p06_confirm_title': 'Confirm Donation',
+      'p06_confirm_big_text': '{amount} → 100% to {project}',
+      'p06_confirm_min_hint': 'Minimum donation {amount}',
+      'p06_confirm_summary_title': 'Donation summary',
+      'p06_confirm_amount': 'Amount',
+      'p06_confirm_frequency': 'Frequency',
+      'p06_confirm_frequency_once': 'One-time',
+      'p06_confirm_frequency_monthly': 'Monthly',
+      'p06_confirm_purpose': 'Purpose',
+      'p06_confirm_purpose_project': 'Project · {name}',
+      'p06_confirm_purpose_org': 'Organization · {name}',
+      'p06_confirm_method': 'Payment method',
+      'p06_confirm_method_va': 'VA transfer',
+      'p06_confirm_method_ewallet': 'E-wallet',
+      'p06_confirm_method_card': 'Card',
+      'p06_confirm_method_empty': 'Not selected',
+      'p06_confirm_method_required': 'Choose a payment method',
+      'p06_confirm_show_name': 'Show my name in the annual report',
+      'p06_confirm_pay_button': 'Pay Now',
+      'p06_confirm_pay_error':
+          "Payment couldn't be processed. Try again.",
+      'p06_confirm_login_title': 'Sign in to continue',
+      'p06_confirm_login_body':
+          'Your donation details are saved. Sign in to complete the payment.',
+      'p06_confirm_empty_title': 'Donation details not found',
+      'p06_confirm_empty_body':
+          'Go back to the amount step to start a donation.',
+      'p06_confirm_back_to_amount': 'Back to amount',
+      'p06_confirm_project_error':
+          'Could not load the project. Check your connection and try again.',
+      'p06_confirm_processing': 'Processing payment...',
+      'p06_result_title': 'Payment Result',
+      'p06_result_loading': 'Loading donation status...',
+      'p06_result_not_found': 'Donation not found. Check the link or try again.',
+      'p06_result_load_error':
+          'Could not load the donation status. Check your connection and try '
+          'again.',
+      'p06_result_success_title': 'Donation Successful',
+      'p06_result_success_body':
+          'Thank you. Your donation is recorded and 100% goes to the project.',
+      'p06_result_failed_title': 'Payment Failed',
+      'p06_result_failed_body':
+          'Your donation details are safe. Try again without re-entering them.',
+      'p06_result_pending_title': 'Awaiting Payment',
+      'p06_result_pending_body':
+          'Complete the payment as instructed. The status will update once '
+          'confirmed.',
+      'p06_result_still_pending': 'Status is still pending',
+      'p06_result_summary_title': 'Donation summary',
+      'p06_result_amount': 'Amount',
+      'p06_result_project': 'Project',
+      'p06_result_receipt': 'Donation number',
+      'p06_result_view_trace': 'View Trace and E-Receipt',
+      'p06_result_try_again': 'Try Again',
+      'p06_result_check_status': 'Check Status',
+      'p06_result_back_explore': 'Back to Explore',
+      'p06_result_operational_title': 'Support Platform Operations',
+      'p06_result_operational_body':
+          'Operational donations cover platform costs without reducing '
+          'project funds.',
+      'p06_result_operational_cta': 'Support',
+      'p06_operational_card_dismiss': 'Dismiss',
+      'p06_result_success_semantics': 'Payment successful',
+      'p06_result_failed_semantics': 'Payment failed',
+      'p06_result_pending_semantics': 'Awaiting payment',
+      'p06_failure_title': 'Why did the payment fail?',
+      'p06_failure_solution_label': 'Solution',
+      'p06_failure_mock_ending_one':
+          'The donation amount ends in 1. Because the app still uses mock '
+          'data, amounts like this are intentionally failed for testing.',
+      'p06_failure_mock_ending_one_solution':
+          'Use another amount that does not end in 1, for example {amount}, '
+          'then try again.',
+      'p06_failure_mock_generic':
+          'The payment could not be processed. The app still uses mock data.',
+      'p06_failure_mock_generic_solution':
+          'Check the payment method, then try again.',
 
       // --- Legal (Privacy Policy / Terms) ---
       'legal.privacy.title': 'Privacy Policy',

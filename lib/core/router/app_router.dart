@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/login_page.dart';
 import '../../features/donation/presentation/donate_amount_page.dart';
+import '../../features/donation/presentation/donate_status_page.dart';
 import '../../features/explore/presentation/explore_page.dart';
 import '../../features/impact/presentation/impact_page.dart';
 import '../../features/legal/presentation/legal_page.dart';
@@ -67,6 +68,13 @@ GoRouter createRouter({required bool onboardingDone}) {
         parentNavigatorKey: rootKey,
         builder: (context, state) =>
             OrgProfilePage(orgId: state.pathParameters['id'] ?? ''),
+      ),
+      GoRoute(
+        path: '/donate/status/:donationId',
+        parentNavigatorKey: rootKey,
+        builder: (context, state) => DonateStatusPage(
+          donationId: state.pathParameters['donationId'] ?? '',
+        ),
       ),
       GoRoute(
         path: '/donate/:projectId',

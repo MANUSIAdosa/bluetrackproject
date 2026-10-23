@@ -17,6 +17,25 @@ void main() {
         AppColors.coral);
   });
 
+  testWidgets('the default fill can be overridden per screen', (tester) async {
+    await tester.pumpWidget(
+      wrapPage(
+        phoneSized(
+          PrimaryButton(
+            label: 'Lanjut',
+            onPressed: () {},
+            color: AppColors.ocean,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final button = tester.widget<FilledButton>(find.byType(FilledButton));
+    expect(button.style?.backgroundColor?.resolve(<WidgetState>{}),
+        AppColors.ocean);
+  });
+
   testWidgets('loading state still shows the spinner and blocks taps',
       (tester) async {
     await tester.pumpWidget(

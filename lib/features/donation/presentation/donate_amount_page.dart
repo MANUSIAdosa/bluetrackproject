@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/localization/app_localizations.dart';
@@ -9,12 +10,15 @@ import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/step_indicator.dart';
 import '../../explore/domain/project.dart';
 import '../../repositories.dart';
+import '../data/donation_flow_store.dart';
+import '../domain/donation.dart';
+import 'donate_confirmation_page.dart';
 
 /// P06 — Donation, amount step.
 ///
-/// Flow: Amount → Purpose → Confirmation → Result. Only the amount step is
-/// assigned to Subproject 01 (Week 03, Task Group 2); later steps show a
-/// pending notice rather than being invented here.
+/// Flow: Amount → Confirmation → Result. There is no purpose screen; tapping
+/// Continue stores a draft and opens the confirmation step, hosted under the
+/// same route with `?step=3`.
 class DonateAmountPage extends StatefulWidget {
   const DonateAmountPage({super.key, required this.projectId});
 
@@ -35,7 +39,21 @@ class _DonateAmountPageState extends State<DonateAmountPage> {
   @override
   void initState() {
     super.initState();
+    _restoreDraft();
     _loadProject();
+  }
+
+  /// Rehydrates the amount/frequency when the user comes back from the
+  /// confirmation step or returns from the auth redirect.
+  void _restoreDraft() {
+    final draft = DonationFlowStore.instance.draft;
+    if (draft == null || draft.projectId != widget.projectId) return;
+    _monthly = draft.frequency == DonationFrequency.monthly;
+    if (AppConfig.donationPresets.contains(draft.amount)) {
+      _selectedPreset = draft.amount;
+    } else {
+      _amountController.text = '${draft.amount}';
+    }
   }
 
   @override
@@ -61,15 +79,46 @@ class _DonateAmountPageState extends State<DonateAmountPage> {
       return;
     }
     setState(() => _showAmountError = false);
-    // TODO(donation-flow): steps 2–4 (purpose/confirmation/result) are
-    // assigned to a later week — do not invent them here.
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.tr('donate.stepPending'))),
+
+    final existing = DonationFlowStore.instance.draft;
+    final reuse =
+        existing != null && existing.projectId == widget.projectId
+            ? existing
+            : null;
+    DonationFlowStore.instance.save(
+      DonationDraft(
+        projectId: widget.projectId,
+        amount: _amount,
+        frequency:
+            _monthly ? DonationFrequency.monthly : DonationFrequency.once,
+        projectName: reuse?.projectName ?? '',
+        orgName: reuse?.orgName ?? '',
+        // A method/checkbox chosen on the confirmation step survives a trip
+        // back to the amount step.
+        paymentMethod: reuse?.paymentMethod,
+        showNameInReport: reuse?.showNameInReport ?? false,
+      ),
     );
+
+    context.push('/donate/${widget.projectId}?step=3');
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isConfirmationStep(context)) {
+      return DonateConfirmationPage(projectId: widget.projectId);
+    }
+    return _buildAmountStep(context);
+  }
+
+  /// The confirmation step reuses the `/donate/:projectId` route with
+  /// `?step=3`, so the router does not need a new entry for it.
+  bool _isConfirmationStep(BuildContext context) {
+    if (GoRouter.maybeOf(context) == null) return false;
+    return GoRouterState.of(context).uri.queryParameters['step'] == '3';
+  }
+
+  Widget _buildAmountStep(BuildContext context) {
     final lang = Localizations.localeOf(context).languageCode;
 
     return Scaffold(
