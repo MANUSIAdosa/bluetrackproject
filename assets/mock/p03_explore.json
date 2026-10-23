@@ -1,0 +1,78 @@
+{
+  "userLocation": {
+    "latitude": -6.2,
+    "longitude": 106.816666,
+    "label": "Jakarta"
+  },
+  "conditions": {
+    "p01": "baik",
+    "p02": "pemantauan",
+    "p03": "kritis",
+    "p04": "baik",
+    "p05": "pemantauan",
+    "p06": "kritis"
+  },
+  "conservationAreas": [
+    {
+      "id": "a01",
+      "name": "Kawasan Konservasi Kepulauan Raja Ampat",
+      "status": "kritis",
+      "points": [
+        [-0.32, 129.98],
+        [-0.42, 130.62],
+        [-0.86, 131.02],
+        [-1.24, 130.54],
+        [-1.12, 129.86],
+        [-0.62, 129.62]
+      ]
+    },
+    {
+      "id": "a02",
+      "name": "Taman Nasional Kepulauan Seribu",
+      "status": "pemantauan",
+      "points": [
+        [-5.18, 106.42],
+        [-5.22, 106.72],
+        [-5.68, 106.82],
+        [-5.92, 106.52],
+        [-5.54, 106.30]
+      ]
+    },
+    {
+      "id": "a03",
+      "name": "Taman Nasional Wakatobi",
+      "status": "baik",
+      "points": [
+        [-5.22, 123.42],
+        [-5.34, 124.12],
+        [-5.82, 124.52],
+        [-6.12, 124.06],
+        [-5.92, 123.42]
+      ]
+    },
+    {
+      "id": "a04",
+      "name": "Kawasan Konservasi Kepulauan Anambas",
+      "status": "pemantauan",
+      "points": [
+        [2.92, 105.66],
+        [2.98, 106.24],
+        [3.42, 106.32],
+        [3.58, 105.92],
+        [3.24, 105.58]
+      ]
+    },
+    {
+      "id": "a05",
+      "name": "Kawasan Konservasi Kepulauan Derawan",
+      "status": "baik",
+      "points": [
+        [0.92, 117.92],
+        [0.98, 118.52],
+        [1.42, 118.72],
+        [1.56, 118.22],
+        [1.24, 117.86]
+      ]
+    }
+  ]
+}
