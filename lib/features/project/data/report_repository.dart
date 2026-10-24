@@ -19,6 +19,11 @@ abstract interface class ReportRepository {
   /// reference date. [status] further limits the results to one workflow
   /// status; omit it to get every status.
   ///
+  /// Set [verifiedOnly] to true to keep only reports that have passed
+  /// verification (Diverifikasi, Ditindaklanjuti or Selesai). P04 uses this so
+  /// citizen submissions that are still Terkirim never reach the condition
+  /// dashboard.
+  ///
   /// Returns an empty list when the location exists but has no matching
   /// reports. Throws [LocationNotFoundException] when [locationId] is unknown.
   ///
@@ -26,13 +31,14 @@ abstract interface class ReportRepository {
   /// final reports = await repository.getReportsByLocation(
   ///   'p01',
   ///   period: ReportPeriod.threeMonths,
-  ///   status: ReportStatus.verified,
+  ///   verifiedOnly: true,
   /// );
   /// ```
   Future<List<Report>> getReportsByLocation(
     String locationId, {
     ReportPeriod period = ReportPeriod.all,
     ReportStatus? status,
+    bool verifiedOnly = false,
   });
 
   /// One report by its unique [id].
@@ -80,16 +86,22 @@ abstract interface class ReportRepository {
   /// [Report.areaM2] contribute to the totals. The verified count includes
   /// Diverifikasi, Ditindaklanjuti and Selesai, but not Terkirim.
   ///
+  /// Set [verifiedOnly] to true to exclude Terkirim reports from every total.
+  /// P04 uses this so the metrics describe verified observations only.
+  ///
   /// Returns zeroed metrics when the location has no reports in the window.
   /// Throws [LocationNotFoundException] when [locationId] is unknown.
   ///
   /// ```dart
-  /// final summary = await repository.getReportSummary('p01');
-  /// print(summary.totalWasteKg);
+  /// final summary = await repository.getReportSummary(
+  ///   'p01',
+  ///   verifiedOnly: true,
+  /// );
   /// ```
   Future<ReportSummary> getReportSummary(
     String locationId, {
     ReportPeriod period = ReportPeriod.all,
+    bool verifiedOnly = false,
   });
 
   /// Monthly average severity for one location, oldest month first.
@@ -194,6 +206,7 @@ class MockReportRepository implements ReportRepository {
     String locationId, {
     ReportPeriod period = ReportPeriod.all,
     ReportStatus? status,
+    bool verifiedOnly = false,
   }) async {
     await simulateMockCall(latency: latency, forceError: forceError);
     await _ensureLocation(locationId);
@@ -202,6 +215,7 @@ class MockReportRepository implements ReportRepository {
         _inPeriod(await _loadReports(), period)
             .where((report) => report.locationId == locationId)
             .where((report) => status == null || report.status == status)
+            .where((report) => !verifiedOnly || report.hasPassedVerification)
             .toList()
           ..sort(_newestFirst);
     return List<Report>.unmodifiable(reports);
@@ -266,14 +280,16 @@ class MockReportRepository implements ReportRepository {
   Future<ReportSummary> getReportSummary(
     String locationId, {
     ReportPeriod period = ReportPeriod.all,
+    bool verifiedOnly = false,
   }) async {
     await simulateMockCall(latency: latency, forceError: forceError);
     await _ensureLocation(locationId);
 
-    final reports = _inPeriod(
-      await _loadReports(),
-      period,
-    ).where((report) => report.locationId == locationId);
+    final reports = _inPeriod(await _loadReports(), period).where(
+      (report) =>
+          report.locationId == locationId &&
+          (!verifiedOnly || report.hasPassedVerification),
+    );
 
     var wasteKg = 0.0;
     var areaM2 = 0.0;

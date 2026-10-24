@@ -5,15 +5,21 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
-import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_state.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/progress_bar.dart';
 import '../../../shared/widgets/skeleton.dart';
 import '../../../shared/widgets/verification_sheet.dart';
 import '../../../shared/widgets/verified_badge.dart';
+import '../../explore/data/project_repository.dart';
 import '../../explore/domain/project.dart';
 import '../../repositories.dart';
+import '../data/project_data_repositories.dart';
+import '../data/report_repository.dart';
+import '../data/review_repository.dart';
+import '../domain/report.dart';
+import 'widgets/p04_reports_tab.dart';
+import 'widgets/p04_reviews_tab.dart';
 
 /// P04 — Project detail.
 ///
@@ -23,12 +29,24 @@ class ProjectDetailPage extends StatefulWidget {
     super.key,
     required this.projectId,
     this.initialTab,
+    this.projectRepository,
+    this.reportRepository,
+    this.reviewRepository,
   });
 
   final String projectId;
 
   /// Value of `?tab=` — 'reports' jumps to the Laporan tab.
   final String? initialTab;
+
+  /// Test/demo override for the project data source.
+  final ProjectRepository? projectRepository;
+
+  /// Test/demo override for the reports data source.
+  final ReportRepository? reportRepository;
+
+  /// Test/demo override for the reviews data source.
+  final ReviewRepository? reviewRepository;
 
   @override
   State<ProjectDetailPage> createState() => _ProjectDetailPageState();
@@ -40,6 +58,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
   bool _loading = true;
   bool _error = false;
   int _galleryIndex = 0;
+  ReportPeriod _reportPeriod = ReportPeriod.threeMonths;
   late final TabController _tabController;
 
   @override
@@ -62,8 +81,8 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
       _error = false;
     });
     try {
-      final project =
-          await Repositories.projects.getProjectById(widget.projectId);
+      final project = await (widget.projectRepository ?? Repositories.projects)
+          .getProjectById(widget.projectId);
       if (!mounted) return;
       // `_loading` must always be cleared here, otherwise an unknown id leaves
       // the spinner on screen forever and ErrorState is never reached.
@@ -107,9 +126,8 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
             leading: _CircleAppBarButton(
               icon: Icons.arrow_back,
               tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-              onPressed: () => context.canPop()
-                  ? context.pop()
-                  : context.go('/explore'),
+              onPressed: () =>
+                  context.canPop() ? context.pop() : context.go('/explore'),
             ),
             actions: [
               _CircleAppBarButton(
@@ -132,8 +150,10 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                 project.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
             flexibleSpace: FlexibleSpaceBar(
@@ -151,10 +171,10 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
               TabBar(
                 controller: _tabController,
                 tabs: [
-                  Tab(text: context.tr('project.tab.about')),
-                  Tab(text: context.tr('project.tab.budget')),
-                  Tab(text: context.tr('project.tab.reports')),
-                  Tab(text: context.tr('project.tab.reviews')),
+                  _P04TabLabel(label: context.tr('project.tab.about')),
+                  _P04TabLabel(label: context.tr('p04_tab_funding')),
+                  _P04TabLabel(label: context.tr('project.tab.reports')),
+                  _P04TabLabel(label: context.tr('project.tab.reviews')),
                 ],
               ),
             ),
@@ -164,9 +184,21 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
           controller: _tabController,
           children: [
             _AboutTab(project: project),
-            _BudgetTab(project: project, lang: lang),
-            const _ReportsTab(),
-            const _ReviewsTab(),
+            _FundingTab(project: project, lang: lang),
+            P04ReportsTab(
+              projectId: project.id,
+              locationName: project.location,
+              repository:
+                  widget.reportRepository ?? ProjectDataRepositories.reports,
+              period: _reportPeriod,
+              onPeriodChanged: (period) =>
+                  setState(() => _reportPeriod = period),
+            ),
+            P04ReviewsTab(
+              projectId: project.id,
+              repository:
+                  widget.reviewRepository ?? ProjectDataRepositories.reviews,
+            ),
           ],
         ),
       ),
@@ -284,8 +316,10 @@ class _FundingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Derived straight from the mock amounts — no extra funding rule.
-    final remaining = (project.targetAmount - project.raisedAmount)
-        .clamp(0, project.targetAmount);
+    final remaining = (project.targetAmount - project.raisedAmount).clamp(
+      0,
+      project.targetAmount,
+    );
 
     return Card(
       child: Padding(
@@ -453,7 +487,11 @@ class _Gallery extends StatelessWidget {
               ),
             ),
             child: const Center(
-              child: Icon(Icons.image_outlined, size: 64, color: Colors.white70),
+              child: Icon(
+                Icons.image_outlined,
+                size: 64,
+                color: Colors.white70,
+              ),
             ),
           ),
         ),
@@ -555,10 +593,7 @@ class _AboutTab extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         for (final paragraph in project.about) ...[
-          Text(
-            paragraph,
-            style: const TextStyle(fontSize: 15, height: 1.6),
-          ),
+          Text(paragraph, style: const TextStyle(fontSize: 15, height: 1.6)),
           const SizedBox(height: 12),
         ],
         const SizedBox(height: 40),
@@ -567,17 +602,17 @@ class _AboutTab extends StatelessWidget {
   }
 }
 
-class _BudgetTab extends StatelessWidget {
-  const _BudgetTab({required this.project, required this.lang});
+class _FundingTab extends StatelessWidget {
+  const _FundingTab({required this.project, required this.lang});
 
   final Project project;
   final String lang;
 
-  /// Sum of the listed budget lines — matches `targetAmount` in the mock data.
-  int get _budgetTotal =>
+  /// Sum of the listed funding lines — matches `targetAmount` in the mock data.
+  int get _fundingTotal =>
       project.budget.fold(0, (sum, line) => sum + line.amount);
 
-  int get _budgetPercentTotal =>
+  int get _fundingPercentTotal =>
       project.budget.fold(0, (sum, line) => sum + line.percent);
 
   @override
@@ -594,7 +629,7 @@ class _BudgetTab extends StatelessWidget {
                   Expanded(
                     flex: 4,
                     child: Text(
-                      context.tr('project.budget.item'),
+                      context.tr('project.funding.item'),
                       style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
@@ -605,7 +640,7 @@ class _BudgetTab extends StatelessWidget {
                   Expanded(
                     flex: 3,
                     child: Text(
-                      context.tr('project.budget.amount'),
+                      context.tr('project.funding.amount'),
                       textAlign: TextAlign.right,
                       style: const TextStyle(
                         fontWeight: FontWeight.w700,
@@ -617,7 +652,7 @@ class _BudgetTab extends StatelessWidget {
                   Expanded(
                     flex: 2,
                     child: Text(
-                      context.tr('project.budget.percent'),
+                      context.tr('project.funding.percent'),
                       textAlign: TextAlign.right,
                       style: const TextStyle(
                         fontWeight: FontWeight.w700,
@@ -677,7 +712,7 @@ class _BudgetTab extends StatelessWidget {
                     Expanded(
                       flex: 4,
                       child: Text(
-                        context.tr('project.budget.total'),
+                        context.tr('project.funding.total'),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
@@ -687,7 +722,7 @@ class _BudgetTab extends StatelessWidget {
                     Expanded(
                       flex: 3,
                       child: Text(
-                        Formatters.currency(_budgetTotal, lang),
+                        Formatters.currency(_fundingTotal, lang),
                         textAlign: TextAlign.right,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -700,7 +735,7 @@ class _BudgetTab extends StatelessWidget {
                     Expanded(
                       flex: 2,
                       child: Text(
-                        '$_budgetPercentTotal%',
+                        '$_fundingPercentTotal%',
                         textAlign: TextAlign.right,
                         style: const TextStyle(
                           fontSize: 14,
@@ -720,28 +755,20 @@ class _BudgetTab extends StatelessWidget {
   }
 }
 
-class _ReportsTab extends StatelessWidget {
-  const _ReportsTab();
+/// Tab label that scales down instead of overflowing on a 320dp screen with
+/// large text. The four Release 1 labels must stay on one row.
+class _P04TabLabel extends StatelessWidget {
+  const _P04TabLabel({required this.label});
+
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    // TODO(impact-repository): load ImpactRepository.getReports(projectId)
-    // when assigned in a later week.
-    return EmptyState(
-      icon: Icons.description_outlined,
-      message: context.tr('project.reports.empty'),
-    );
-  }
-}
-
-class _ReviewsTab extends StatelessWidget {
-  const _ReviewsTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return EmptyState(
-      icon: Icons.rate_review_outlined,
-      message: context.tr('project.reviews.empty'),
+    return Tab(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(label, maxLines: 1, softWrap: false),
+      ),
     );
   }
 }
@@ -762,8 +789,7 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
     BuildContext context,
     double shrinkOffset,
     bool overlapsContent,
-  ) =>
-      Container(color: Colors.white, child: tabBar);
+  ) => Container(color: Colors.white, child: tabBar);
 
   @override
   bool shouldRebuild(covariant _TabBarDelegate oldDelegate) => false;

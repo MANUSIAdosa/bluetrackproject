@@ -18,6 +18,14 @@ abstract final class Formatters {
     return NumberFormat.percentPattern(locale).format(value);
   }
 
+  /// Plain number with the active locale's decimal separator.
+  ///
+  /// Used by P05 summary values such as report counts and waste kilograms.
+  static String number(num value, String localeLanguageCode) {
+    final locale = localeLanguageCode == 'en' ? 'en_US' : 'id_ID';
+    return NumberFormat.decimalPattern(locale).format(value);
+  }
+
   static String date(DateTime date, String localeLanguageCode) {
     final locale = localeLanguageCode == 'en' ? 'en_US' : 'id_ID';
     return DateFormat.yMMMMd(locale).format(date);
