@@ -83,6 +83,15 @@ abstract final class Formatters {
     final locale = _locale(localeLanguageCode);
     return NumberFormat.percentPattern(locale).format(value);
   }
+
+  /// Plain number with the active locale's decimal separator.
+  ///
+  /// Used by P05 summary values such as report counts and waste kilograms.
+  static String number(num value, String localeLanguageCode) {
+    _ensureDateSymbols();
+    final locale = _locale(localeLanguageCode);
+    return NumberFormat.decimalPattern(locale).format(value);
+  }
 }
 
 /// Groups the notification list falls into. Defined here because grouping and
