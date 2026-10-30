@@ -121,12 +121,14 @@ class _ExplorePageState extends State<ExplorePage> {
     super.initState();
     _scrollController.addListener(_onScroll);
     OfflineController.instance.addListener(_onOfflineChanged);
+    OnboardingState.interests.addListener(_onInterestsChanged);
     _load();
   }
 
   @override
   void dispose() {
     OfflineController.instance.removeListener(_onOfflineChanged);
+    OnboardingState.interests.removeListener(_onInterestsChanged);
     _scrollController
       ..removeListener(_onScroll)
       ..dispose();
@@ -139,6 +141,10 @@ class _ExplorePageState extends State<ExplorePage> {
   void _onOfflineChanged() {
     if (!mounted) return;
     _load();
+  }
+
+  void _onInterestsChanged() {
+    setState(() => _interests = OnboardingState.interests.value);
   }
 
   Future<void> _load() async {
@@ -314,10 +320,7 @@ class _ExplorePageState extends State<ExplorePage> {
           _distance == DistanceBand.semua ||
           mapData == null ||
           _distance.matches(
-            distanceKm(
-              mapData.userLocation,
-              LatLng(p.latitude, p.longitude),
-            ),
+            distanceKm(mapData.userLocation, LatLng(p.latitude, p.longitude)),
           );
       return matchesSaved &&
           matchesCategory &&

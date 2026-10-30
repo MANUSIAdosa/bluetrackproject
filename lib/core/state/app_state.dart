@@ -158,10 +158,23 @@ class OnboardingController extends ChangeNotifier {
 class OnboardingState {
   OnboardingState._();
 
-  static Future<void> markDone(List<String> interests) async {
+  /// Updates already-mounted pages after preferences are saved from Profile.
+  static final interests = ValueNotifier<List<String>>([]);
+
+  static Future<void> saveInterests(List<String> selected) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(AppConfig.onboardingDoneKey, true);
-    await prefs.setStringList(AppConfig.interestsKey, interests);
+    if (!await prefs.setStringList(AppConfig.interestsKey, selected)) {
+      throw StateError('Unable to save interests.');
+    }
+    interests.value = List.unmodifiable(selected);
+  }
+
+  static Future<void> markDone(List<String> interests) async {
+    await saveInterests(interests);
+    final prefs = await SharedPreferences.getInstance();
+    if (!await prefs.setBool(AppConfig.onboardingDoneKey, true)) {
+      throw StateError('Unable to save onboarding completion.');
+    }
   }
 
   static Future<List<String>> readInterests() async {

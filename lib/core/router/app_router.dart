@@ -63,10 +63,14 @@ GoRouter createRouter({required bool onboardingDone}) {
         builder: (context, state) => const OnboardingPage(),
       ),
       GoRoute(
+        path: Routes.interests,
+        parentNavigatorKey: rootKey,
+        builder: (context, state) => const OnboardingPage(editInterests: true),
+      ),
+      GoRoute(
         path: Routes.auth,
-        builder: (context, state) => LoginPage(
-          redirect: state.uri.queryParameters['redirect'],
-        ),
+        builder: (context, state) =>
+            LoginPage(redirect: state.uri.queryParameters['redirect']),
       ),
       GoRoute(
         path: Routes.notifications,
@@ -86,14 +90,12 @@ GoRouter createRouter({required bool onboardingDone}) {
       GoRoute(
         path: Routes.legalPrivacy,
         parentNavigatorKey: rootKey,
-        builder: (context, state) =>
-            const LegalPage(documentKey: 'privacy'),
+        builder: (context, state) => const LegalPage(documentKey: 'privacy'),
       ),
       GoRoute(
         path: Routes.legalTerms,
         parentNavigatorKey: rootKey,
-        builder: (context, state) =>
-            const LegalPage(documentKey: 'terms'),
+        builder: (context, state) => const LegalPage(documentKey: 'terms'),
       ),
       GoRoute(
         path: Routes.projectDetail,
@@ -138,9 +140,8 @@ GoRouter createRouter({required bool onboardingDone}) {
       GoRoute(
         path: Routes.actionDetail,
         parentNavigatorKey: rootKey,
-        builder: (context, state) => ActionDetailPage(
-          actionId: state.pathParameters['id'] ?? '',
-        ),
+        builder: (context, state) =>
+            ActionDetailPage(actionId: state.pathParameters['id'] ?? ''),
       ),
       GoRoute(
         path: Routes.report,

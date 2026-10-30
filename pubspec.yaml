@@ -39,6 +39,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/mock/
+    - assets/images/interests/
   fonts:
     - family: PlusJakartaSans
       fonts:

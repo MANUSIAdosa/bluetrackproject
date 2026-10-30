@@ -47,13 +47,22 @@ Future<void> goToSecondSlide(WidgetTester tester) async {
 void main() {
   setUp(() {
     OceanFactsRepository.loader = (_) async => [
-          slide('slide1', slide1Title,
-              'Lihat sampah atau kerusakan di pesisir? Laporkan lewat aplikasi, tanpa perlu masuk.'),
-          slide('slide2', slide2Title,
-              'Ikuti laporan lain, pantau kemajuan aksi komunitas terdekat dari validasi hingga selesai.'),
-          slide('slide3', slide3Title,
-              'Ajukan ide aksi komunitas dan libatkan dirimu dalam gerakan menyelamatkan laut.'),
-        ];
+      slide(
+        'slide1',
+        slide1Title,
+        'Lihat sampah atau kerusakan di pesisir? Laporkan lewat aplikasi, tanpa perlu masuk.',
+      ),
+      slide(
+        'slide2',
+        slide2Title,
+        'Ikuti laporan lain, pantau kemajuan aksi komunitas terdekat dari validasi hingga selesai.',
+      ),
+      slide(
+        'slide3',
+        slide3Title,
+        'Ajukan ide aksi komunitas dan libatkan dirimu dalam gerakan menyelamatkan laut.',
+      ),
+    ];
   });
 
   tearDown(() {
@@ -94,13 +103,19 @@ void main() {
           .map((dot) => dot.constraints!.maxWidth)
           .toList();
 
-      expect(dotWidths(), [24, 8, 8],
-          reason: 'slide 1 (active dot is the wide one)');
+      expect(dotWidths(), [
+        24,
+        8,
+        8,
+      ], reason: 'slide 1 (active dot is the wide one)');
 
       await tester.drag(find.byType(PageView), const Offset(-450, 0));
       await tester.pumpAndSettle();
-      expect(dotWidths(), [8, 24, 8],
-          reason: 'the active marker moves to the second dot');
+      expect(dotWidths(), [
+        8,
+        24,
+        8,
+      ], reason: 'the active marker moves to the second dot');
     });
 
     testWidgets('illustration area fills roughly the upper half', (
@@ -124,8 +139,8 @@ void main() {
             )
             .first,
       );
-      final screenHeight = tester.view.physicalSize.height /
-          tester.view.devicePixelRatio;
+      final screenHeight =
+          tester.view.physicalSize.height / tester.view.devicePixelRatio;
       expect(gradientBlock.height / screenHeight, greaterThan(0.4));
       expect(gradientBlock.height / screenHeight, lessThan(0.7));
     });
@@ -161,14 +176,11 @@ void main() {
       await pumpOnboarding(tester);
 
       final skip = tester.getRect(find.widgetWithText(TextButton, 'Lewati'));
-      final screen = tester.view.physicalSize.width /
-          tester.view.devicePixelRatio;
+      final screen =
+          tester.view.physicalSize.width / tester.view.devicePixelRatio;
       // Top-right: past the horizontal middle, above the primary button.
       expect(skip.left, greaterThan(screen / 2));
-      expect(
-        skip.top,
-        lessThan(tester.getRect(find.byType(FilledButton)).top),
-      );
+      expect(skip.top, lessThan(tester.getRect(find.byType(FilledButton)).top));
       expect(find.widgetWithText(FilledButton, 'Lewati'), findsNothing);
     });
 
@@ -202,45 +214,47 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('all five interests fit on a standard phone without scrolling',
-        (tester) async {
-      phoneSurface(tester);
-      await pumpInterests(tester);
+    testWidgets(
+      'all five interests fit on a standard phone without scrolling',
+      (tester) async {
+        phoneSurface(tester);
+        await pumpInterests(tester);
 
-      for (final label in [
-        'Sampah Laut',
-        'Terumbu Karang',
-        'Mangrove',
-        'Perikanan Berkelanjutan',
-        'Satwa Laut',
-      ]) {
-        expect(
-          find.text(label),
-          findsOneWidget,
-          reason: '"$label" should be visible',
-        );
-      }
+        for (final label in [
+          'Sampah Laut',
+          'Terumbu Karang',
+          'Mangrove',
+          'Perikanan Berkelanjutan',
+          'Satwa Laut',
+        ]) {
+          expect(
+            find.text(label),
+            findsOneWidget,
+            reason: '"$label" should be visible',
+          );
+        }
 
-      // Every card fully inside the viewport.
-      final screenHeight = tester.view.physicalSize.height /
-          tester.view.devicePixelRatio;
-      for (final label in [
-        'Sampah Laut',
-        'Terumbu Karang',
-        'Mangrove',
-        'Perikanan Berkelanjutan',
-        'Satwa Laut',
-      ]) {
-        final box = tester.getRect(find.text(label));
-        expect(
-          box.bottom,
-          lessThanOrEqualTo(screenHeight),
-          reason: '"$label" is cut off at the bottom',
-        );
-      }
-    });
+        // Every card fully inside the viewport.
+        final screenHeight =
+            tester.view.physicalSize.height / tester.view.devicePixelRatio;
+        for (final label in [
+          'Sampah Laut',
+          'Terumbu Karang',
+          'Mangrove',
+          'Perikanan Berkelanjutan',
+          'Satwa Laut',
+        ]) {
+          final box = tester.getRect(find.text(label));
+          expect(
+            box.bottom,
+            lessThanOrEqualTo(screenHeight),
+            reason: '"$label" is cut off at the bottom',
+          );
+        }
+      },
+    );
 
-    testWidgets('the grid scrolls if the text scale makes it overflow', (
+    testWidgets('the gallery scrolls if the text scale makes it overflow', (
       tester,
     ) async {
       phoneSurface(tester);
@@ -261,73 +275,61 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('uses two columns with the fifth card spanning the row', (
+    testWidgets('five equal columns align captions below alternating blocks', (
       tester,
     ) async {
       phoneSurface(tester);
       await pumpInterests(tester);
+      final blocks = [
+        for (final id in AppConfig.interestIds)
+          tester.getRect(find.byKey(ValueKey('interest.block.$id'))),
+      ];
+      final captions = [
+        for (final id in AppConfig.interestIds)
+          tester.getRect(find.byKey(ValueKey('interest.caption.$id'))),
+      ];
+      for (var i = 0; i < blocks.length; i++) {
+        expect(blocks[i].width, closeTo(blocks.first.width, 0.5));
+        expect(blocks[i].top, closeTo(blocks.first.top, 0.5));
 
-      final sampah = tester.getRect(find.text('Sampah Laut'));
-      final terumbu = tester.getRect(find.text('Terumbu Karang'));
-      final mangrove = tester.getRect(find.text('Mangrove'));
-      final perikanan = tester.getRect(find.text('Perikanan Berkelanjutan'));
-      final satwa = tester.getRect(find.text('Satwa Laut'));
-
-      // Same row: side by side, equal height.
-      expect(sampah.top, closeTo(terumbu.top, 0.5));
-      expect(terumbu.left, greaterThan(sampah.left));
-      expect(sampah.width, closeTo(terumbu.width, 0.5));
-      expect(sampah.height, closeTo(terumbu.height, 0.5));
-
-      // Second row starts below the first.
-      expect(mangrove.top, greaterThan(sampah.bottom));
-
-      // The odd fifth card spans the full width, matching row 1's extent.
-      expect(satwa.left, closeTo(sampah.left, 0.5));
+        expect(captions[i].bottom, closeTo(captions.first.bottom, 0.5));
+        expect(captions[i].center.dx, closeTo(blocks[i].center.dx, 0.5));
+        expect(blocks[i].height, greaterThan(blocks[i].width));
+        if (i > 0) expect(blocks[i].left, greaterThan(blocks[i - 1].right));
+      }
+      expect(blocks[0].height, blocks[2].height);
+      expect(blocks[2].height, blocks[4].height);
+      expect(blocks[1].height, blocks[3].height);
+      expect(blocks[1].height, lessThan(blocks[0].height));
       expect(
-        satwa.right,
-        closeTo(perikanan.right, 1.0),
-        reason: 'Satwa Laut should span the whole row',
+        captions[1].top - blocks[1].bottom,
+        greaterThan(captions[0].top - blocks[0].bottom),
       );
-      expect(satwa.width, greaterThan(perikanan.width));
+      expect(tester.takeException(), isNull);
     });
 
-    testWidgets('cards are compact: much wider than tall', (tester) async {
-      phoneSurface(tester);
-      await pumpInterests(tester);
-
-      final card = tester.getRect(find.text('Sampah Laut'));
-      expect(card.width / card.height, greaterThan(2.0));
-    });
-
-    testWidgets('the icon sits to the left of the label', (tester) async {
-      phoneSurface(tester);
-      await pumpInterests(tester);
-
-      // Mangrove keeps a Material icon.
-      final icon = tester.getRect(find.byIcon(Icons.forest));
-      final label = tester.getRect(find.text('Mangrove'));
-      expect(icon.left, lessThan(label.left));
-      expect(icon.center.dy, closeTo(label.center.dy, 12));
-    });
-
-    testWidgets('Material icons where available, emoji for the rest', (
-      tester,
-    ) async {
-      phoneSurface(tester);
-      await pumpInterests(tester);
-
-      // TODO(P01-part-4): icon proposals awaiting the product owner.
-      expect(find.byIcon(Icons.recycling), findsOneWidget);
-      expect(find.byIcon(Icons.forest), findsOneWidget);
-      expect(find.byIcon(Icons.set_meal), findsOneWidget);
-
-      // Terumbu Karang and Satwa Laut have no Material glyph.
-      expect(find.text('🪸'), findsOneWidget);
-      expect(find.text('🐬'), findsOneWidget);
+    testWidgets('all columns fit a narrow phone in English', (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(320, 640);
+      addTearDown(tester.view.reset);
+      SharedPreferences.setMockInitialValues({});
+      await tester.pumpWidget(
+        wrapPage(const OnboardingPage(), locale: const Locale('en')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Skip'));
+      await tester.pumpAndSettle();
+      for (final id in AppConfig.interestIds) {
+        final caption = tester.getRect(
+          find.byKey(ValueKey('interest.caption.$id')),
+        );
+        expect(caption.left, greaterThanOrEqualTo(0));
+        expect(caption.right, lessThanOrEqualTo(320));
+        expect(caption.bottom, lessThanOrEqualTo(640));
+      }
+      expect(tester.takeException(), isNull);
     });
   });
-
   group('interest selection states', () {
     Future<void> pumpInterests(WidgetTester tester) async {
       SharedPreferences.setMockInitialValues({});
@@ -337,12 +339,15 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('"Pilih minimal satu" stays until something is selected', (
+    testWidgets('selection hint stays until something is selected', (
       tester,
     ) async {
       await pumpInterests(tester);
 
-      expect(find.text('Pilih minimal satu'), findsOneWidget);
+      expect(
+        find.text('Kami akan mengurutkan proyek sesuai minatmu.'),
+        findsOneWidget,
+      );
       expect(
         tester
             .widget<FilledButton>(find.widgetWithText(FilledButton, 'Mulai'))
@@ -352,7 +357,10 @@ void main() {
 
       await tester.tap(find.text('Terumbu Karang'));
       await tester.pumpAndSettle();
-      expect(find.text('Pilih minimal satu'), findsNothing);
+      expect(
+        find.text('Kami akan mengurutkan proyek sesuai minatmu.'),
+        findsNothing,
+      );
     });
 
     testWidgets('Start is enabled once at least one interest is picked', (
@@ -381,7 +389,10 @@ void main() {
       await tester.tap(find.text('Mangrove'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Pilih minimal satu'), findsOneWidget);
+      expect(
+        find.text('Kami akan mengurutkan proyek sesuai minatmu.'),
+        findsOneWidget,
+      );
       expect(
         tester
             .widget<FilledButton>(find.widgetWithText(FilledButton, 'Mulai'))
@@ -402,38 +413,23 @@ void main() {
       expect(find.byIcon(Icons.circle_outlined), findsNWidgets(3));
     });
 
-    testWidgets('selected cards are ocean/teal, unselected stay plain', (
+    testWidgets('selected photos glow while unselected photos stay neutral', (
       tester,
     ) async {
       await pumpInterests(tester);
       await tester.tap(find.text('Sampah Laut'));
       await tester.pumpAndSettle();
-
       expect(find.byIcon(Icons.check_circle), findsOneWidget);
       expect(find.byIcon(Icons.circle_outlined), findsNWidgets(4));
-
-      // The selected card paints the onboarding ocean-to-teal gradient; the
-      // four unselected ones paint none.
-      final gradients = tester
-          .widgetList<Ink>(find.byType(Ink))
-          .map((ink) => ink.decoration)
-          .whereType<BoxDecoration>()
-          .where((d) => d.gradient != null)
-          .toList();
-      expect(gradients, hasLength(1));
-      final gradient = gradients.single.gradient! as LinearGradient;
-      expect(gradient.colors, [AppColors.ocean, AppColors.teal]);
-
-      // Unselected cards stay plain white with a light border.
-      final plain = tester
-          .widgetList<Ink>(find.byType(Ink))
-          .map((ink) => ink.decoration)
-          .whereType<BoxDecoration>()
-          .where((d) => d.gradient == null)
-          .toList();
-      expect(plain, hasLength(4));
+      for (var i = 0; i < AppConfig.interestIds.length; i++) {
+        final ink = tester.widget<AnimatedContainer>(
+          find.byKey(ValueKey('interest.block.${AppConfig.interestIds[i]}')),
+        );
+        final decoration = ink.decoration! as BoxDecoration;
+        expect(decoration.color, i == 0 ? AppColors.teal : AppColors.border);
+        expect(decoration.boxShadow!.isNotEmpty, i == 0);
+      }
     });
-
     testWidgets('the check marks move as interests are toggled', (
       tester,
     ) async {
@@ -453,7 +449,7 @@ void main() {
       expect(find.byIcon(Icons.circle_outlined), findsNWidgets(4));
     });
 
-    testWidgets('the selected card uses white text, unselected dark', (
+    testWidgets('selected captions use ocean text, unselected dark', (
       tester,
     ) async {
       await pumpInterests(tester);
@@ -462,7 +458,7 @@ void main() {
 
       final selected = tester.widget<Text>(find.text('Sampah Laut'));
       final unselected = tester.widget<Text>(find.text('Terumbu Karang'));
-      expect(selected.style?.color, Colors.white);
+      expect(selected.style?.color, AppColors.oceanDeep);
       expect(unselected.style?.color, AppColors.textPrimary);
     });
   });
@@ -504,7 +500,10 @@ void main() {
       await tester.tap(find.widgetWithText(TextButton, 'Lewati'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Pilih minimal satu'), findsOneWidget);
+      expect(
+        find.text('Kami akan mengurutkan proyek sesuai minatmu.'),
+        findsOneWidget,
+      );
       final start = tester.widget<FilledButton>(
         find.widgetWithText(FilledButton, 'Mulai'),
       );
@@ -539,7 +538,7 @@ void main() {
 
       expect(find.byType(IconButton), findsOneWidget);
       expect(find.byType(FilledButton), findsOneWidget);
-      expect(find.byType(TextButton), findsNothing);
+      expect(find.widgetWithText(TextButton, 'Lewati'), findsOneWidget);
     });
 
     testWidgets('returning to the slides keeps selected interests', (
