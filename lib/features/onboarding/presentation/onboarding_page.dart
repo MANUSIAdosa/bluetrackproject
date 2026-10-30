@@ -3,13 +3,21 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/router/routes.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/error_state.dart';
+import '../../../shared/widgets/skeleton.dart';
+import '../data/ocean_facts_repository.dart';
 
-/// P01 — Onboarding: 3 ocean-fact slides + interest selection.
+/// P01 — Onboarding: 3 slides introducing the reporting / community-action
+/// flow + interest selection.
 ///
-/// Completing it sets `onboarding_done = true` and persists selected
-/// interests (used later to sort Explore).
+/// Slide copy comes from `assets/mock/ocean_facts.json` —
+/// TODO(P01-part-4): the wording is a DRAFT awaiting Trevan's approval; the
+/// JSON is the only place it can change. Completing onboarding sets
+/// `onboarding_done = true` and persists selected interests (used later to
+/// sort Explore).
 ///
 /// Flow rules:
 /// - One primary button per screen. Slides 1–2 say "Next", slide 3 says
@@ -34,32 +42,24 @@ class _OnboardingPageState extends State<OnboardingPage> {
   int _slide = 0;
   bool _showInterests = false;
 
-  static const _slides = [
-    _OceanFact(
-      titleKey: 'onboarding.slide1.title',
-      bodyKey: 'onboarding.slide1.body',
-      icon: Icons.water_drop,
-    ),
-    _OceanFact(
-      titleKey: 'onboarding.slide2.title',
-      bodyKey: 'onboarding.slide2.body',
-      icon: Icons.waves,
-    ),
-    _OceanFact(
-      titleKey: 'onboarding.slide3.title',
-      bodyKey: 'onboarding.slide3.body',
-      icon: Icons.eco,
-    ),
-  ];
+  /// Set when returning from the interest screen: the slide deck is then
+  /// re-attached one frame later (after the facts future surfaces), so the
+  /// restore to the last slide is deferred until the PageView has clients.
+  bool _returningToSlides = false;
 
-  /// Material has no turtle, coral, or marine-mammal glyph, so those three use
-  /// an emoji; mangrove and seagrass have close Material matches.
+  /// Slide copy for the device language; the future is created once the
+  /// dependencies (i.e. the locale) are available and reused across rebuilds.
+  Future<List<OnboardingSlide>>? _factsFuture;
+
+  /// Material has no coral or marine-mammal glyph, so those use an emoji.
+  // TODO(P01-part-4): icon proposals to confirm with Trevan — `recycling`
+  // for marine waste, `set_meal` for sustainable fisheries.
   static const _interestVisuals = <String, _InterestVisual>{
-    'penyu': _InterestVisual(emoji: '🐢'),
-    'karang': _InterestVisual(emoji: '🪸'),
+    'sampah_laut': _InterestVisual(icon: Icons.recycling),
+    'terumbu_karang': _InterestVisual(emoji: '🪸'),
     'mangrove': _InterestVisual(icon: Icons.forest),
-    'mamalia_laut': _InterestVisual(emoji: '🐬'),
-    'lamun': _InterestVisual(icon: Icons.grass),
+    'perikanan': _InterestVisual(icon: Icons.set_meal),
+    'satwa_laut': _InterestVisual(emoji: '🐬'),
   };
 
   static const double _cardHeight = 68;
@@ -73,14 +73,22 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   Future<void> _finish(List<String> interests) async {
     await OnboardingState.markDone(interests);
+    // Keep the in-memory flag in sync, otherwise the router redirect bounces
+    // /explore straight back to /onboarding.
+    OnboardingController.instance.markDone();
     if (!mounted) return;
     // `go` replaces the stack, so /onboarding is gone: back from /explore
     // cannot land here again.
-    context.go('/explore');
+    context.go(Routes.explore);
   }
 
+  /// Re-runs the facts load after an error; the build recreates the future.
+  void _retryFacts() => setState(() => _factsFuture = null);
+
   void _nextSlide() {
-    if (_slide < _slides.length - 1) {
+    // The deck is fixed at 3 slides per the onboarding rules; the copy of all
+    // three lives in ocean_facts.json.
+    if (_slide < 2) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
@@ -108,13 +116,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
   /// Returns from the interest screen to the last slide, keeping any interests
   /// already selected.
   void _backToSlides() {
-    setState(() => _showInterests = false);
-    // The interest screen replaces the PageView in the tree, so the controller
-    // is detached at this moment and only re-attaches after the next build.
-    // Jumping eagerly would throw; waiting a frame lands on the last slide.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_pageController.hasClients) return;
-      _pageController.jumpToPage(_slides.length - 1);
+    setState(() {
+      _showInterests = false;
+      _returningToSlides = true;
     });
   }
 
@@ -134,19 +138,102 @@ class _OnboardingPageState extends State<OnboardingPage> {
   @override
   Widget build(BuildContext context) {
     if (_showInterests) return _buildInterests(context);
-    return _buildSlides(context);
+    return _buildSlidesContainer(context);
   }
 
-  Widget _buildSlides(BuildContext context) {
-    final isLast = _slide == _slides.length - 1;
+  /// Loads the slide copy once per page lifetime, mirroring the locale at
+  /// first build. Retry clears the future so the next build re-runs.
+  Widget _buildSlidesContainer(BuildContext context) {
+    _factsFuture ??=
+        OceanFactsRepository.load(Localizations.localeOf(context).languageCode);
+
+    return FutureBuilder<List<OnboardingSlide>>(
+      future: _factsFuture,
+      builder: (context, snapshot) {
+        final slides = snapshot.data;
+        if (snapshot.connectionState != ConnectionState.done) {
+          return _buildScaffold(
+            context,
+            body: _buildLoadingBody(context),
+          );
+        }
+        if (snapshot.hasError || slides == null || slides.isEmpty) {
+          return _buildScaffold(
+            context,
+            body: Center(
+              child: ErrorState(onRetry: _retryFacts),
+            ),
+          );
+        }
+        return _buildSlides(context, slides);
+      },
+    );
+  }
+
+  /// Thin outer scaffold shared by every onboarding state so the Skip/arrow
+  /// layout sub-header stays present while facts load.
+  Widget _buildScaffold(
+    BuildContext context, {
+    required Widget body,
+    Widget? header,
+  }) {
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            ?header,
+            Expanded(child: body),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingBody(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Spacer(),
+          const Skeleton(height: 300, radius: 24),
+          const SizedBox(height: 32),
+          Skeleton(
+            height: 28,
+            radius: AppDimens.cardRadius,
+          ),
+          const SizedBox(height: 12),
+          Skeleton(
+            height: 18,
+            radius: AppDimens.cardRadius,
+          ),
+          const Spacer(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSlides(BuildContext context, List<OnboardingSlide> slides) {
+    if (_returningToSlides) {
+      _returningToSlides = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _pageController.hasClients) {
+          // Back always lands on the last slide; the deck is fixed at 3.
+          _pageController.jumpToPage(2);
+        }
+      });
+    }
+
+    final isLast = _slide == slides.length - 1;
     // Nothing behind slide 1, so there the route keeps its normal pop behavior.
     final isFirst = _slide == 0;
-    return PopScope<Object?>(
-      canPop: isFirst,
-      onPopInvokedWithResult: (didPop, _) =>
-          _handleSystemBack(didPop, onInterests: false),
-      child: Scaffold(
-        body: SafeArea(
+    return _buildScaffold(
+      context,
+      body: PopScope<Object?>(
+        canPop: isFirst,
+        onPopInvokedWithResult: (didPop, _) =>
+            _handleSystemBack(didPop, onInterests: false),
+        child: SafeArea(
           child: Column(
             children: [
               // Back arrow and Skip are secondary controls, deliberately not the
@@ -167,23 +254,25 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   const Spacer(),
                   TextButton(
                     onPressed: _showInterestScreen,
-                    child: Text(context.tr('onboarding.skip')),
+                    child: Text(context.tr('p01.skip')),
                   ),
                 ],
               ),
               Expanded(
                 child: PageView.builder(
                   controller: _pageController,
-                  itemCount: _slides.length,
+                  itemCount: slides.length,
                   onPageChanged: (i) => setState(() => _slide = i),
                   itemBuilder: (context, i) {
-                    final slide = _slides[i];
+                    final slide = slides[i];
                     return Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Column(
                         children: [
-                          // Illustration area ≈ 55% of screen height.
-                          Flexible(
+                          // Illustration area ≈ 55% of slide height; tight so
+                          // the block cannot shrink below its share (a loose
+                          // Flexible would collapse to the icon's 120px).
+                          Expanded(
                             flex: 55,
                             child: Container(
                               width: double.infinity,
@@ -195,10 +284,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                   colors: [AppColors.ocean, AppColors.teal],
                                 ),
                               ),
-                              child: Icon(
-                                slide.icon,
+                              alignment: Alignment.center,
+                              child: const Icon(
+                                Icons.waves,
                                 size: 120,
-                                color: Colors.white.withValues(alpha: 0.9),
+                                color: Colors.white70,
                               ),
                             ),
                           ),
@@ -210,7 +300,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    context.tr(slide.titleKey),
+                                    slide.title,
                                     style: const TextStyle(
                                       fontSize: 26,
                                       fontWeight: FontWeight.w800,
@@ -218,7 +308,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                   ),
                                   const SizedBox(height: 12),
                                   Text(
-                                    context.tr(slide.bodyKey),
+                                    slide.body,
                                     style: const TextStyle(
                                       fontSize: 16,
                                       height: 1.5,
@@ -239,7 +329,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  for (var i = 0; i < _slides.length; i++)
+                  for (var i = 0; i < slides.length; i++)
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -260,8 +350,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     onPressed: _nextSlide,
                     child: Text(
                       isLast
-                          ? context.tr('onboarding.chooseInterests')
-                          : context.tr('onboarding.next'),
+                          ? context.tr('p01.chooseInterests')
+                          : context.tr('p01.next'),
                     ),
                   ),
                 ),
@@ -325,7 +415,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   ),
                 ),
                 Text(
-                  context.tr('onboarding.interests.title'),
+                  context.tr('p01.interests.title'),
                   style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w800,
@@ -333,7 +423,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  context.tr('onboarding.interests.subtitle'),
+                  context.tr('p01.interests.subtitle'),
                   style: const TextStyle(
                     fontSize: 15,
                     color: AppColors.textSecondary,
@@ -406,7 +496,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: Text(
-                        context.tr('onboarding.minOne'),
+                        context.tr('p01.minOne'),
                         style: const TextStyle(
                           color: AppColors.coral,
                           fontWeight: FontWeight.w600,
@@ -421,7 +511,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     onPressed: canStart
                         ? () => _finish(_selectedInterests.toList())
                         : null,
-                    child: Text(context.tr('onboarding.start')),
+                    child: Text(context.tr('p01.start')),
                   ),
                 ),
               ],
@@ -431,18 +521,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
       ),
     );
   }
-}
-
-class _OceanFact {
-  const _OceanFact({
-    required this.titleKey,
-    required this.bodyKey,
-    required this.icon,
-  });
-
-  final String titleKey;
-  final String bodyKey;
-  final IconData icon;
 }
 
 /// Visual for one interest: a Material icon where a close match exists,

@@ -13,17 +13,14 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        wrapPage(const TabPlaceholder(location: '/transparency')),
+        wrapPage(const TabPlaceholder(location: '/actions')),
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.account_balance), findsOneWidget);
-      expect(find.text('Transparansi'), findsOneWidget);
+      expect(find.byIcon(Icons.task_alt), findsOneWidget);
+      expect(find.text('Aksi'), findsOneWidget);
       expect(
-        find.text(
-          'Lihat ke mana donasi mengalir, terbuka untuk semua tanpa perlu '
-          'login.',
-        ),
+        find.text('Lapor, pantau, dan dukung aksi bersama untuk laut.'),
         findsOneWidget,
       );
       expect(
@@ -67,11 +64,11 @@ void main() {
   });
 
   group('shell tab configuration', () {
-    test('only the three requested tabs carry a purpose sentence', () {
+    test('purpose sentences live on the concept tabs that have them', () {
       expect(ShellTabs.byLocation('/explore')?.descriptionKey, isNull);
       expect(
-        ShellTabs.byLocation('/transparency')?.descriptionKey,
-        'nav.transparency.description',
+        ShellTabs.byLocation('/actions')?.descriptionKey,
+        'nav.aksi.description',
       );
       expect(
         ShellTabs.byLocation('/impact')?.descriptionKey,
@@ -83,10 +80,10 @@ void main() {
       );
     });
 
-    test('release 1 exposes four tabs in order', () {
+    test('release exposes four tabs in order, Aksi replacing Transparansi', () {
       expect(
         ShellTabs.active.map((t) => t.location).toList(),
-        ['/explore', '/transparency', '/impact', '/profile'],
+        ['/explore', '/actions', '/impact', '/profile'],
       );
     });
   });

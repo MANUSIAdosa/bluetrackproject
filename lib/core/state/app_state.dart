@@ -3,8 +3,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../features/notification/data/notification_repository.dart';
-import '../../features/repositories.dart';
 import '../config/app_config.dart';
 
 /// Application-wide controllers (no external state management package).
@@ -104,33 +102,6 @@ class SavedProjectsController extends ChangeNotifier {
   }
 }
 
-/// Unread notification count, loaded once from [NotificationRepository].
-///
-/// Single source of truth: the app-bar bell and the My Impact nav badge both
-/// read this, so the two can never disagree. Starts at 0, so no badge shows
-/// before [load] resolves.
-class NotificationsController extends ChangeNotifier {
-  NotificationsController._();
-
-  static final NotificationsController instance = NotificationsController._();
-
-  int _unreadCount = 0;
-
-  int get unreadCount => _unreadCount;
-
-  /// True once a count has been read from the repository.
-  bool get loaded => _loaded;
-  bool _loaded = false;
-
-  Future<void> load({NotificationRepository? repository}) async {
-    final count = await (repository ?? Repositories.notifications)
-        .getUnreadCount();
-    _unreadCount = count < 0 ? 0 : count;
-    _loaded = true;
-    notifyListeners();
-  }
-}
-
 /// Offline banner state.
 ///
 /// TODO(connectivity): plug a real connectivity source here once approved;
@@ -147,6 +118,38 @@ class OfflineController extends ChangeNotifier {
   void setOffline(bool value) {
     if (_offline == value) return;
     _offline = value;
+    notifyListeners();
+  }
+}
+
+/// In-memory mirror of the onboarding completion flag, seeded from
+/// shared_preferences at startup.
+///
+/// The GoRouter redirect reads this synchronously — preferences are async and
+/// the redirect cannot await — so [init] must run before navigation resolves.
+/// [main] already reads the flag once; it passes the same value into
+/// `createRouter`, which seeds this controller. Completing onboarding calls
+/// [markDone]; persistence stays in [OnboardingState.markDone].
+class OnboardingController extends ChangeNotifier {
+  OnboardingController._();
+
+  static final OnboardingController instance = OnboardingController._();
+
+  bool _done = false;
+
+  bool get done => _done;
+
+  /// Seeds the startup value. Idempotent — rerun on every cold start/router
+  /// rebuild so tests can pump the app with either value.
+  void init(bool done) {
+    _done = done;
+  }
+
+  /// Flips the flag so the redirect stops bouncing the user to /onboarding.
+  /// Does not write preferences — [OnboardingState.markDone] owns that.
+  void markDone() {
+    if (_done) return;
+    _done = true;
     notifyListeners();
   }
 }

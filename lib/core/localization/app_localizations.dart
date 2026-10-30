@@ -44,6 +44,9 @@ class AppLocalizations {
       // `nav.*.description` is the one-line purpose of a tab, owned by the App
       // Shell tab configuration and reused by placeholder tab pages.
       'nav.jelajahi': 'Jelajahi',
+      'nav.aksi': 'Aksi',
+      'nav.aksi.description':
+          'Lapor, pantau, dan dukung aksi bersama untuk laut.',
       'nav.transparency': 'Transparansi',
       'nav.transparency.description': 'Lihat ke mana donasi mengalir, terbuka untuk semua tanpa perlu login.',
       'nav.grants': 'Hibah',
@@ -53,9 +56,22 @@ class AppLocalizations {
       'nav.profile': 'Profil',
       'nav.profile.description':
           'Kelola akun dan pengaturanmu, serta akses proposal, notifikasi, '
-          'dan materi belajar.',
-      'shell.offline': 'Anda sedang offline. Menampilkan data tersimpan.',
+              'dan materi belajar.',
+      'shell.offline': 'Mode offline - menampilkan data tersimpan',
       'shell.notifications': 'Notifikasi',
+
+      // --- Detail placeholders (part 3) ---
+      // Verification pages for routes registered in Part 3; the parameter
+      // label is identical in both locales so tests can lock onto it.
+      'detail.action': 'Detail Aksi',
+      'detail.settings': 'Pengaturan',
+      'detail.learn': 'Belajar',
+      'detail.report': 'Lapor Temuan',
+      'detail.myReports': 'Laporan Saya',
+      'detail.myActions': 'Aksi Saya',
+      'detail.communityApply': 'Ajukan Aksi Komunitas',
+      'detail.donationTrace': 'Jejak Dukungan',
+      'placeholder.paramValue': '{name}: {value}',
 
       // --- Login prompt ---
       'login.prompt.title': 'Fitur ini butuh masuk',
@@ -71,23 +87,24 @@ class AppLocalizations {
       'cat.mamalia_laut': 'Mamalia laut',
       'cat.lamun': 'Lamun',
       'cat.tersimpan': 'Tersimpan',
+      // Revised interest set (P01 part 4). The old categories above stay:
+      // `assets/mock/projects.json` and filters.json still speak them.
+      'cat.sampah_laut': 'Sampah Laut',
+      'cat.terumbu_karang': 'Terumbu Karang',
+      'cat.perikanan': 'Perikanan Berkelanjutan',
+      'cat.satwa_laut': 'Satwa Laut',
 
       // --- Onboarding (P01) ---
-      'onboarding.skip': 'Lewati',
-      'onboarding.next': 'Berikutnya',
-      'onboarding.chooseInterests': 'Pilih Minat',
-      'onboarding.start': 'Mulai',
-      'onboarding.slide1.title': 'Laut Menyerap Karbon',
-      'onboarding.slide1.body': 'Laut menyerap lebih dari sepertiga karbon yang dilepas manusia setiap tahun.',
-      'onboarding.slide2.title': 'Terumbu Karang Rumah Ikan',
-      'onboarding.slide2.body':
-          'Lima persen dasar laut menampung seperempat spesies laut dunia.',
-      'onboarding.slide3.title': 'Penyu Butuh Bantuanmu',
-      'onboarding.slide3.body': 'Ribuan tukik gagal mencapai laut karena sampah dan hilangnya habitat.',
-      'onboarding.interests.title': 'Pilih Minatmu',
-      'onboarding.interests.subtitle':
+      // Slide facts are NOT localized here: their single source is
+      // `assets/mock/ocean_facts.json` (draft copy, see file TODO).
+      'p01.skip': 'Lewati',
+      'p01.next': 'Berikutnya',
+      'p01.chooseInterests': 'Pilih Minat',
+      'p01.start': 'Mulai',
+      'p01.interests.title': 'Pilih Minatmu',
+      'p01.interests.subtitle':
           'Kami akan mengurutkan proyek sesuai minatmu.',
-      'onboarding.minOne': 'Pilih minimal satu',
+      'p01.minOne': 'Pilih minimal satu',
 
       // --- Auth (P02) ---
       // The title lives in the body heading, not the app bar, so there is one
@@ -465,9 +482,28 @@ class AppLocalizations {
       // --- Placeholder tab pages ---
       'profile.title': 'Profil',
       'profile.signOut': 'Keluar',
-      'notifications.title': 'Notifikasi',
-      'notifications.donationNews':
-          'Kabar tentang donasimu akan muncul di sini.',
+
+      // --- Notifications (P13) ---
+      // TODO(P13, minggu 12-13): the list, mark-read and delete flows are fed
+      // by mock data only; copy may change once real triggers exist.
+      'p13.title': 'Notifikasi',
+      'p13.markAllRead': 'Tandai semua dibaca',
+      'p13.group.today': 'Hari ini',
+      'p13.group.thisWeek': 'Minggu ini',
+      'p13.group.older': 'Lebih lama',
+      'p13.empty': 'Belum ada notifikasi.',
+      'p13.errorBody': 'Notifikasi gagal dimuat.',
+      'p13.retry': 'Coba lagi',
+      'p13.type.reportStatus': 'Status laporan',
+      'p13.type.actionReminder': 'Pengingat aksi',
+      'p13.type.locationUpdate': 'Update lokasi',
+      'p13.semanticUnread': 'Belum dibaca',
+      'p13.delete': 'Hapus',
+      'p13.targetUnavailable':
+          'Halaman tujuan notifikasi ini belum tersedia.',
+      'p13.loginPrompt.title': 'Lacak notifikasi personal',
+      'p13.loginPrompt.body':
+          'Masuk untuk melihat laporan dan aksi yang terkait akunmu. Notifikasi tetap tampil tanpa masuk.',
     },
     'en': {
       // --- Common ---
@@ -483,6 +519,9 @@ class AppLocalizations {
 
       // --- Shell / navigation ---
       'nav.jelajahi': 'Explore',
+      'nav.aksi': 'Action',
+      'nav.aksi.description':
+          'Report, monitor, and support community action for the ocean.',
       'nav.transparency': 'Transparency',
       'nav.transparency.description': 'See where donations are disbursed, open to everyone without signing in.',
       'nav.grants': 'Grants',
@@ -492,9 +531,20 @@ class AppLocalizations {
       'nav.profile': 'Profile',
       'nav.profile.description':
           'Manage your account and settings, and access proposals, '
-          'notifications, and learning materials.',
-      'shell.offline': "You're offline. Showing saved data.",
+              'notifications, and learning materials.',
+      'shell.offline': 'Offline mode - showing saved data',
       'shell.notifications': 'Notifications',
+
+      // --- Detail placeholders (part 3) ---
+      'detail.action': 'Action Detail',
+      'detail.settings': 'Settings',
+      'detail.learn': 'Learn',
+      'detail.report': 'Report a Finding',
+      'detail.myReports': 'My Reports',
+      'detail.myActions': 'My Actions',
+      'detail.communityApply': 'Propose Community Action',
+      'detail.donationTrace': 'Donation Trace',
+      'placeholder.paramValue': '{name}: {value}',
 
       // --- Login prompt ---
       'login.prompt.title': 'Sign in required',
@@ -509,22 +559,24 @@ class AppLocalizations {
       'cat.mamalia_laut': 'Marine mammals',
       'cat.lamun': 'Seagrass',
       'cat.tersimpan': 'Saved',
+      // Revised interest set (P01 part 4). The old categories above stay:
+      // `assets/mock/projects.json` and filters.json still speak them.
+      'cat.sampah_laut': 'Marine Waste',
+      'cat.terumbu_karang': 'Coral Reefs',
+      'cat.perikanan': 'Sustainable Fisheries',
+      'cat.satwa_laut': 'Marine Wildlife',
 
       // --- Onboarding (P01) ---
-      'onboarding.skip': 'Skip',
-      'onboarding.next': 'Next',
-      'onboarding.chooseInterests': 'Choose Interests',
-      'onboarding.start': 'Start',
-      'onboarding.slide1.title': 'The Ocean Absorbs Carbon',
-      'onboarding.slide1.body': 'The ocean absorbs more than a third of the carbon humans emit each year.',
-      'onboarding.slide2.title': 'Coral Reefs Are Fish Homes',
-      'onboarding.slide2.body': 'Five percent of the seafloor shelters a quarter of all marine species.',
-      'onboarding.slide3.title': 'Turtles Need Your Help',
-      'onboarding.slide3.body': 'Thousands of hatchlings never reach the sea due to waste and habitat loss.',
-      'onboarding.interests.title': 'Pick Your Interests',
-      'onboarding.interests.subtitle':
+      // Slide facts are NOT localized here: their single source is
+      // `assets/mock/ocean_facts.json` (draft copy, see file TODO).
+      'p01.skip': 'Skip',
+      'p01.next': 'Next',
+      'p01.chooseInterests': 'Choose Interests',
+      'p01.start': 'Start',
+      'p01.interests.title': 'Pick Your Interests',
+      'p01.interests.subtitle':
           "We'll sort projects to match your interests.",
-      'onboarding.minOne': 'Pick at least one',
+      'p01.minOne': 'Pick at least one',
 
       // --- Auth (P02) ---
       // The title lives in the body heading, not the app bar, so there is one
@@ -898,9 +950,28 @@ class AppLocalizations {
       // --- Placeholder tab pages ---
       'profile.title': 'Profile',
       'profile.signOut': 'Sign out',
-      'notifications.title': 'Notifications',
-      'notifications.donationNews':
-          'News about your donations will appear here.',
+
+      // --- Notifications (P13) ---
+      // TODO(P13, minggu 12-13): the list, mark-read and delete flows are fed
+      // by mock data only; copy may change once real triggers exist.
+      'p13.title': 'Notifications',
+      'p13.markAllRead': 'Mark all as read',
+      'p13.group.today': 'Today',
+      'p13.group.thisWeek': 'This week',
+      'p13.group.older': 'Older',
+      'p13.empty': 'No notifications yet.',
+      'p13.errorBody': 'Notifications failed to load.',
+      'p13.retry': 'Try again',
+      'p13.type.reportStatus': 'Report status',
+      'p13.type.actionReminder': 'Action reminder',
+      'p13.type.locationUpdate': 'Location update',
+      'p13.semanticUnread': 'Unread',
+      'p13.delete': 'Delete',
+      'p13.targetUnavailable':
+          "This notification's target page is not available yet.",
+      'p13.loginPrompt.title': 'Track personal notifications',
+      'p13.loginPrompt.body':
+          'Sign in to see reports and actions linked to your account. Notifications stay visible without signing in.',
     },
   };
 }
