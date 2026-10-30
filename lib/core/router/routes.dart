@@ -13,6 +13,7 @@ abstract final class Routes {
   static const notifications = '/notifications';
   static const learn = '/learn';
   static const profile = '/profile';
+  static const interests = '/profile/interests';
   static const settings = '/settings';
 
   // --- Dynamic path patterns (register these) -----------------------------
@@ -81,6 +82,7 @@ abstract final class Routes {
     notifications,
     learn,
     profile,
+    interests,
     settings,
     projectDetail,
     orgDetail,

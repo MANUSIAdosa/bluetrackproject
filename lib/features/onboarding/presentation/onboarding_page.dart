@@ -23,13 +23,14 @@ import '../data/ocean_facts_repository.dart';
 /// - One primary button per screen. Slides 1–2 say "Next", slide 3 says
 ///   "Choose Interests", the interest screen says "Start". Each label means the
 ///   same thing wherever it appears, so it never changes meaning mid-flow.
-/// - "Skip" is a secondary text button that jumps to the interest screen; it
-///   does not finish onboarding. Only "Start" completes it, and only with at
-///   least one interest selected.
+/// - Slides can be skipped to interests; interests can be skipped to Explore.
+/// - Profile reopens the same picker with saved interests, without the slides.
 /// - The interest screen has a back arrow returning to the last slide, and the
 ///   system back button behaves the same.
 class OnboardingPage extends StatefulWidget {
-  const OnboardingPage({super.key});
+  const OnboardingPage({super.key, this.editInterests = false});
+
+  final bool editInterests;
 
   @override
   State<OnboardingPage> createState() => _OnboardingPageState();
@@ -41,6 +42,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   int _slide = 0;
   bool _showInterests = false;
+  bool _saving = false;
+  bool _loadingPreferences = false;
+  bool _preferencesError = false;
 
   /// Set when returning from the interest screen: the slide deck is then
   /// re-attached one frame later (after the facts future surfaces), so the
@@ -51,19 +55,44 @@ class _OnboardingPageState extends State<OnboardingPage> {
   /// dependencies (i.e. the locale) are available and reused across rebuilds.
   Future<List<OnboardingSlide>>? _factsFuture;
 
-  /// Material has no coral or marine-mammal glyph, so those use an emoji.
-  // TODO(P01-part-4): icon proposals to confirm with Trevan — `recycling`
-  // for marine waste, `set_meal` for sustainable fisheries.
-  static const _interestVisuals = <String, _InterestVisual>{
-    'sampah_laut': _InterestVisual(icon: Icons.recycling),
-    'terumbu_karang': _InterestVisual(emoji: '🪸'),
-    'mangrove': _InterestVisual(icon: Icons.forest),
-    'perikanan': _InterestVisual(icon: Icons.set_meal),
-    'satwa_laut': _InterestVisual(emoji: '🐬'),
+  static const double _gallerySpacing = 8;
+  static const _interestImages = {
+    'sampah_laut': 'assets/images/interests/marine_waste.jpg',
+    'terumbu_karang': 'assets/images/interests/coral_reef.jpg',
+    'mangrove': 'assets/images/interests/mangrove.jpg',
+    'perikanan': 'assets/images/interests/sustainable_fishery.jpg',
+    'satwa_laut': 'assets/images/interests/marine_wildlife.jpg',
   };
 
-  static const double _cardHeight = 68;
-  static const double _cardSpacing = 10;
+  @override
+  void initState() {
+    super.initState();
+    if (widget.editInterests) {
+      _showInterests = true;
+      _loadPreferences();
+    }
+  }
+
+  Future<void> _loadPreferences() async {
+    setState(() {
+      _loadingPreferences = true;
+      _preferencesError = false;
+    });
+    try {
+      final saved = await OnboardingState.readInterests();
+      if (!mounted) return;
+      setState(() {
+        _selectedInterests.addAll(saved.where(AppConfig.interestIds.contains));
+        _loadingPreferences = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loadingPreferences = false;
+        _preferencesError = true;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -72,14 +101,36 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Future<void> _finish(List<String> interests) async {
-    await OnboardingState.markDone(interests);
-    // Keep the in-memory flag in sync, otherwise the router redirect bounces
-    // /explore straight back to /onboarding.
-    OnboardingController.instance.markDone();
-    if (!mounted) return;
-    // `go` replaces the stack, so /onboarding is gone: back from /explore
-    // cannot land here again.
-    context.go(Routes.explore);
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      if (widget.editInterests) {
+        await OnboardingState.saveInterests(interests);
+      } else {
+        await OnboardingState.markDone(interests);
+        OnboardingController.instance.markDone();
+      }
+      if (!mounted) return;
+      if (widget.editInterests) {
+        _leavePreferences();
+      } else {
+        context.go(Routes.explore);
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.tr('p01.interests.saveError'))),
+      );
+    }
+  }
+
+  void _leavePreferences() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(Routes.profile);
+    }
   }
 
   /// Re-runs the facts load after an error; the build recreates the future.
@@ -98,9 +149,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     }
   }
 
-  /// Both "Skip" and the last slide's primary button land here. Skipping must
-  /// not complete onboarding — the interest screen still applies its own
-  /// one-minimum rule.
+  /// Skipping slides opens interests, which has its own optional Skip action.
   void _showInterestScreen() => setState(() => _showInterests = true);
 
   /// Steps back one slide so an earlier fact can be re-read. A no-op on the
@@ -116,6 +165,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
   /// Returns from the interest screen to the last slide, keeping any interests
   /// already selected.
   void _backToSlides() {
+    if (_saving) return;
+    if (widget.editInterests) {
+      _leavePreferences();
+      return;
+    }
     setState(() {
       _showInterests = false;
       _returningToSlides = true;
@@ -137,6 +191,17 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loadingPreferences || _preferencesError) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(context.tr('p01.interests.manage')),
+          leading: BackButton(onPressed: _leavePreferences),
+        ),
+        body: _preferencesError
+            ? ErrorState(onRetry: _loadPreferences)
+            : const Center(child: CircularProgressIndicator()),
+      );
+    }
     if (_showInterests) return _buildInterests(context);
     return _buildSlidesContainer(context);
   }
@@ -144,25 +209,21 @@ class _OnboardingPageState extends State<OnboardingPage> {
   /// Loads the slide copy once per page lifetime, mirroring the locale at
   /// first build. Retry clears the future so the next build re-runs.
   Widget _buildSlidesContainer(BuildContext context) {
-    _factsFuture ??=
-        OceanFactsRepository.load(Localizations.localeOf(context).languageCode);
+    _factsFuture ??= OceanFactsRepository.load(
+      Localizations.localeOf(context).languageCode,
+    );
 
     return FutureBuilder<List<OnboardingSlide>>(
       future: _factsFuture,
       builder: (context, snapshot) {
         final slides = snapshot.data;
         if (snapshot.connectionState != ConnectionState.done) {
-          return _buildScaffold(
-            context,
-            body: _buildLoadingBody(context),
-          );
+          return _buildScaffold(context, body: _buildLoadingBody(context));
         }
         if (snapshot.hasError || slides == null || slides.isEmpty) {
           return _buildScaffold(
             context,
-            body: Center(
-              child: ErrorState(onRetry: _retryFacts),
-            ),
+            body: Center(child: ErrorState(onRetry: _retryFacts)),
           );
         }
         return _buildSlides(context, slides);
@@ -198,15 +259,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
           const Spacer(),
           const Skeleton(height: 300, radius: 24),
           const SizedBox(height: 32),
-          Skeleton(
-            height: 28,
-            radius: AppDimens.cardRadius,
-          ),
+          Skeleton(height: 28, radius: AppDimens.cardRadius),
           const SizedBox(height: 12),
-          Skeleton(
-            height: 18,
-            radius: AppDimens.cardRadius,
-          ),
+          Skeleton(height: 18, radius: AppDimens.cardRadius),
           const Spacer(),
         ],
       ),
@@ -365,31 +420,34 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   Widget _buildInterestCard(
     BuildContext context,
-    String id, {
-    required double width,
+    int index, {
+    required double galleryHeight,
+    required double labelHeight,
   }) {
-    final visual =
-        _interestVisuals[id] ?? const _InterestVisual(icon: Icons.spa);
+    final id = AppConfig.interestIds[index];
 
-    return SizedBox(
-      width: width,
-      height: _cardHeight,
-      child: _InterestCard(
+    return Expanded(
+      child: _InterestGalleryColumn(
+        id: id,
         label: context.tr('cat.$id'),
-        icon: visual.icon,
-        emoji: visual.emoji,
+        imagePath: _interestImages[id]!,
+        galleryHeight: galleryHeight,
+        labelHeight: labelHeight,
+        blockHeight: galleryHeight * (index.isEven ? 1 : 0.88),
         selected: _selectedInterests.contains(id),
-        onTap: () => setState(() {
-          _selectedInterests.contains(id)
-              ? _selectedInterests.remove(id)
-              : _selectedInterests.add(id);
-        }),
+        onTap: _saving
+            ? null
+            : () => setState(() {
+                _selectedInterests.contains(id)
+                    ? _selectedInterests.remove(id)
+                    : _selectedInterests.add(id);
+              }),
       ),
     );
   }
 
   Widget _buildInterests(BuildContext context) {
-    final canStart = _selectedInterests.isNotEmpty;
+    final canStart = widget.editInterests || _selectedInterests.isNotEmpty;
     return PopScope<Object?>(
       // On this screen back means "one step back in the flow", so the route
       // itself must not pop.
@@ -399,20 +457,27 @@ class _OnboardingPageState extends State<OnboardingPage> {
       child: Scaffold(
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(AppDimens.padding),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Secondary control, not a second primary button.
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                    tooltip: MaterialLocalizations.of(context)
-                        .backButtonTooltip,
-                    icon: const Icon(Icons.arrow_back),
-                    color: AppColors.ocean,
-                    onPressed: _backToSlides,
-                  ),
+                Row(
+                  children: [
+                    IconButton(
+                      tooltip: MaterialLocalizations.of(context)
+                          .backButtonTooltip,
+                      icon: const Icon(Icons.arrow_back),
+                      color: AppColors.ocean,
+                      onPressed: _saving ? null : _backToSlides,
+                    ),
+                    const Spacer(),
+                    if (!widget.editInterests)
+                      TextButton(
+                        onPressed: _saving ? null : () => _finish([]),
+                        child: Text(context.tr('p01.skip')),
+                      ),
+                  ],
                 ),
                 Text(
                   context.tr('p01.interests.title'),
@@ -423,7 +488,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  context.tr('p01.interests.subtitle'),
+                  context.tr('p01.interests.later'),
                   style: const TextStyle(
                     fontSize: 15,
                     color: AppColors.textSecondary,
@@ -431,74 +496,91 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 ),
                 const SizedBox(height: 24),
                 Expanded(
-                  // Two columns, with a trailing odd card stretched across the
-                  // full row so the five options stay balanced and visible
-                  // without scrolling on a standard phone.
                   child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      const gap = SizedBox(width: _cardSpacing);
-                      final cardWidth =
-                          (constraints.maxWidth - _cardSpacing) / 2;
+                    builder: (context, viewport) {
+                      // Keep captions reachable on short/wide screens. Large
+                      // text can still scroll instead of clipping the gallery.
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 760),
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final columnWidth =
+                                    (constraints.maxWidth -
+                                        _gallerySpacing *
+                                            (AppConfig.interestIds.length -
+                                                1)) /
+                                    AppConfig.interestIds.length;
+                                // Measure translated captions at the current
+                                // text scale; bottom-align them without ellipses.
+                                var labelHeight = 0.0;
+                                for (final id in AppConfig.interestIds) {
+                                  final painter = TextPainter(
+                                    text: TextSpan(
+                                      text: context.tr('cat.$id'),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelSmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
+                                    textDirection: Directionality.of(context),
+                                    textScaler: MediaQuery.textScalerOf(
+                                      context,
+                                    ),
+                                  )..layout(maxWidth: columnWidth);
+                                  if (painter.height > labelHeight) {
+                                    labelHeight = painter.height;
+                                  }
+                                  painter.dispose();
+                                }
+                                final maxBlockHeight =
+                                    (viewport.maxHeight - labelHeight - 40)
+                                        .clamp(100.0, 420.0);
+                                final galleryHeight = (columnWidth * 4.2).clamp(
+                                  100.0,
+                                  maxBlockHeight,
+                                );
 
-                      final rows = <Widget>[];
-                      for (
-                        var i = 0;
-                        i < AppConfig.interestIds.length;
-                        i += 2
-                      ) {
-                        final first = AppConfig.interestIds[i];
-                        final second = i + 1 < AppConfig.interestIds.length
-                            ? AppConfig.interestIds[i + 1]
-                            : null;
-
-                        rows.add(
-                          Padding(
-                            padding: EdgeInsets.only(
-                              bottom: second == null ? 0 : _cardSpacing,
-                            ),
-                            child: second == null
-                                // Last odd card spans the whole row.
-                                ? _buildInterestCard(
-                                    context,
-                                    first,
-                                    width: constraints.maxWidth,
-                                  )
-                                : Row(
-                                    children: [
+                                return Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    for (
+                                      var i = 0;
+                                      i < AppConfig.interestIds.length;
+                                      i++
+                                    ) ...[
+                                      if (i > 0)
+                                        const SizedBox(width: _gallerySpacing),
                                       _buildInterestCard(
                                         context,
-                                        first,
-                                        width: cardWidth,
-                                      ),
-                                      gap,
-                                      _buildInterestCard(
-                                        context,
-                                        second,
-                                        width: cardWidth,
+                                        i,
+                                        galleryHeight: galleryHeight,
+                                        labelHeight: labelHeight,
                                       ),
                                     ],
-                                  ),
+                                  ],
+                                );
+                              },
+                            ),
                           ),
-                        );
-                      }
-
-                      return SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: rows,
                         ),
                       );
                     },
                   ),
                 ),
+                const SizedBox(height: 16),
                 if (!canStart) ...[
                   Center(
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: Text(
-                        context.tr('p01.minOne'),
+                        context.tr('p01.interests.subtitle'),
                         style: const TextStyle(
-                          color: AppColors.coral,
+                          color: AppColors.textSecondary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -508,10 +590,22 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
-                    onPressed: canStart
+                    onPressed: canStart && !_saving
                         ? () => _finish(_selectedInterests.toList())
                         : null,
-                    child: Text(context.tr('p01.start')),
+                    child: _saving
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(
+                            context.tr(
+                              widget.editInterests
+                                  ? 'p01.interests.save'
+                                  : 'p01.start',
+                            ),
+                          ),
                   ),
                 ),
               ],
@@ -523,99 +617,165 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 }
 
-/// Visual for one interest: a Material icon where a close match exists,
-/// otherwise an emoji glyph rendered as text.
-class _InterestVisual {
-  const _InterestVisual({this.icon, this.emoji});
-
-  final IconData? icon;
-  final String? emoji;
-}
-
-/// Compact interest option: icon or emoji on the left, the label on the
-/// right, and an unmistakable check on the right edge when selected.
-///
-/// Selected cards keep the onboarding palette — an ocean-to-teal gradient with
-/// white glyphs — while unselected ones stay a plain white surface with a
-/// light border, so the two states are easy to tell apart at a glance.
-class _InterestCard extends StatelessWidget {
-  const _InterestCard({
+/// Equal-width gallery columns reserve the same image area, leaving space
+/// below shorter blocks so every caption sits on the same horizontal line.
+class _InterestGalleryColumn extends StatefulWidget {
+  const _InterestGalleryColumn({
+    required this.id,
     required this.label,
+    required this.imagePath,
+    required this.galleryHeight,
+    required this.labelHeight,
+    required this.blockHeight,
     required this.selected,
     required this.onTap,
-    this.icon,
-    this.emoji,
   });
 
+  final String id;
   final String label;
-  final IconData? icon;
-  final String? emoji;
+  final String imagePath;
+  final double galleryHeight;
+  final double labelHeight;
+  final double blockHeight;
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+
+  @override
+  State<_InterestGalleryColumn> createState() => _InterestGalleryColumnState();
+}
+
+class _InterestGalleryColumnState extends State<_InterestGalleryColumn> {
+  bool _hovered = false;
+  bool _focused = false;
 
   @override
   Widget build(BuildContext context) {
     const radius = BorderRadius.all(Radius.circular(AppDimens.cardRadius));
-
-    return Material(
-      color: selected ? AppColors.ocean : AppColors.surface,
-      borderRadius: radius,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Ink(
-          decoration: BoxDecoration(
+    final highlighted = widget.selected || _hovered || _focused;
+    final duration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 200);
+    return Semantics(
+      label: widget.label,
+      button: true,
+      selected: widget.selected,
+      enabled: widget.onTap != null,
+      onTap: widget.onTap,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: widget.label,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            key: ValueKey('interest.option.${widget.id}'),
             borderRadius: radius,
-            border: Border.all(
-              color: selected ? AppColors.oceanDeep : AppColors.border,
-              width: selected ? 2 : 1,
-            ),
-            // Teal only joins selected cards, so the gradient doubles as the
-            // selected-state signal rather than decoration.
-            gradient: selected
-                ? const LinearGradient(
-                    colors: [AppColors.ocean, AppColors.teal],
-                  )
-                : null,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
+            onTap: widget.onTap,
+            onHover: (value) => setState(() => _hovered = value),
+            onFocusChange: (value) => setState(() => _focused = value),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(
-                  width: 30,
-                  child: Center(
-                    child: emoji != null
-                        ? Text(emoji!, style: const TextStyle(fontSize: 22))
-                        : Icon(
-                            icon,
-                            size: 24,
-                            color: selected
-                                ? Colors.white
-                                : AppColors.textSecondary,
-                          ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                      color: selected ? Colors.white : AppColors.textPrimary,
+                  height: widget.galleryHeight,
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: AnimatedContainer(
+                      key: ValueKey('interest.block.${widget.id}'),
+                      duration: duration,
+                      curve: Curves.easeOut,
+                      height: widget.blockHeight,
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: highlighted ? AppColors.teal : AppColors.border,
+                        borderRadius: radius,
+                        boxShadow: highlighted
+                            ? [
+                                BoxShadow(
+                                  color:
+                                      (widget.selected
+                                              ? AppColors.teal
+                                              : AppColors.ocean)
+                                          .withValues(
+                                            alpha: widget.selected ? 0.5 : 0.25,
+                                          ),
+                                  blurRadius: widget.selected ? 18 : 12,
+                                  spreadRadius: widget.selected ? 2 : 0,
+                                ),
+                              ]
+                            : const [],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(
+                          AppDimens.cardRadius - 2,
+                        ),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            AnimatedScale(
+                              scale: _hovered || _focused ? 1.06 : 1,
+                              duration: duration,
+                              child: Image.asset(
+                                widget.imagePath,
+                                fit: BoxFit.cover,
+                                excludeFromSemantics: true,
+                                errorBuilder: (context, error, stack) =>
+                                    const ColoredBox(
+                                      color: AppColors.border,
+                                      child: Icon(
+                                        Icons.image_not_supported_outlined,
+                                      ),
+                                    ),
+                              ),
+                            ),
+                            Positioned(
+                              top: 8,
+                              left: 0,
+                              right: 0,
+                              child: Center(
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: widget.selected
+                                        ? AppColors.ocean
+                                        : Colors.black45,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(3),
+                                    child: Icon(
+                                      widget.selected
+                                          ? Icons.check_circle
+                                          : Icons.circle_outlined,
+                                      size: 20,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                // A filled check on selected, a hollow ring on unselected, so
-                // every card shows where its state will appear.
-                Icon(
-                  selected ? Icons.check_circle : Icons.circle_outlined,
-                  size: selected ? 22 : 18,
-                  color: selected ? Colors.white : AppColors.inactiveTab,
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: widget.labelHeight,
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Text(
+                      widget.label,
+                      key: ValueKey('interest.caption.${widget.id}'),
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: widget.selected
+                            ? AppColors.oceanDeep
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),

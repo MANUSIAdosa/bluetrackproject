@@ -102,6 +102,10 @@ class AppLocalizations {
       'p01.chooseInterests': 'Pilih Minat',
       'p01.start': 'Mulai',
       'p01.interests.title': 'Pilih Minatmu',
+      'p01.interests.manage': 'Preferensi Minat',
+      'p01.interests.later': 'Minat bisa diubah kapan saja melalui Profil.',
+      'p01.interests.save': 'Simpan minat',
+      'p01.interests.saveError': 'Minat belum tersimpan. Coba lagi.',
       'p01.interests.subtitle':
           'Kami akan mengurutkan proyek sesuai minatmu.',
       'p01.minOne': 'Pilih minimal satu',
@@ -574,6 +578,10 @@ class AppLocalizations {
       'p01.chooseInterests': 'Choose Interests',
       'p01.start': 'Start',
       'p01.interests.title': 'Pick Your Interests',
+      'p01.interests.manage': 'Interest Preferences',
+      'p01.interests.later': 'You can change your interests anytime from Profile.',
+      'p01.interests.save': 'Save interests',
+      'p01.interests.saveError': 'Could not save your interests. Try again.',
       'p01.interests.subtitle':
           "We'll sort projects to match your interests.",
       'p01.minOne': 'Pick at least one',
