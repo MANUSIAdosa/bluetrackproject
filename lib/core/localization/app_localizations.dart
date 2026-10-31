@@ -468,6 +468,50 @@ class AppLocalizations {
       'notifications.title': 'Notifikasi',
       'notifications.donationNews':
           'Kabar tentang donasimu akan muncul di sini.',
+
+      // --- Report wizard (Lapor Temuan) ---
+      'report_title': 'Lapor Temuan',
+      'report_step_photos': 'Foto',
+      'report_step_location': 'Lokasi',
+      'report_step_type': 'Jenis',
+      'report_step_review': 'Tinjau',
+      'report_photos_title': 'Foto temuan',
+      'report_photos_body': 'Tambahkan 1–3 foto temuanmu.',
+      'report_photo_counter': '{n}/{max} foto',
+      'report_add_photo': 'Tambah Foto',
+      'report_remove_photo': 'Hapus foto',
+      'report_photo_load_error': 'Foto tidak dapat dimuat.',
+      'report_source_title': 'Pilih sumber foto',
+      'report_source_camera': 'Kamera',
+      'report_source_gallery': 'Galeri',
+      'report_max_photos': 'Maksimal {max} foto.',
+      'report_photos_truncated':
+          'Hanya {n} foto ditambahkan karena batas maksimal {max}.',
+      'report_draft_banner': 'Draf tersimpan otomatis.',
+      'report_resume_title': 'Lanjutkan draf?',
+      'report_resume_body':
+          'Kami menemukan draf Lapor Temuan yang belum dikirim.',
+      'report_resume_continue': 'Lanjutkan draf',
+      'report_resume_new': 'Mulai baru',
+      'report_exit_title': 'Simpan draf dan keluar?',
+      'report_exit_body': 'Draf akan tersimpan dan bisa dilanjutkan nanti.',
+      'report_exit_confirm': 'Keluar',
+      'report_back': 'Kembali',
+      'report_coming_soon': 'Segera hadir.',
+      'report_permission_title': 'Izin diperlukan',
+      'report_permission_camera':
+          'Akses kamera ditolak. Izinkan akses kamera di Pengaturan perangkat, '
+          'lalu coba lagi.',
+      'report_permission_gallery':
+          'Akses galeri ditolak. Izinkan akses foto di Pengaturan perangkat, '
+          'lalu coba lagi.',
+      'report_permission_settings_hint':
+          'Buka Pengaturan > Aplikasi > BlueTrack > Izin.',
+      'report_photo_error_title': 'Gagal mengambil foto',
+      'report_photo_unavailable':
+          'Sumber foto tidak tersedia di perangkat ini.',
+      'report_photo_failed': 'Foto tidak dapat diambil. Coba lagi.',
+      'report_permission_dismiss': 'Mengerti',
     },
     'en': {
       // --- Common ---
@@ -901,6 +945,50 @@ class AppLocalizations {
       'notifications.title': 'Notifications',
       'notifications.donationNews':
           'News about your donations will appear here.',
+
+      // --- Report wizard (Lapor Temuan) ---
+      'report_title': 'Report a Finding',
+      'report_step_photos': 'Photo',
+      'report_step_location': 'Location',
+      'report_step_type': 'Type',
+      'report_step_review': 'Review',
+      'report_photos_title': 'Photos of the finding',
+      'report_photos_body': 'Add 1–3 photos of your finding.',
+      'report_photo_counter': '{n}/{max} photos',
+      'report_add_photo': 'Add Photo',
+      'report_remove_photo': 'Remove photo',
+      'report_photo_load_error': 'The photo could not be loaded.',
+      'report_source_title': 'Choose a photo source',
+      'report_source_camera': 'Camera',
+      'report_source_gallery': 'Gallery',
+      'report_max_photos': 'Maximum {max} photos.',
+      'report_photos_truncated':
+          'Only {n} photo(s) added because the limit is {max}.',
+      'report_draft_banner': 'Draft saved automatically.',
+      'report_resume_title': 'Resume draft?',
+      'report_resume_body':
+          'We found a Report a Finding draft you have not sent.',
+      'report_resume_continue': 'Resume draft',
+      'report_resume_new': 'Start new',
+      'report_exit_title': 'Save the draft and leave?',
+      'report_exit_body': 'The draft will be saved and you can continue later.',
+      'report_exit_confirm': 'Leave',
+      'report_back': 'Back',
+      'report_coming_soon': 'Coming soon.',
+      'report_permission_title': 'Permission required',
+      'report_permission_camera':
+          'Camera access was denied. Allow camera access in your device '
+          'Settings, then try again.',
+      'report_permission_gallery':
+          'Gallery access was denied. Allow photo access in your device '
+          'Settings, then try again.',
+      'report_permission_settings_hint':
+          'Open Settings > Apps > BlueTrack > Permissions.',
+      'report_photo_error_title': 'Could not take photo',
+      'report_photo_unavailable':
+          'The photo source is not available on this device.',
+      'report_photo_failed': 'The photo could not be taken. Try again.',
+      'report_permission_dismiss': 'Got it',
     },
   };
 }

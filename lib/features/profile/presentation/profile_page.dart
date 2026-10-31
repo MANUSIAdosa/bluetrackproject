@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/state/app_state.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../shell/tab_placeholder.dart';
 
 /// P17 Profile — tab shell.
@@ -24,6 +26,23 @@ class ProfilePage extends StatelessWidget {
         builder: (context, _) {
           return Column(
             children: [
+              // TODO(lapor): move this entry to the final "Laporan Saya"
+              // surface once that page is designed. Kept on Profile so the
+              // Lapor Temuan wizard is reachable in Release 1.
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Card(
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.add_a_photo_outlined,
+                      color: AppColors.coral,
+                    ),
+                    title: Text(context.tr('report_title')),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push('/report'),
+                  ),
+                ),
+              ),
               if (signedIn)
                 Padding(
                   padding: const EdgeInsets.all(16),

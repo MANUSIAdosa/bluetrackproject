@@ -1,0 +1,446 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+
+import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/offline_banner.dart';
+import '../../../../shared/widgets/primary_button.dart';
+import '../../data/report_draft_store.dart';
+import '../../data/report_photo_picker.dart';
+import '../../domain/report_draft.dart';
+import '../../domain/report_rules.dart';
+import '../widgets/report_photo_grid.dart';
+import '../widgets/report_photo_source_sheet.dart';
+import '../widgets/report_step_frame.dart';
+
+/// "Lapor Temuan" — one page, four internal steps.
+///
+/// Step 1 (photos) is implemented here. Steps 2–4 are placeholders that keep
+/// navigation and the stored step working until their tasks land. The draft is
+/// written to Hive after every change (debounced), so closing the app does not
+/// lose it.
+class ReportWizardPage extends StatefulWidget {
+  const ReportWizardPage({super.key, this.store, this.photoPicker});
+
+  /// Injectable for tests; defaults to the Hive-backed store.
+  final ReportDraftStore? store;
+
+  /// Injectable for tests; defaults to `image_picker`.
+  final ReportPhotoPicker? photoPicker;
+
+  @override
+  State<ReportWizardPage> createState() => _ReportWizardPageState();
+}
+
+class _ReportWizardPageState extends State<ReportWizardPage>
+    with WidgetsBindingObserver {
+  static const _saveDebounce = Duration(milliseconds: 500);
+
+  late final ReportDraftStore _store =
+      widget.store ?? HiveReportDraftStore.instance;
+  late final ReportPhotoPicker _photoPicker =
+      widget.photoPicker ?? ImagePickerReportPhotoPicker();
+
+  ReportWizardDraft _draft = const ReportWizardDraft();
+
+  /// False until the stored draft has been resolved, so disposing the page
+  /// while the first load is in flight cannot wipe an existing draft.
+  bool _draftReady = false;
+  bool _loading = true;
+  bool _picking = false;
+  Timer? _saveTimer;
+
+  int get _step => _draft.currentStep;
+
+  int get _remaining => ReportRules.maxPhotos - _draft.photoCount;
+
+  bool get _canContinue =>
+      _step != ReportWizardDraft.firstStep ||
+      _draft.photoCount >= ReportRules.minPhotos;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _restoreDraft();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _saveTimer?.cancel();
+    if (_draftReady) unawaited(_persist());
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      if (_draftReady) unawaited(_persist());
+    }
+  }
+
+  Future<void> _restoreDraft() async {
+    final stored = await _store.load();
+    if (!mounted) return;
+
+    if (stored == null || !stored.hasContent) {
+      setState(() {
+        _loading = false;
+        _draftReady = true;
+      });
+      return;
+    }
+
+    // Render the empty step behind the modal. Keeping the spinner here would
+    // animate forever while the dialog waits for an answer, which also makes
+    // widget tests hang in pumpAndSettle.
+    setState(() => _loading = false);
+
+    final resume = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(dialogContext.tr('report_resume_title')),
+        content: Text(dialogContext.tr('report_resume_body')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(dialogContext.tr('report_resume_new')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(dialogContext.tr('report_resume_continue')),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+
+    // A dismissed dialog (system back) keeps the draft instead of deleting it.
+    if (resume == false) {
+      // Show the loading state so a new photo cannot be added while the old
+      // draft is being cleared.
+      setState(() => _loading = true);
+      await _store.clear();
+      if (!mounted) return;
+      setState(() {
+        _draft = const ReportWizardDraft();
+        _loading = false;
+        _draftReady = true;
+      });
+      return;
+    }
+
+    setState(() {
+      _draft = stored;
+      _loading = false;
+      _draftReady = true;
+    });
+  }
+
+  void _update(ReportWizardDraft next) {
+    setState(() {
+      _draft = next.copyWith(updatedAt: DateTime.now().toUtc());
+    });
+    _scheduleSave();
+  }
+
+  void _scheduleSave() {
+    _saveTimer?.cancel();
+    _saveTimer = Timer(_saveDebounce, () => unawaited(_persist()));
+  }
+
+  Future<void> _persist() async {
+    _saveTimer?.cancel();
+    _saveTimer = null;
+    final draft = _draft;
+    if (!draft.hasContent) {
+      await _store.clear();
+      return;
+    }
+    await _store.save(draft);
+  }
+
+  Future<void> _handleBack() async {
+    if (_step > ReportWizardDraft.firstStep) {
+      _update(_draft.copyWith(currentStep: _step - 1));
+      return;
+    }
+
+    if (!_draft.hasContent) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(dialogContext.tr('report_exit_title')),
+        content: Text(dialogContext.tr('report_exit_body')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(dialogContext.tr('common.cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(dialogContext.tr('report_exit_confirm')),
+          ),
+        ],
+      ),
+    );
+    if (leave != true || !mounted) return;
+
+    await _persist();
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  void _goNext() {
+    if (_step >= ReportWizardDraft.lastStep || !_canContinue) return;
+    _update(_draft.copyWith(currentStep: _step + 1));
+  }
+
+  Future<void> _addPhoto() async {
+    if (_remaining <= 0) {
+      _showSnack(
+        context.tr('report_max_photos', {'max': '${ReportRules.maxPhotos}'}),
+      );
+      return;
+    }
+
+    final source = await ReportPhotoSourceSheet.show(context);
+    if (source == null || !mounted) return;
+
+    setState(() => _picking = true);
+    final result = await _photoPicker.pick(
+      source: source,
+      remaining: _remaining,
+    );
+    if (!mounted) return;
+    setState(() => _picking = false);
+
+    final failure = result.failure;
+    if (failure != null) {
+      await _showPickFailure(failure);
+      return;
+    }
+    if (result.paths.isEmpty) return;
+
+    final nextPaths = [
+      ..._draft.photoPaths,
+      ...result.paths,
+    ].take(ReportRules.maxPhotos).toList();
+    _update(_draft.copyWith(photoPaths: nextPaths));
+
+    if (result.truncated) {
+      _showSnack(
+        context.tr('report_photos_truncated', {
+          'n': '${result.paths.length}',
+          'max': '${ReportRules.maxPhotos}',
+        }),
+      );
+    }
+  }
+
+  void _removePhoto(int index) {
+    final nextPaths = [..._draft.photoPaths]..removeAt(index);
+    _update(_draft.copyWith(photoPaths: nextPaths));
+  }
+
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _showPickFailure(ReportPhotoFailure failure) async {
+    final permissionDenied =
+        failure == ReportPhotoFailure.cameraPermissionDenied ||
+        failure == ReportPhotoFailure.galleryPermissionDenied;
+
+    final message = switch (failure) {
+      ReportPhotoFailure.cameraPermissionDenied => context.tr(
+        'report_permission_camera',
+      ),
+      ReportPhotoFailure.galleryPermissionDenied => context.tr(
+        'report_permission_gallery',
+      ),
+      ReportPhotoFailure.unavailable => context.tr('report_photo_unavailable'),
+      ReportPhotoFailure.unknown => context.tr('report_photo_failed'),
+    };
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          dialogContext.tr(
+            permissionDenied
+                ? 'report_permission_title'
+                : 'report_photo_error_title',
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(message),
+            if (permissionDenied) ...[
+              const SizedBox(height: 12),
+              Text(
+                dialogContext.tr('report_permission_settings_hint'),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(dialogContext.tr('report_permission_dismiss')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: _step == ReportWizardDraft.firstStep && !_draft.hasContent,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        unawaited(_handleBack());
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(context.tr('report_title')),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+            onPressed: () => unawaited(_handleBack()),
+          ),
+        ),
+        body: Column(
+          children: [
+            const OfflineBanner(),
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ReportStepFrame(
+                      step: _step,
+                      showDraftBanner: _draft.hasContent,
+                      child: _step == ReportWizardDraft.firstStep
+                          ? _buildPhotoStep(context)
+                          : _buildComingSoonStep(context),
+                    ),
+            ),
+          ],
+        ),
+        bottomNavigationBar: _loading ? null : _buildActions(context),
+      ),
+    );
+  }
+
+  Widget _buildPhotoStep(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          context.tr('report_photos_title'),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          context.tr('report_photos_body'),
+          style: const TextStyle(
+            fontSize: 14,
+            height: 1.5,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 20),
+        ReportPhotoGrid(
+          photoPaths: _draft.photoPaths,
+          maxPhotos: ReportRules.maxPhotos,
+          onAdd: _picking ? null : _addPhoto,
+          onRemove: _removePhoto,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          context.tr('report_photo_counter', {
+            'n': '${_draft.photoCount}',
+            'max': '${ReportRules.maxPhotos}',
+          }),
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildComingSoonStep(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48),
+      child: Center(
+        child: Column(
+          children: [
+            const Icon(
+              Icons.construction_outlined,
+              size: 48,
+              color: AppColors.textSecondary,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              context.tr('report_coming_soon'),
+              style: const TextStyle(
+                fontSize: 15,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActions(BuildContext context) {
+    final isFirst = _step == ReportWizardDraft.firstStep;
+    final isLast = _step == ReportWizardDraft.lastStep;
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            if (!isFirst) ...[
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => unawaited(_handleBack()),
+                  child: Text(context.tr('report_back')),
+                ),
+              ),
+              if (!isLast) const SizedBox(width: 12),
+            ],
+            if (!isLast)
+              Expanded(
+                child: PrimaryButton(
+                  label: context.tr('common.continue'),
+                  onPressed: _canContinue ? _goNext : null,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
