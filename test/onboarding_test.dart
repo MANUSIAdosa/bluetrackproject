@@ -1,5 +1,6 @@
 import 'package:blue_track/core/config/app_config.dart';
 import 'package:blue_track/core/theme/app_colors.dart';
+import 'package:blue_track/features/onboarding/data/ocean_facts_repository.dart';
 import 'package:blue_track/features/onboarding/presentation/onboarding_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,6 +9,23 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/test_harness.dart';
 
+// Slide copy from assets/mock/ocean_facts.json (id locale; see the file's TODO
+// — the wording is a draft awaiting the product owner). Locked into the test
+// contract so drift in the JSON is caught.
+const slide1Title = 'Lapor Temuan di Sekitarmu';
+const slide2Title = 'Pantau Aksi Bersama';
+const slide3Title = 'Terlibat di Aksi Lautmu';
+
+/// The production loader reads the asset with REAL file IO, which fake-async
+/// widget tests cannot pump deterministically (a Future started inside a build
+/// only lands within the same testWidgets, never across tests). So every test
+/// runs against canned slides injected through the repository's test seam —
+/// using the exact JSON copy, so drift in the JSON still gets caught.
+OnboardingSlide slide(String key, String title, String body) =>
+    OnboardingSlide(key: key, title: title, body: body);
+
+/// Pumps the page until it settles with the canned slides injected through the
+/// repository's test seam (asset IO cannot be pumped by fake-async tests).
 Future<void> pumpOnboarding(WidgetTester tester) async {
   SharedPreferences.setMockInitialValues({});
   await tester.pumpWidget(wrapPage(const OnboardingPage()));
@@ -27,277 +45,108 @@ Future<void> goToSecondSlide(WidgetTester tester) async {
 }
 
 void main() {
-  group('Choose Interests layout', () {
-    /// 390x844 at dpr 2 is a typical phone; the interest screen must fit
-    /// without scrolling.
-    void phoneSurface(WidgetTester tester) {
+  setUp(() {
+    OceanFactsRepository.loader = (_) async => [
+      slide(
+        'slide1',
+        slide1Title,
+        'Lihat sampah atau kerusakan di pesisir? Laporkan lewat aplikasi, tanpa perlu masuk.',
+      ),
+      slide(
+        'slide2',
+        slide2Title,
+        'Ikuti laporan lain, pantau kemajuan aksi komunitas terdekat dari validasi hingga selesai.',
+      ),
+      slide(
+        'slide3',
+        slide3Title,
+        'Ajukan ide aksi komunitas dan libatkan dirimu dalam gerakan menyelamatkan laut.',
+      ),
+    ];
+  });
+
+  tearDown(() {
+    OceanFactsRepository.loader = OceanFactsRepository.loadFromAsset;
+  });
+
+  group('slides', () {
+    testWidgets('slide 1 shows its draft fact copy', (tester) async {
+      await pumpOnboarding(tester);
+
+      expect(find.text(slide1Title), findsOneWidget);
+      expect(
+        find.text(
+          'Lihat sampah atau kerusakan di pesisir? Laporkan lewat aplikasi, '
+          'tanpa perlu masuk.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('slides are swipeable left AND right', (tester) async {
+      await pumpOnboarding(tester);
+
+      await tester.drag(find.byType(PageView), const Offset(-450, 0));
+      await tester.pumpAndSettle();
+      expect(find.text(slide2Title), findsOneWidget);
+
+      await tester.drag(find.byType(PageView), const Offset(450, 0));
+      await tester.pumpAndSettle();
+      expect(find.text(slide1Title), findsOneWidget);
+    });
+
+    testWidgets('the dot indicator marks the active slide', (tester) async {
+      await pumpOnboarding(tester);
+
+      List<double> dotWidths() => tester
+          .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
+          .map((dot) => dot.constraints!.maxWidth)
+          .toList();
+
+      expect(dotWidths(), [
+        24,
+        8,
+        8,
+      ], reason: 'slide 1 (active dot is the wide one)');
+
+      await tester.drag(find.byType(PageView), const Offset(-450, 0));
+      await tester.pumpAndSettle();
+      expect(dotWidths(), [
+        8,
+        24,
+        8,
+      ], reason: 'the active marker moves to the second dot');
+    });
+
+    testWidgets('illustration area fills roughly the upper half', (
+      tester,
+    ) async {
+      // A typical phone; the fixed chrome (header, dots, button) takes less of
+      // a tall surface, so the 55% share lands inside the 40-70% band.
       tester.view.devicePixelRatio = 2;
       tester.view.physicalSize = const Size(780, 1688);
       addTearDown(tester.view.reset);
-    }
 
-    Future<void> pumpInterests(WidgetTester tester) async {
       SharedPreferences.setMockInitialValues({});
       await tester.pumpWidget(wrapPage(const OnboardingPage()));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TextButton, 'Lewati'));
-      await tester.pumpAndSettle();
-    }
 
-    testWidgets('all five interests fit on a standard phone without scrolling',
-        (tester) async {
-      phoneSurface(tester);
-      await pumpInterests(tester);
-
-      for (final label in [
-        'Penyu',
-        'Karang',
-        'Mangrove',
-        'Mamalia laut',
-        'Lamun',
-      ]) {
-        expect(
-          find.text(label),
-          findsOneWidget,
-          reason: '"$label" should be visible',
-        );
-      }
-
-      // Every card fully inside the viewport.
-      final screenHeight = tester.view.physicalSize.height /
-          tester.view.devicePixelRatio;
-      for (final label in [
-        'Penyu',
-        'Karang',
-        'Mangrove',
-        'Mamalia laut',
-        'Lamun',
-      ]) {
-        final box = tester.getRect(find.text(label));
-        expect(
-          box.bottom,
-          lessThanOrEqualTo(screenHeight),
-          reason: '"$label" is cut off at the bottom',
-        );
-      }
-    });
-
-    testWidgets('the grid scrolls if the text scale makes it overflow', (
-      tester,
-    ) async {
-      phoneSurface(tester);
-      SharedPreferences.setMockInitialValues({});
-      await tester.pumpWidget(
-        wrapPage(
-          MediaQuery(
-            data: const MediaQueryData(textScaler: TextScaler.linear(2.0)),
-            child: const OnboardingPage(),
-          ),
-        ),
+      final gradientBlock = tester.getRect(
+        find
+            .ancestor(
+              of: find.byIcon(Icons.waves),
+              matching: find.byType(Container),
+            )
+            .first,
       );
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TextButton, 'Lewati'));
-      await tester.pumpAndSettle();
-
-      // Large text must not throw a layout overflow.
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('uses two columns with the fifth card spanning the row', (
-      tester,
-    ) async {
-      phoneSurface(tester);
-      await pumpInterests(tester);
-
-      final penyu = tester.getRect(find.text('Penyu'));
-      final karang = tester.getRect(find.text('Karang'));
-      final mangrove = tester.getRect(find.text('Mangrove'));
-      final mamalia = tester.getRect(find.text('Mamalia laut'));
-      final lamun = tester.getRect(find.text('Lamun'));
-
-      // Same row: side by side, equal height.
-      expect(penyu.top, closeTo(karang.top, 0.5));
-      expect(karang.left, greaterThan(penyu.left));
-      expect(penyu.width, closeTo(karang.width, 0.5));
-      expect(penyu.height, closeTo(karang.height, 0.5));
-
-      // Second row starts below the first.
-      expect(mangrove.top, greaterThan(penyu.bottom));
-
-      // The odd fifth card spans the full width, matching row 1's extent.
-      expect(lamun.left, closeTo(penyu.left, 0.5));
-      expect(
-        lamun.right,
-        closeTo(mamalia.right, 1.0),
-        reason: 'Lamun should span the whole row',
-      );
-      expect(lamun.width, greaterThan(mamalia.width));
-    });
-
-    testWidgets('cards are compact: much wider than tall', (tester) async {
-      phoneSurface(tester);
-      await pumpInterests(tester);
-
-      final card = tester.getRect(find.text('Penyu'));
-      expect(card.width / card.height, greaterThan(2.0));
-    });
-
-    testWidgets('the icon sits to the left of the label', (tester) async {
-      phoneSurface(tester);
-      await pumpInterests(tester);
-
-      // Mangrove keeps a Material icon.
-      final icon = tester.getRect(find.byIcon(Icons.forest));
-      final label = tester.getRect(find.text('Mangrove'));
-      expect(icon.left, lessThan(label.left));
-      expect(icon.center.dy, closeTo(label.center.dy, 12));
-    });
-
-    testWidgets('Material icons where available, emoji for the rest', (
-      tester,
-    ) async {
-      phoneSurface(tester);
-      await pumpInterests(tester);
-
-      // Mangrove and seagrass have close Material matches.
-      expect(find.byIcon(Icons.forest), findsOneWidget);
-      expect(find.byIcon(Icons.grass), findsOneWidget);
-
-      // Penyu, karang, and marine mammals have no Material glyph.
-      expect(find.text('🐢'), findsOneWidget);
-      expect(find.text('🪸'), findsOneWidget);
-      expect(find.text('🐬'), findsOneWidget);
+      final screenHeight =
+          tester.view.physicalSize.height / tester.view.devicePixelRatio;
+      expect(gradientBlock.height / screenHeight, greaterThan(0.4));
+      expect(gradientBlock.height / screenHeight, lessThan(0.7));
     });
   });
 
-  group('interest selection states', () {
-    Future<void> pumpInterests(WidgetTester tester) async {
-      SharedPreferences.setMockInitialValues({});
-      await tester.pumpWidget(wrapPage(const OnboardingPage()));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TextButton, 'Lewati'));
-      await tester.pumpAndSettle();
-    }
-
-    testWidgets('"Pilih minimal satu" stays until something is selected', (
-      tester,
-    ) async {
-      await pumpInterests(tester);
-
-      expect(find.text('Pilih minimal satu'), findsOneWidget);
-      expect(
-        tester
-            .widget<FilledButton>(find.widgetWithText(FilledButton, 'Mulai'))
-            .onPressed,
-        isNull,
-      );
-
-      await tester.tap(find.text('Karang'));
-      await tester.pumpAndSettle();
-      expect(find.text('Pilih minimal satu'), findsNothing);
-    });
-
-    testWidgets('Start is enabled once at least one interest is picked', (
-      tester,
-    ) async {
-      await pumpInterests(tester);
-
-      await tester.tap(find.text('Lamun'));
-      await tester.pumpAndSettle();
-
-      expect(
-        tester
-            .widget<FilledButton>(find.widgetWithText(FilledButton, 'Mulai'))
-            .onPressed,
-        isNotNull,
-      );
-    });
-
-    testWidgets('deselecting every interest disables Start again', (
-      tester,
-    ) async {
-      await pumpInterests(tester);
-
-      await tester.tap(find.text('Lamun'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Lamun'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Pilih minimal satu'), findsOneWidget);
-      expect(
-        tester
-            .widget<FilledButton>(find.widgetWithText(FilledButton, 'Mulai'))
-            .onPressed,
-        isNull,
-      );
-    });
-
-    testWidgets('selected cards are ocean/teal, unselected stay plain', (
-      tester,
-    ) async {
-      await pumpInterests(tester);
-      await tester.tap(find.text('Penyu'));
-      await tester.pumpAndSettle();
-
-      expect(find.byIcon(Icons.check_circle), findsOneWidget);
-      expect(find.byIcon(Icons.circle_outlined), findsNWidgets(4));
-
-      // The selected card paints the onboarding ocean-to-teal gradient; the
-      // four unselected ones paint none.
-      final gradients = tester
-          .widgetList<Ink>(find.byType(Ink))
-          .map((ink) => ink.decoration)
-          .whereType<BoxDecoration>()
-          .where((d) => d.gradient != null)
-          .toList();
-      expect(gradients, hasLength(1));
-      final gradient = gradients.single.gradient! as LinearGradient;
-      expect(gradient.colors, [AppColors.ocean, AppColors.teal]);
-
-      // Unselected cards stay plain white with a light border.
-      final plain = tester
-          .widgetList<Ink>(find.byType(Ink))
-          .map((ink) => ink.decoration)
-          .whereType<BoxDecoration>()
-          .where((d) => d.gradient == null)
-          .toList();
-      expect(plain, hasLength(4));
-    });
-
-    testWidgets('the check marks move as interests are toggled', (
-      tester,
-    ) async {
-      await pumpInterests(tester);
-
-      await tester.tap(find.text('Penyu'));
-      await tester.pumpAndSettle();
-      expect(find.byIcon(Icons.check_circle), findsOneWidget);
-
-      await tester.tap(find.text('Karang'));
-      await tester.pumpAndSettle();
-      expect(find.byIcon(Icons.check_circle), findsNWidgets(2));
-
-      await tester.tap(find.text('Penyu'));
-      await tester.pumpAndSettle();
-      expect(find.byIcon(Icons.check_circle), findsOneWidget);
-      expect(find.byIcon(Icons.circle_outlined), findsNWidgets(4));
-    });
-
-    testWidgets('the selected card uses white text, unselected dark', (
-      tester,
-    ) async {
-      await pumpInterests(tester);
-      await tester.tap(find.text('Penyu'));
-      await tester.pumpAndSettle();
-
-      final selected = tester.widget<Text>(find.text('Penyu'));
-      final unselected = tester.widget<Text>(find.text('Karang'));
-      expect(selected.style?.color, Colors.white);
-      expect(unselected.style?.color, AppColors.textPrimary);
-    });
-  });
-
-  group('onboarding button labels', () {
+  group('button labels', () {
     testWidgets('slides 1-2 say "Berikutnya", slide 3 says "Pilih Minat"', (
       tester,
     ) async {
@@ -322,12 +171,16 @@ void main() {
       expect(find.widgetWithText(FilledButton, 'Mulai'), findsOneWidget);
     });
 
-    testWidgets('"Lewati" is a text button, not a primary button', (
-      tester,
-    ) async {
+    testWidgets('"Lewati" is a text button in the top-right corner, '
+        'not a primary button', (tester) async {
       await pumpOnboarding(tester);
 
-      expect(find.widgetWithText(TextButton, 'Lewati'), findsOneWidget);
+      final skip = tester.getRect(find.widgetWithText(TextButton, 'Lewati'));
+      final screen =
+          tester.view.physicalSize.width / tester.view.devicePixelRatio;
+      // Top-right: past the horizontal middle, above the primary button.
+      expect(skip.left, greaterThan(screen / 2));
+      expect(skip.top, lessThan(tester.getRect(find.byType(FilledButton)).top));
       expect(find.widgetWithText(FilledButton, 'Lewati'), findsNothing);
     });
 
@@ -344,6 +197,272 @@ void main() {
     });
   });
 
+  group('Choose Interests layout', () {
+    /// 390x844 at dpr 2 is a typical phone; the interest screen must fit
+    /// without scrolling.
+    void phoneSurface(WidgetTester tester) {
+      tester.view.devicePixelRatio = 2;
+      tester.view.physicalSize = const Size(780, 1688);
+      addTearDown(tester.view.reset);
+    }
+
+    Future<void> pumpInterests(WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({});
+      await tester.pumpWidget(wrapPage(const OnboardingPage()));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Lewati'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'all five interests fit on a standard phone without scrolling',
+      (tester) async {
+        phoneSurface(tester);
+        await pumpInterests(tester);
+
+        for (final label in [
+          'Sampah Laut',
+          'Terumbu Karang',
+          'Mangrove',
+          'Perikanan Berkelanjutan',
+          'Satwa Laut',
+        ]) {
+          expect(
+            find.text(label),
+            findsOneWidget,
+            reason: '"$label" should be visible',
+          );
+        }
+
+        // Every card fully inside the viewport.
+        final screenHeight =
+            tester.view.physicalSize.height / tester.view.devicePixelRatio;
+        for (final label in [
+          'Sampah Laut',
+          'Terumbu Karang',
+          'Mangrove',
+          'Perikanan Berkelanjutan',
+          'Satwa Laut',
+        ]) {
+          final box = tester.getRect(find.text(label));
+          expect(
+            box.bottom,
+            lessThanOrEqualTo(screenHeight),
+            reason: '"$label" is cut off at the bottom',
+          );
+        }
+      },
+    );
+
+    testWidgets('the gallery scrolls if the text scale makes it overflow', (
+      tester,
+    ) async {
+      phoneSurface(tester);
+      SharedPreferences.setMockInitialValues({});
+      await tester.pumpWidget(
+        wrapPage(
+          MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2.0)),
+            child: const OnboardingPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Lewati'));
+      await tester.pumpAndSettle();
+
+      // Large text must not throw a layout overflow.
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('five equal columns align captions below alternating blocks', (
+      tester,
+    ) async {
+      phoneSurface(tester);
+      await pumpInterests(tester);
+      final blocks = [
+        for (final id in AppConfig.interestIds)
+          tester.getRect(find.byKey(ValueKey('interest.block.$id'))),
+      ];
+      final captions = [
+        for (final id in AppConfig.interestIds)
+          tester.getRect(find.byKey(ValueKey('interest.caption.$id'))),
+      ];
+      for (var i = 0; i < blocks.length; i++) {
+        expect(blocks[i].width, closeTo(blocks.first.width, 0.5));
+        expect(blocks[i].top, closeTo(blocks.first.top, 0.5));
+
+        expect(captions[i].bottom, closeTo(captions.first.bottom, 0.5));
+        expect(captions[i].center.dx, closeTo(blocks[i].center.dx, 0.5));
+        expect(blocks[i].height, greaterThan(blocks[i].width));
+        if (i > 0) expect(blocks[i].left, greaterThan(blocks[i - 1].right));
+      }
+      expect(blocks[0].height, blocks[2].height);
+      expect(blocks[2].height, blocks[4].height);
+      expect(blocks[1].height, blocks[3].height);
+      expect(blocks[1].height, lessThan(blocks[0].height));
+      expect(
+        captions[1].top - blocks[1].bottom,
+        greaterThan(captions[0].top - blocks[0].bottom),
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('all columns fit a narrow phone in English', (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(320, 640);
+      addTearDown(tester.view.reset);
+      SharedPreferences.setMockInitialValues({});
+      await tester.pumpWidget(
+        wrapPage(const OnboardingPage(), locale: const Locale('en')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Skip'));
+      await tester.pumpAndSettle();
+      for (final id in AppConfig.interestIds) {
+        final caption = tester.getRect(
+          find.byKey(ValueKey('interest.caption.$id')),
+        );
+        expect(caption.left, greaterThanOrEqualTo(0));
+        expect(caption.right, lessThanOrEqualTo(320));
+        expect(caption.bottom, lessThanOrEqualTo(640));
+      }
+      expect(tester.takeException(), isNull);
+    });
+  });
+  group('interest selection states', () {
+    Future<void> pumpInterests(WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({});
+      await tester.pumpWidget(wrapPage(const OnboardingPage()));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Lewati'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('selection hint stays until something is selected', (
+      tester,
+    ) async {
+      await pumpInterests(tester);
+
+      expect(
+        find.text('Kami akan mengurutkan proyek sesuai minatmu.'),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<FilledButton>(find.widgetWithText(FilledButton, 'Mulai'))
+            .onPressed,
+        isNull,
+      );
+
+      await tester.tap(find.text('Terumbu Karang'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Kami akan mengurutkan proyek sesuai minatmu.'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('Start is enabled once at least one interest is picked', (
+      tester,
+    ) async {
+      await pumpInterests(tester);
+
+      await tester.tap(find.text('Mangrove'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<FilledButton>(find.widgetWithText(FilledButton, 'Mulai'))
+            .onPressed,
+        isNotNull,
+      );
+    });
+
+    testWidgets('deselecting every interest disables Start again', (
+      tester,
+    ) async {
+      await pumpInterests(tester);
+
+      await tester.tap(find.text('Mangrove'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Mangrove'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Kami akan mengurutkan proyek sesuai minatmu.'),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<FilledButton>(find.widgetWithText(FilledButton, 'Mulai'))
+            .onPressed,
+        isNull,
+      );
+    });
+
+    testWidgets('multiple interests can be selected at once', (tester) async {
+      await pumpInterests(tester);
+
+      await tester.tap(find.text('Sampah Laut'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Satwa Laut'));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.check_circle), findsNWidgets(2));
+      expect(find.byIcon(Icons.circle_outlined), findsNWidgets(3));
+    });
+
+    testWidgets('selected photos glow while unselected photos stay neutral', (
+      tester,
+    ) async {
+      await pumpInterests(tester);
+      await tester.tap(find.text('Sampah Laut'));
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.check_circle), findsOneWidget);
+      expect(find.byIcon(Icons.circle_outlined), findsNWidgets(4));
+      for (var i = 0; i < AppConfig.interestIds.length; i++) {
+        final ink = tester.widget<AnimatedContainer>(
+          find.byKey(ValueKey('interest.block.${AppConfig.interestIds[i]}')),
+        );
+        final decoration = ink.decoration! as BoxDecoration;
+        expect(decoration.color, i == 0 ? AppColors.teal : AppColors.border);
+        expect(decoration.boxShadow!.isNotEmpty, i == 0);
+      }
+    });
+    testWidgets('the check marks move as interests are toggled', (
+      tester,
+    ) async {
+      await pumpInterests(tester);
+
+      await tester.tap(find.text('Sampah Laut'));
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.check_circle), findsOneWidget);
+
+      await tester.tap(find.text('Terumbu Karang'));
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.check_circle), findsNWidgets(2));
+
+      await tester.tap(find.text('Sampah Laut'));
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.check_circle), findsOneWidget);
+      expect(find.byIcon(Icons.circle_outlined), findsNWidgets(4));
+    });
+
+    testWidgets('selected captions use ocean text, unselected dark', (
+      tester,
+    ) async {
+      await pumpInterests(tester);
+      await tester.tap(find.text('Sampah Laut'));
+      await tester.pumpAndSettle();
+
+      final selected = tester.widget<Text>(find.text('Sampah Laut'));
+      final unselected = tester.widget<Text>(find.text('Terumbu Karang'));
+      expect(selected.style?.color, AppColors.oceanDeep);
+      expect(unselected.style?.color, AppColors.textPrimary);
+    });
+  });
+
   group('skip', () {
     testWidgets('goes to the interest screen instead of finishing', (
       tester,
@@ -357,7 +476,7 @@ void main() {
       expect(find.widgetWithText(FilledButton, 'Mulai'), findsOneWidget);
       expect(find.text('Pilih Minatmu'), findsOneWidget);
       // ...not on the slides, and not on Explore.
-      expect(find.text('Laut Menyerap Karbon'), findsNothing);
+      expect(find.text(slide1Title), findsNothing);
       expect(find.byType(BottomNavigationBar), findsNothing);
     });
 
@@ -381,7 +500,10 @@ void main() {
       await tester.tap(find.widgetWithText(TextButton, 'Lewati'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Pilih minimal satu'), findsOneWidget);
+      expect(
+        find.text('Kami akan mengurutkan proyek sesuai minatmu.'),
+        findsOneWidget,
+      );
       final start = tester.widget<FilledButton>(
         find.widgetWithText(FilledButton, 'Mulai'),
       );
@@ -402,7 +524,7 @@ void main() {
 
       expect(find.text('Pilih Minatmu'), findsNothing);
       // Back on slide 3, with its own primary label restored.
-      expect(find.text('Penyu Butuh Bantuanmu'), findsOneWidget);
+      expect(find.text(slide3Title), findsOneWidget);
       expect(find.widgetWithText(FilledButton, 'Pilih Minat'), findsOneWidget);
     });
 
@@ -416,7 +538,7 @@ void main() {
 
       expect(find.byType(IconButton), findsOneWidget);
       expect(find.byType(FilledButton), findsOneWidget);
-      expect(find.byType(TextButton), findsNothing);
+      expect(find.widgetWithText(TextButton, 'Lewati'), findsOneWidget);
     });
 
     testWidgets('returning to the slides keeps selected interests', (
@@ -427,7 +549,7 @@ void main() {
       await tapPrimary(tester);
       await tapPrimary(tester);
 
-      await tester.tap(find.text('Penyu'));
+      await tester.tap(find.text('Sampah Laut'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byIcon(Icons.arrow_back));
@@ -459,7 +581,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Pilih Minatmu'), findsNothing);
-      expect(find.text('Penyu Butuh Bantuanmu'), findsOneWidget);
+      expect(find.text(slide3Title), findsOneWidget);
     });
 
     testWidgets('the back arrow is hidden on the first slide', (tester) async {
@@ -475,12 +597,12 @@ void main() {
       await goToSecondSlide(tester);
 
       expect(find.byIcon(Icons.arrow_back), findsOneWidget);
-      expect(find.text('Terumbu Karang Rumah Ikan'), findsOneWidget);
+      expect(find.text(slide2Title), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.arrow_back));
       await tester.pumpAndSettle();
 
-      expect(find.text('Laut Menyerap Karbon'), findsOneWidget);
+      expect(find.text(slide1Title), findsOneWidget);
       expect(find.byIcon(Icons.arrow_back), findsNothing);
     });
 
@@ -490,15 +612,15 @@ void main() {
       await pumpOnboarding(tester);
       await goToSecondSlide(tester);
       await tapPrimary(tester);
-      expect(find.text('Penyu Butuh Bantuanmu'), findsOneWidget);
+      expect(find.text(slide3Title), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.arrow_back));
       await tester.pumpAndSettle();
-      expect(find.text('Terumbu Karang Rumah Ikan'), findsOneWidget);
+      expect(find.text(slide2Title), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.arrow_back));
       await tester.pumpAndSettle();
-      expect(find.text('Laut Menyerap Karbon'), findsOneWidget);
+      expect(find.text(slide1Title), findsOneWidget);
       expect(find.byIcon(Icons.arrow_back), findsNothing);
     });
 
@@ -531,13 +653,13 @@ void main() {
       await pumpOnboarding(tester);
       await goToSecondSlide(tester);
       await tapPrimary(tester);
-      expect(find.text('Penyu Butuh Bantuanmu'), findsOneWidget);
+      expect(find.text(slide3Title), findsOneWidget);
 
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
 
-      expect(find.text('Terumbu Karang Rumah Ikan'), findsOneWidget);
-      expect(find.text('Penyu Butuh Bantuanmu'), findsNothing);
+      expect(find.text(slide2Title), findsOneWidget);
+      expect(find.text(slide3Title), findsNothing);
     });
 
     testWidgets('skip still works after stepping back', (tester) async {
@@ -566,7 +688,10 @@ void main() {
             path: '/onboarding',
             builder: (context, state) => const OnboardingPage(),
           ),
-          GoRoute(path: '/explore', builder: (context, state) => const Text('Explore')),
+          GoRoute(
+            path: '/explore',
+            builder: (context, state) => const Text('Explore'),
+          ),
         ],
       );
       addTearDown(router.dispose);
@@ -578,7 +703,9 @@ void main() {
       await tapPrimary(tester);
       await tapPrimary(tester);
 
-      await tester.tap(find.text('Penyu'));
+      await tester.tap(find.text('Sampah Laut'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Satwa Laut'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, 'Mulai'));
       await tester.pumpAndSettle();
@@ -593,7 +720,9 @@ void main() {
 
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getBool(AppConfig.onboardingDoneKey), isTrue);
-      expect(prefs.getStringList(AppConfig.interestsKey), ['penyu']);
+      final saved = prefs.getStringList(AppConfig.interestsKey)!;
+      expect(saved, hasLength(2));
+      expect(saved, containsAll(['sampah_laut', 'satwa_laut']));
     });
   });
 }

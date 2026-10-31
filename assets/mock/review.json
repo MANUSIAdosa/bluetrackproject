@@ -1,0 +1,236 @@
+[
+  {
+    "id": "rev001",
+    "locationId": "p01",
+    "authorId": "u02",
+    "authorName": "Budi Santoso",
+    "rating": 5,
+    "comment": "Program patroli sarang penyu sangat terlihat di lapangan. Relawan menjelaskan prosesnya dengan terbuka.",
+    "createdAt": "2026-05-18T10:00:00Z"
+  },
+  {
+    "id": "rev002",
+    "locationId": "p01",
+    "authorId": "u03",
+    "authorName": "Citra Wulandari",
+    "rating": 4,
+    "comment": "Pantainya bersih dan informasi proyek mudah dipahami. Semoga jadwal kunjungan bisa lebih sering.",
+    "createdAt": "2026-06-22T09:30:00Z"
+  },
+  {
+    "id": "rev003",
+    "locationId": "p01",
+    "authorId": "u04",
+    "authorName": "Dimas Pratama",
+    "rating": 5,
+    "comment": "Laporan mingguan transparan, saya bisa melihat bagaimana donasi dipakai.",
+    "createdAt": "2026-07-09T14:15:00Z"
+  },
+  {
+    "id": "rev004",
+    "locationId": "p01",
+    "authorId": "u05",
+    "authorName": "Eka Putri",
+    "rating": 3,
+    "comment": "Akses ke lokasi cukup jauh dan jalan rusak, tetapi kegiatan konservasinya bermanfaat.",
+    "createdAt": "2026-08-15T08:45:00Z"
+  },
+  {
+    "id": "rev005",
+    "locationId": "p01",
+    "authorId": "u06",
+    "authorName": "Fajar Nugroho",
+    "rating": 2,
+    "comment": "Saya berharap ada informasi lebih jelas soal larangan membawa plastik sekali pakai.",
+    "createdAt": "2026-09-28T16:20:00Z"
+  },
+  {
+    "id": "rev006",
+    "locationId": "p01",
+    "authorId": "u07",
+    "authorName": "Gita Maharani",
+    "rating": 4,
+    "comment": "Pemandu ramah dan edukasinya bagus. Fasilitas toilet masih perlu diperbaiki.",
+    "createdAt": "2026-10-12T11:05:00Z"
+  },
+  {
+    "id": "rev007",
+    "locationId": "p02",
+    "authorId": "u01",
+    "authorName": "Ayu Lestari",
+    "rating": 5,
+    "comment": "Terumbu karangnya indah dan tim penyelam sangat peduli pada keselamatan peserta.",
+    "createdAt": "2026-05-05T08:20:00Z"
+  },
+  {
+    "id": "rev008",
+    "locationId": "p02",
+    "authorId": "u08",
+    "authorName": "Hendra Wijaya",
+    "rating": 5,
+    "comment": "Program transplantasi karangnya jelas dan hasilnya bisa dilihat langsung.",
+    "createdAt": "2026-06-30T13:40:00Z"
+  },
+  {
+    "id": "rev009",
+    "locationId": "p02",
+    "authorId": "u09",
+    "authorName": "Indah Permata",
+    "rating": 4,
+    "comment": "Pengalaman menyelam edukatif, tetapi jumlah peserta per sesi terlalu banyak.",
+    "createdAt": "2026-08-02T10:10:00Z"
+  },
+  {
+    "id": "rev010",
+    "locationId": "p02",
+    "authorId": "u10",
+    "authorName": "Joko Susilo",
+    "rating": 3,
+    "comment": "Informasi jadwal sempat berubah mendadak. Kegiatan tetap menarik.",
+    "createdAt": "2026-09-19T15:35:00Z"
+  },
+  {
+    "id": "rev011",
+    "locationId": "p02",
+    "authorId": "u02",
+    "authorName": "Budi Santoso",
+    "rating": 2,
+    "comment": "Saya menemukan sampah plastik di area dermaga. Perlu pengawasan lebih ketat.",
+    "createdAt": "2026-10-20T09:15:00Z"
+  },
+  {
+    "id": "rev012",
+    "locationId": "p03",
+    "authorId": "u03",
+    "authorName": "Citra Wulandari",
+    "rating": 4,
+    "comment": "Jalur mangrove tertata dan penjelasan ekosistemnya mudah dipahami anak-anak.",
+    "createdAt": "2026-05-27T07:50:00Z"
+  },
+  {
+    "id": "rev013",
+    "locationId": "p03",
+    "authorId": "u04",
+    "authorName": "Dimas Pratama",
+    "rating": 3,
+    "comment": "Lokasinya dekat kota, tetapi bau sampah cukup mengganggu saat saya berkunjung.",
+    "createdAt": "2026-07-03T12:30:00Z"
+  },
+  {
+    "id": "rev014",
+    "locationId": "p03",
+    "authorId": "u05",
+    "authorName": "Eka Putri",
+    "rating": 5,
+    "comment": "Warga sangat terlibat dan programnya terasa berdampak bagi lingkungan sekitar.",
+    "createdAt": "2026-08-21T09:05:00Z"
+  },
+  {
+    "id": "rev015",
+    "locationId": "p03",
+    "authorId": "u06",
+    "authorName": "Fajar Nugroho",
+    "rating": 2,
+    "comment": "Beberapa papan informasi rusak dan jalur sempit. Perlu perawatan.",
+    "createdAt": "2026-09-06T14:45:00Z"
+  },
+  {
+    "id": "rev016",
+    "locationId": "p03",
+    "authorId": "u07",
+    "authorName": "Gita Maharani",
+    "rating": 1,
+    "comment": "Saya kecewa karena area yang dipromosikan sebagai hutan mangrove justru dipenuhi sampah.",
+    "createdAt": "2026-10-01T08:00:00Z"
+  },
+  {
+    "id": "rev017",
+    "locationId": "p04",
+    "authorId": "u08",
+    "authorName": "Hendra Wijaya",
+    "rating": 5,
+    "comment": "Ekspedisi pausnya luar biasa dan pemandu menjelaskan tanpa mengganggu hewan.",
+    "createdAt": "2026-06-10T07:25:00Z"
+  },
+  {
+    "id": "rev018",
+    "locationId": "p04",
+    "authorId": "u09",
+    "authorName": "Indah Permata",
+    "rating": 4,
+    "comment": "Kapal bersih dan staf sigap, sayang jadwal keberangkatan sering tertunda.",
+    "createdAt": "2026-07-25T10:40:00Z"
+  },
+  {
+    "id": "rev019",
+    "locationId": "p04",
+    "authorId": "u10",
+    "authorName": "Joko Susilo",
+    "rating": 4,
+    "comment": "Saya melihat lumba-lumba dari jarak aman. Protokolnya terasa bertanggung jawab.",
+    "createdAt": "2026-08-08T13:10:00Z"
+  },
+  {
+    "id": "rev020",
+    "locationId": "p04",
+    "authorId": "u01",
+    "authorName": "Ayu Lestari",
+    "rating": 3,
+    "comment": "Perjalanan panjang dan cuaca kurang mendukung, tetapi informasinya jelas.",
+    "createdAt": "2026-09-14T16:05:00Z"
+  },
+  {
+    "id": "rev021",
+    "locationId": "p04",
+    "authorId": "u02",
+    "authorName": "Budi Santoso",
+    "rating": 5,
+    "comment": "Tim konservasi responsif dan laporan pemantauan dibagikan terbuka.",
+    "createdAt": "2026-10-18T09:50:00Z"
+  },
+  {
+    "id": "rev022",
+    "locationId": "p05",
+    "authorId": "u03",
+    "authorName": "Citra Wulandari",
+    "rating": 3,
+    "comment": "Padang lamunnya menarik, tetapi akses perahu terbatas dan jadwalnya jarang.",
+    "createdAt": "2026-05-30T11:20:00Z"
+  },
+  {
+    "id": "rev023",
+    "locationId": "p05",
+    "authorId": "u04",
+    "authorName": "Dimas Pratama",
+    "rating": 5,
+    "comment": "Saya ikut menanam lamun dan mendapat penjelasan yang sangat rinci.",
+    "createdAt": "2026-06-17T08:35:00Z"
+  },
+  {
+    "id": "rev024",
+    "locationId": "p05",
+    "authorId": "u05",
+    "authorName": "Eka Putri",
+    "rating": 2,
+    "comment": "Fasilitas dasar kurang memadai dan tidak ada tempat sampah di dermaga.",
+    "createdAt": "2026-07-21T15:00:00Z"
+  },
+  {
+    "id": "rev025",
+    "locationId": "p05",
+    "authorId": "u06",
+    "authorName": "Fajar Nugroho",
+    "rating": 4,
+    "comment": "Programnya bagus dan warga ramah. Perlu lebih banyak papan edukasi.",
+    "createdAt": "2026-08-29T10:15:00Z"
+  },
+  {
+    "id": "rev026",
+    "locationId": "p05",
+    "authorId": "u07",
+    "authorName": "Gita Maharani",
+    "rating": 5,
+    "comment": "Laporan dampak setiap bulan membuat saya yakin donasi tepat sasaran.",
+    "createdAt": "2026-10-06T12:55:00Z"
+  }
+]

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/router/routes.dart';
 import '../../../core/state/app_state.dart';
 import '../../shell/tab_placeholder.dart';
 
@@ -24,26 +26,33 @@ class ProfilePage extends StatelessWidget {
         builder: (context, _) {
           return Column(
             children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.tune),
+                    title: Text(context.tr('p01.interests.manage')),
+                    subtitle: Text(context.tr('p01.interests.later')),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push(Routes.interests),
+                  ),
+                ),
+              ),
               if (signedIn)
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Card(
                     child: ListTile(
-                      leading: const CircleAvatar(
-                        child: Icon(Icons.person),
-                      ),
+                      leading: const CircleAvatar(child: Icon(Icons.person)),
                       title: Text(context.tr('profile.title')),
                       trailing: TextButton(
-                        onPressed: () =>
-                            AuthController.instance.signOut(),
+                        onPressed: () => AuthController.instance.signOut(),
                         child: Text(context.tr('profile.signOut')),
                       ),
                     ),
                   ),
                 ),
-              const Expanded(
-                child: TabPlaceholder(location: '/profile'),
-              ),
+              const Expanded(child: TabPlaceholder(location: '/profile')),
             ],
           );
         },

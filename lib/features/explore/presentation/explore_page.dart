@@ -122,6 +122,7 @@ class _ExplorePageState extends State<ExplorePage> {
     _scrollController.addListener(_onScroll);
     OfflineController.instance.addListener(_onOfflineChanged);
     SavedProjectsController.instance.addListener(_onSavedProjectsChanged);
+    OnboardingState.interests.addListener(_onInterestsChanged);
     _load();
   }
 
@@ -129,6 +130,7 @@ class _ExplorePageState extends State<ExplorePage> {
   void dispose() {
     OfflineController.instance.removeListener(_onOfflineChanged);
     SavedProjectsController.instance.removeListener(_onSavedProjectsChanged);
+    OnboardingState.interests.removeListener(_onInterestsChanged);
     _scrollController
       ..removeListener(_onScroll)
       ..dispose();
@@ -147,6 +149,10 @@ class _ExplorePageState extends State<ExplorePage> {
   void _onOfflineChanged() {
     if (!mounted) return;
     _load();
+  }
+
+  void _onInterestsChanged() {
+    setState(() => _interests = OnboardingState.interests.value);
   }
 
   Future<void> _load() async {

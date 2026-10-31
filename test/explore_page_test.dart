@@ -227,6 +227,23 @@ void main() {
     if (_hiveDir.existsSync()) _hiveDir.deleteSync(recursive: true);
   });
 
+  testWidgets('saved preferences update an already open Explore page', (
+    tester,
+  ) async {
+    final projects = FakeProjectRepository([
+      buildProject(id: 'p01', category: 'mangrove'),
+    ]);
+    await pumpExplore(tester, projects: projects);
+    expect(find.text('Untuk minatmu'), findsNothing);
+    await OnboardingState.saveInterests(['mangrove']);
+    await pumpFrames(tester);
+    expect(find.text('Untuk minatmu'), findsOneWidget);
+    expect(projects.callCount, 1);
+    await OnboardingState.saveInterests([]);
+    await pumpFrames(tester);
+    expect(find.text('Untuk minatmu'), findsNothing);
+  });
+
   testWidgets('load failure shows ErrorState instead of endless skeletons', (
     tester,
   ) async {

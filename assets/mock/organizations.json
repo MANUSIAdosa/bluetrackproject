@@ -36,5 +36,71 @@
       {"key": "field", "done": false},
       {"key": "finance", "done": true}
     ]
+  },
+  {
+    "id": "c01",
+    "type": "community",
+    "name": "Kelompok Nelayan Pantai Sukamade",
+    "verified": true,
+    "location": "Banyuwangi, Jawa Timur",
+    "establishedYear": 2012,
+    "totalProjects": 2,
+    "totalDisbursed": 95000000,
+    "communitiesServed": 2,
+    "memberCount": 48,
+    "color": "#0EA5E9",
+    "email": "nelayan.sukamade@bluetrack.id",
+    "phone": "+62 812-1000-2000",
+    "managedProjectIds": ["p01", "p05"],
+    "checklist": [
+      {"key": "legal", "done": true},
+      {"key": "audit", "done": true},
+      {"key": "field", "done": true},
+      {"key": "finance", "done": true}
+    ]
+  },
+  {
+    "id": "c02",
+    "type": "community",
+    "name": "Komunitas Pecinta Alam Pesisir",
+    "verified": true,
+    "location": "Kepulauan Seribu, DKI Jakarta",
+    "establishedYear": 2016,
+    "totalProjects": 2,
+    "totalDisbursed": 64000000,
+    "communitiesServed": 2,
+    "memberCount": 36,
+    "color": "#14B8A6",
+    "email": "pecintaalam.pesisir@bluetrack.id",
+    "phone": "+62 813-2000-3000",
+    "managedProjectIds": ["p02", "p03"],
+    "checklist": [
+      {"key": "legal", "done": true},
+      {"key": "audit", "done": true},
+      {"key": "field", "done": true},
+      {"key": "finance", "done": false}
+    ]
+  },
+  {
+    "id": "c03",
+    "type": "community",
+    "name": "Karang Taruna Pesisir Makassar",
+    "verified": false,
+    "location": "Makassar, Sulawesi Selatan",
+    "establishedYear": 2020,
+    "totalProjects": 0,
+    "totalDisbursed": 0,
+    "communitiesServed": 1,
+    "memberCount": 27,
+    "color": "#F59E0B",
+    "email": "karangtaruna.makassar@bluetrack.id",
+    "phone": "+62 812-3000-4000",
+    "managedProjectIds": [],
+    "checklist": [
+      {"key": "legal", "done": true},
+      {"key": "audit", "done": false},
+      {"key": "field", "done": false},
+      {"key": "finance", "done": false}
+    ]
   }
 ]
