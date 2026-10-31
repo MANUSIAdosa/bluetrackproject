@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/router/routes.dart';
 import '../../../../core/state/app_state.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/login_prompt_card.dart';
@@ -328,7 +329,7 @@ class _ReportWizardPageState extends State<ReportWizardPage>
         _submitting = false;
         _draft = const ReportWizardDraft();
       });
-      context.pushReplacement('/report/success/${report.id}');
+      context.pushReplacement(Routes.reportSuccessUrl(report.id));
     } catch (_) {
       // Keep every field so the user can retry without redoing the form.
       if (!mounted) return;
@@ -340,8 +341,8 @@ class _ReportWizardPageState extends State<ReportWizardPage>
   }
 
   Future<void> _openLogin() async {
-    final redirect = Uri.encodeComponent('/report?resume=1');
-    await context.push<void>('/auth?redirect=$redirect');
+    final redirect = Uri.encodeComponent('${Routes.report}?resume=1');
+    await context.push<void>('${Routes.auth}?redirect=$redirect');
   }
 
   void _editFromReview(int step) {
@@ -591,7 +592,9 @@ class _ReportWizardPageState extends State<ReportWizardPage>
               LoginPromptCard(
                 // Encoded because LoginPage reads `redirect` as one query
                 // value and the wizard needs `resume=1` to skip the dialog.
-                returnLocation: Uri.encodeComponent('/report?resume=1'),
+                returnLocation: Uri.encodeComponent(
+                  '${Routes.report}?resume=1',
+                ),
                 title: context.tr('report_review_login_title'),
                 body: context.tr('report_review_login_body'),
               ),

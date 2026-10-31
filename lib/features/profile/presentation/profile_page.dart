@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/router/routes.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../shell/tab_placeholder.dart';
@@ -26,11 +27,23 @@ class ProfilePage extends StatelessWidget {
         builder: (context, _) {
           return Column(
             children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.tune),
+                    title: Text(context.tr('p01.interests.manage')),
+                    subtitle: Text(context.tr('p01.interests.later')),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push(Routes.interests),
+                  ),
+                ),
+              ),
               // TODO(lapor): move this entry to the final "Laporan Saya"
               // surface once that page is designed. Kept on Profile so the
               // Lapor Temuan wizard is reachable in Release 1.
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: Card(
                   child: ListTile(
                     leading: const Icon(
@@ -39,7 +52,7 @@ class ProfilePage extends StatelessWidget {
                     ),
                     title: Text(context.tr('report_title')),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () => context.push('/report'),
+                    onTap: () => context.push(Routes.report),
                   ),
                 ),
               ),
@@ -48,21 +61,16 @@ class ProfilePage extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   child: Card(
                     child: ListTile(
-                      leading: const CircleAvatar(
-                        child: Icon(Icons.person),
-                      ),
+                      leading: const CircleAvatar(child: Icon(Icons.person)),
                       title: Text(context.tr('profile.title')),
                       trailing: TextButton(
-                        onPressed: () =>
-                            AuthController.instance.signOut(),
+                        onPressed: () => AuthController.instance.signOut(),
                         child: Text(context.tr('profile.signOut')),
                       ),
                     ),
                   ),
                 ),
-              const Expanded(
-                child: TabPlaceholder(location: '/profile'),
-              ),
+              const Expanded(child: TabPlaceholder(location: '/profile')),
             ],
           );
         },

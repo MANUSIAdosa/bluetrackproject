@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/primary_button.dart';
@@ -30,7 +31,7 @@ class ReportSuccessPage extends StatelessWidget {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        context.go('/explore');
+        context.go(Routes.explore);
       },
       child: Scaffold(
         body: SafeArea(
@@ -38,7 +39,7 @@ class ReportSuccessPage extends StatelessWidget {
             children: [
               Positioned.fill(
                 child: report == null
-                    ? _ReportNotFound(onBack: () => context.go('/explore'))
+                    ? _ReportNotFound(onBack: () => context.go(Routes.explore))
                     : _SuccessBody(report: report),
               ),
               Positioned(
@@ -51,7 +52,7 @@ class ReportSuccessPage extends StatelessWidget {
                     key: const ValueKey('report_success_close'),
                     tooltip: MaterialLocalizations.of(context)
                         .closeButtonTooltip,
-                    onPressed: () => context.go('/explore'),
+                    onPressed: () => context.go(Routes.explore),
                     icon: const Icon(Icons.close),
                   ),
                 ),
@@ -182,7 +183,7 @@ class _SuccessBody extends StatelessWidget {
             key: const ValueKey('report_success_new_report'),
             // Replace the success screen so back from the fresh form does not
             // return to the report that was just sent.
-            onPressed: () => context.pushReplacement('/report'),
+            onPressed: () => context.pushReplacement(Routes.report),
             child: Text(context.tr('report_success_new_report')),
           ),
         ],

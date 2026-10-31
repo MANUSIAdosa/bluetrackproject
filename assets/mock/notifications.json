@@ -1,3 +1,104 @@
 {
-  "unreadCount": 2
+  "_todo": "P13-part-5/6: mock data only. `minutesAgo` keeps the three time groups (Hari ini / Minggu ini / Lebih lama) observable at any point in time — the groups themselves are always recomputed by the app against DateTime.now(), never read from here. Read/unread mix, the three notification types and target routes are all represented; routes must stay registered in lib/core/router/routes.dart or the page falls back to an error snackbar. TODO(P13, minggu 12-13): wire real notification triggers; refresh this mock when that lands.",
+  "notifications": [
+    {
+      "id": "n101",
+      "type": "report_status",
+      "titleId": "Laporanmu lolos validasi",
+      "titleEn": "Your report passed validation",
+      "bodyId": "Laporan sampah plastikmu telah tervalidasi dan tampil di peta publik.",
+      "bodyEn": "Your plastic-waste report has been validated and now appears on the public map.",
+      "minutesAgo": 12,
+      "read": false,
+      "route": "/my-reports"
+    },
+    {
+      "id": "n102",
+      "type": "location_update",
+      "titleId": "Aksi baru di dekatmu",
+      "titleEn": "New action near you",
+      "bodyId": "Aksi komunitas menambah lokasi baru dalam radius 5 km dari laporan terakhirmu.",
+      "bodyEn": "Community action added a new location within 5 km of your last report.",
+      "minutesAgo": 95,
+      "read": false,
+      "route": "/project/p01"
+    },
+    {
+      "id": "n103",
+      "type": "action_reminder",
+      "titleId": "Pengingat aksi esok hari",
+      "titleEn": "Action scheduled for tomorrow",
+      "bodyId": "Aksi bersih pantai yang kamu ikuti dimulai besok pukul 08.00.",
+      "bodyEn": "The beach-cleanup action you joined starts tomorrow at 08:00.",
+      "minutesAgo": 240,
+      "read": true,
+      "route": "/my-actions"
+    },
+    {
+      "id": "n104",
+      "type": "report_status",
+      "titleId": "Laporan sedang diverifikasi",
+      "titleEn": "Report under verification",
+      "bodyId": "Laporan kerusakan terumbumu sedang ditinjau oleh relawan terverifikasi.",
+      "bodyEn": "Your coral-damage report is being reviewed by verified volunteers.",
+      "minutesAgo": 1560,
+      "read": false,
+      "route": "/my-reports"
+    },
+    {
+      "id": "n105",
+      "type": "location_update",
+      "titleId": "Perubahan lokasi aksi",
+      "titleEn": "Action location changed",
+      "bodyId": "Lokasi aksi tanam mangrove dipindah ke muara sungai sebelah timur.",
+      "bodyEn": "The mangrove-planting location moved to the river mouth east of town.",
+      "minutesAgo": 3000,
+      "read": false,
+      "route": "/project/p01"
+    },
+    {
+      "id": "n106",
+      "type": "action_reminder",
+      "titleId": "Pendaftaran aksi ditutup",
+      "titleEn": "Action enrollment closed",
+      "bodyId": "Pendaftaran aksi patroli pantai ditutup; kamu masuk ke daftar tunggu.",
+      "bodyEn": "Enrollment for the beach patrol action closed; you joined the waitlist.",
+      "minutesAgo": 4440,
+      "read": true,
+      "route": "/my-actions"
+    },
+    {
+      "id": "n107",
+      "type": "report_status",
+      "titleId": "Laporanmu masuk tindak lanjut",
+      "titleEn": "Your report is being followed up",
+      "bodyId": "Dinas lingkungan menandai laporanmu untuk tindak lanjut bersama komunitas.",
+      "bodyEn": "The environmental office flagged your report for follow-up with the community.",
+      "minutesAgo": 7200,
+      "read": false,
+      "route": "/my-reports"
+    },
+    {
+      "id": "n108",
+      "type": "location_update",
+      "titleId": "Pantauan lokasi diperbarui",
+      "titleEn": "Monitoring site updated",
+      "bodyId": "Titik pantauan bulanan di sekolah mangrove diperbarui oleh fasilitator.",
+      "bodyEn": "The monthly monitoring spot at the mangrove school was updated by a facilitator.",
+      "minutesAgo": 24000,
+      "read": true,
+      "route": "/org/o01"
+    },
+    {
+      "id": "n109",
+      "type": "action_reminder",
+      "titleId": "Aksimu diselesaikan",
+      "titleEn": "Your action was completed",
+      "bodyId": "Aksi pengumpulan sampah yang kamu usulkan ditandai selesai.",
+      "bodyEn": "The waste-collection action you proposed was marked complete.",
+      "minutesAgo": 28800,
+      "read": true,
+      "route": "/my-actions"
+    }
+  ]
 }

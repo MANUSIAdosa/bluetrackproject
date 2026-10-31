@@ -5,8 +5,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../features/notification/data/notification_repository.dart';
-import '../../features/repositories.dart';
 import '../config/app_config.dart';
 import 'connectivity_service.dart';
 
@@ -116,34 +114,7 @@ class SavedProjectsController extends ChangeNotifier {
   }
 }
 
-/// Unread notification count, loaded once from [NotificationRepository].
-///
-/// Single source of truth: the app-bar bell and the My Impact nav badge both
-/// read this, so the two can never disagree. Starts at 0, so no badge shows
-/// before [load] resolves.
-class NotificationsController extends ChangeNotifier {
-  NotificationsController._();
-
-  static final NotificationsController instance = NotificationsController._();
-
-  int _unreadCount = 0;
-
-  int get unreadCount => _unreadCount;
-
-  /// True once a count has been read from the repository.
-  bool get loaded => _loaded;
-  bool _loaded = false;
-
-  Future<void> load({NotificationRepository? repository}) async {
-    final count = await (repository ?? Repositories.notifications)
-        .getUnreadCount();
-    _unreadCount = count < 0 ? 0 : count;
-    _loaded = true;
-    notifyListeners();
-  }
-}
-
-/// Offline banner state, driven by the device network interface.
+/// Offline banner state.
 ///
 /// [start] is called once from `main`. The app starts offline only when no
 /// network interface exists; a connected interface is treated as online
@@ -203,14 +174,59 @@ class OfflineController extends ChangeNotifier {
   }
 }
 
+/// In-memory mirror of the onboarding completion flag, seeded from
+/// shared_preferences at startup.
+///
+/// The GoRouter redirect reads this synchronously — preferences are async and
+/// the redirect cannot await — so [init] must run before navigation resolves.
+/// [main] already reads the flag once; it passes the same value into
+/// `createRouter`, which seeds this controller. Completing onboarding calls
+/// [markDone]; persistence stays in [OnboardingState.markDone].
+class OnboardingController extends ChangeNotifier {
+  OnboardingController._();
+
+  static final OnboardingController instance = OnboardingController._();
+
+  bool _done = false;
+
+  bool get done => _done;
+
+  /// Seeds the startup value. Idempotent — rerun on every cold start/router
+  /// rebuild so tests can pump the app with either value.
+  void init(bool done) {
+    _done = done;
+  }
+
+  /// Flips the flag so the redirect stops bouncing the user to /onboarding.
+  /// Does not write preferences — [OnboardingState.markDone] owns that.
+  void markDone() {
+    if (_done) return;
+    _done = true;
+    notifyListeners();
+  }
+}
+
 /// Onboarding flags stored in shared_preferences.
 class OnboardingState {
   OnboardingState._();
 
-  static Future<void> markDone(List<String> interests) async {
+  /// Updates already-mounted pages after preferences are saved from Profile.
+  static final interests = ValueNotifier<List<String>>([]);
+
+  static Future<void> saveInterests(List<String> selected) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(AppConfig.onboardingDoneKey, true);
-    await prefs.setStringList(AppConfig.interestsKey, interests);
+    if (!await prefs.setStringList(AppConfig.interestsKey, selected)) {
+      throw StateError('Unable to save interests.');
+    }
+    interests.value = List.unmodifiable(selected);
+  }
+
+  static Future<void> markDone(List<String> interests) async {
+    await saveInterests(interests);
+    final prefs = await SharedPreferences.getInstance();
+    if (!await prefs.setBool(AppConfig.onboardingDoneKey, true)) {
+      throw StateError('Unable to save onboarding completion.');
+    }
   }
 
   static Future<List<String>> readInterests() async {

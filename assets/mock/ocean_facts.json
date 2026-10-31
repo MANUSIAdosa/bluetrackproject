@@ -1,0 +1,26 @@
+{
+  "_todo": "TODO(P01-part-4): draft copy, NOT yet approved by Trevan. The three slides introduce environmental reporting and community action (revised concept), not donations. Titles must stay within 8 words; each slide keeps exactly one sentence. Approve or revise each usulan before release.",
+  "slides": [
+    {
+      "key": "slide1",
+      "titleId": "Lapor Temuan di Sekitarmu",
+      "titleEn": "Report Findings Nearby",
+      "bodyId": "Lihat sampah atau kerusakan di pesisir? Laporkan lewat aplikasi, tanpa perlu masuk.",
+      "bodyEn": "Spot waste or coastal damage? Report it in the app, no sign-in needed."
+    },
+    {
+      "key": "slide2",
+      "titleId": "Pantau Aksi Bersama",
+      "titleEn": "Follow Community Action",
+      "bodyId": "Ikuti laporan lain, pantau kemajuan aksi komunitas terdekat dari validasi hingga selesai.",
+      "bodyEn": "Follow other reports and track nearby community action from validation to completion."
+    },
+    {
+      "key": "slide3",
+      "titleId": "Terlibat di Aksi Lautmu",
+      "titleEn": "Join Your Ocean Action",
+      "bodyId": "Ajukan ide aksi komunitas dan libatkan dirimu dalam gerakan menyelamatkan laut.",
+      "bodyEn": "Propose community actions and get involved in the movement to save the ocean."
+    }
+  ]
+}

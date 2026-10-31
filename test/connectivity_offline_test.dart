@@ -93,7 +93,7 @@ void main() {
     await tester.pump();
     expect(find.byIcon(Icons.cloud_off), findsOneWidget);
     expect(
-      find.text('Anda sedang offline. Menampilkan data tersimpan.'),
+      find.text('Mode offline - menampilkan data tersimpan'),
       findsOneWidget,
     );
 

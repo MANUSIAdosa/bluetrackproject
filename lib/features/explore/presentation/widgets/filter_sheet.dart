@@ -3,14 +3,15 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/state/app_state.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/category_icon.dart';
 import '../../domain/explore_map_data.dart';
 import 'condition_label.dart';
 
 /// The filters Jelajahi applies to both the list and the map.
 ///
-/// `'semua'` / [DistanceBand.semua] / `null` mean "no filter", so the chip row,
-/// the search field and the sheet all write into the same selection.
+/// `'semua'` / [DistanceBand.semua] / `null` mean "no filter", so the category
+/// selector, the search field and the sheet all write into the same selection.
 class ExploreFilterSelection {
   const ExploreFilterSelection({
     this.category = 'semua',
@@ -43,22 +44,28 @@ class ExploreFilterSelection {
   );
 }
 
-/// Localized name of a condition, shared by the sheet and the map sheets.
 /// Opens the filter sheet and returns the new selection, or null when the user
 /// dismisses the sheet without applying anything.
+///
+/// [countFor] receives the draft selection so the footer can preview how many
+/// projects the draft would keep; the page owns that calculation, so the sheet
+/// never duplicates the filtering rules.
 Future<ExploreFilterSelection?> showExploreFilterSheet(
   BuildContext context, {
   required List<String> categoryIds,
   required ExploreFilterSelection selection,
   required String userLocationLabel,
+  int Function(ExploreFilterSelection draft)? countFor,
 }) => showModalBottomSheet<ExploreFilterSelection>(
   context: context,
   isScrollControlled: true,
   showDragHandle: true,
+  backgroundColor: AppColors.surface,
   builder: (_) => _ExploreFilterSheet(
     categoryIds: categoryIds,
     selection: selection,
     userLocationLabel: userLocationLabel,
+    countFor: countFor,
   ),
 );
 
@@ -67,11 +74,13 @@ class _ExploreFilterSheet extends StatefulWidget {
     required this.categoryIds,
     required this.selection,
     required this.userLocationLabel,
+    this.countFor,
   });
 
   final List<String> categoryIds;
   final ExploreFilterSelection selection;
   final String userLocationLabel;
+  final int Function(ExploreFilterSelection draft)? countFor;
 
   @override
   State<_ExploreFilterSheet> createState() => _ExploreFilterSheetState();
@@ -82,134 +91,272 @@ class _ExploreFilterSheetState extends State<_ExploreFilterSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final count = widget.countFor?.call(_draft);
+
     return SafeArea(
       top: false,
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _SectionTitle(context.tr('p03_filter_category')),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final id in widget.categoryIds)
-                    ChoiceChip(
-                      avatar: id == 'semua'
-                          ? null
-                          : CategoryIcon(category: id, size: 18),
-                      label: Text(context.tr('cat.$id')),
-                      selected: _draft.category == id,
-                      showCheckmark: false,
-                      onSelected: (_) =>
-                          setState(() => _draft = _draft.copyWith(category: id)),
-                    ),
-                ],
-              ),
-              _SectionTitle(
-                context.tr('p03_filter_distance'),
-                subtitle: context.tr('p03_distance_reference', {
-                  'place': widget.userLocationLabel,
-                }),
-              ),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final band in DistanceBand.values)
-                    ChoiceChip(
-                      label: Text(context.tr('p03_distance_${band.name}')),
-                      selected: _draft.distance == band,
-                      showCheckmark: false,
-                      onSelected: (_) => setState(
-                        () => _draft = _draft.copyWith(distance: band),
-                      ),
-                    ),
-                ],
-              ),
-              _SectionTitle(context.tr('p03_filter_condition')),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  ChoiceChip(
-                    label: Text(context.tr('p03_distance_semua')),
-                    selected: _draft.condition == null,
-                    showCheckmark: false,
-                    onSelected: (_) => setState(
-                      () => _draft = _draft.copyWith(clearCondition: true),
-                    ),
-                  ),
-                  for (final condition in ProjectCondition.values)
-                    ChoiceChip(
-                      label: Text(condition.label(context)),
-                      selected: _draft.condition == condition,
-                      showCheckmark: false,
-                      onSelected: (_) => setState(
-                        () => _draft = _draft.copyWith(condition: condition),
-                      ),
-                    ),
-                ],
-              ),
-              // No connectivity package exists, so the offline state can only be
-              // set by hand. The switch is debug-only: it never ships.
-              if (kDebugMode) ...[
-                const SizedBox(height: 8),
-                const _OfflineDebugSwitch(),
-              ],
-              const SizedBox(height: 16),
-              Row(
+      child: ConstrainedBox(
+        key: const ValueKey('explore.filter.sheet'),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 8, 4),
+              child: Row(
                 children: [
                   Expanded(
+                    child: Text(
+                      context.tr('p03_filter_title'),
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    key: const ValueKey('explore.filter.close'),
+                    tooltip: context.tr('p03_filter_close'),
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _FilterGroup(
+                      title: context.tr('p03_filter_category'),
+                      helper: context.tr('p03_filter_category_helper'),
+                      children: [
+                        for (final id in widget.categoryIds)
+                          _FilterOption(
+                            key: ValueKey('explore.filter.category.$id'),
+                            label: context.tr('cat.$id'),
+                            selected: _draft.category == id,
+                            leading: id == 'semua'
+                                ? const Icon(
+                                    Icons.grid_view_rounded,
+                                    size: 18,
+                                    color: AppColors.ocean,
+                                  )
+                                : CategoryIcon(category: id, size: 18),
+                            onTap: () => setState(
+                              () => _draft = _draft.copyWith(category: id),
+                            ),
+                          ),
+                      ],
+                    ),
+                    _FilterGroup(
+                      title: context.tr('p03_filter_distance'),
+                      helper: context.tr('p03_distance_reference', {
+                        'place': widget.userLocationLabel,
+                      }),
+                      children: [
+                        for (final band in DistanceBand.values)
+                          _FilterOption(
+                            key: ValueKey(
+                              'explore.filter.distance.${band.name}',
+                            ),
+                            label: context.tr('p03_distance_${band.name}'),
+                            selected: _draft.distance == band,
+                            onTap: () => setState(
+                              () => _draft = _draft.copyWith(distance: band),
+                            ),
+                          ),
+                      ],
+                    ),
+                    _FilterGroup(
+                      title: context.tr('p03_filter_condition'),
+                      helper: context.tr('p03_filter_condition_helper'),
+                      children: [
+                        _FilterOption(
+                          key: const ValueKey('explore.filter.condition.semua'),
+                          label: context.tr('p03_filter_all'),
+                          selected: _draft.condition == null,
+                          onTap: () => setState(
+                            () =>
+                                _draft = _draft.copyWith(clearCondition: true),
+                          ),
+                        ),
+                        for (final condition in ProjectCondition.values)
+                          _FilterOption(
+                            key: ValueKey(
+                              'explore.filter.condition.${condition.id}',
+                            ),
+                            label: condition.label(context),
+                            selected: _draft.condition == condition,
+                            onTap: () => setState(
+                              () => _draft = _draft.copyWith(
+                                condition: condition,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    // No connectivity package exists, so the offline state can
+                    // only be set by hand. The switch is debug-only.
+                    if (kDebugMode) ...[
+                      const SizedBox(height: 4),
+                      const _OfflineDebugSwitch(),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              decoration: const BoxDecoration(
+                color: AppColors.surface,
+                border: Border(top: BorderSide(color: AppColors.border)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 3,
                     child: OutlinedButton(
+                      key: const ValueKey('explore.filter.reset'),
                       onPressed: () =>
-                          Navigator.of(context).pop(ExploreFilterSelection.none),
+                          setState(() => _draft = ExploreFilterSelection.none),
                       child: Text(context.tr('p03_filter_reset')),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
+                    flex: 5,
                     child: FilledButton(
+                      key: const ValueKey('explore.filter.apply'),
                       onPressed: () => Navigator.of(context).pop(_draft),
-                      child: Text(context.tr('p03_filter_apply')),
+                      child: Text(
+                        count == null
+                            ? context.tr('p03_filter_apply')
+                            : context.tr('p03_filter_result_count', {
+                                'n': '$count',
+                              }),
+                      ),
                     ),
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text, {this.subtitle});
+/// One filter dimension: a titled card so the groups never blur together.
+class _FilterGroup extends StatelessWidget {
+  const _FilterGroup({
+    required this.title,
+    required this.children,
+    this.helper,
+  });
 
-  final String text;
-  final String? subtitle;
+  final String title;
+  final String? helper;
+  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 12, bottom: 8),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(AppDimens.cardRadius),
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            text,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-          ),
-          if (subtitle != null)
-            Text(
-              subtitle!,
-              style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                if (helper != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    helper!,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ],
             ),
+          ),
+          ...children,
+          const SizedBox(height: 4),
         ],
+      ),
+    );
+  }
+}
+
+/// Radio-style row: one tap target per option, no chip semantics.
+class _FilterOption extends StatelessWidget {
+  const _FilterOption({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.leading,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final Widget? leading;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          child: Row(
+            children: [
+              if (leading != null) ...[leading!, const SizedBox(width: 10)],
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected ? AppColors.ocean : AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              Icon(
+                selected ? Icons.radio_button_checked : Icons.radio_button_off,
+                size: 20,
+                color: selected ? AppColors.ocean : AppColors.inactiveTab,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

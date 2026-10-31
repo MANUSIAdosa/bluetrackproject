@@ -443,7 +443,7 @@ void main() {
       picker: _FakePicker(paths: photoPaths.take(1).toList()),
     );
     expect(
-      find.text('Anda sedang offline. Menampilkan data tersimpan.'),
+      find.text('Mode offline - menampilkan data tersimpan'),
       findsOneWidget,
     );
 
@@ -632,7 +632,7 @@ void main() {
     await pumpWizard(tester, store: _FakeStore());
 
     expect(
-      find.text('Anda sedang offline. Menampilkan data tersimpan.'),
+      find.text('Mode offline - menampilkan data tersimpan'),
       findsOneWidget,
     );
     expect(find.byKey(_addPhotoKey), findsOneWidget);
