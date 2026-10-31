@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:blue_track/core/theme/app_colors.dart';
 import 'package:blue_track/features/explore/domain/explore_map_data.dart';
 import 'package:blue_track/features/explore/domain/project.dart';
 import 'package:blue_track/features/explore/presentation/widgets/explore_map.dart';
@@ -83,6 +84,7 @@ Future<void> pumpMap(
   bool showConservationLayer = false,
   bool offline = false,
   void Function(String projectId)? onOpenProject,
+  void Function(bool enabled)? onConservationLayerChanged,
 }) async {
   await tester.pumpWidget(
     wrapPage(
@@ -95,6 +97,7 @@ Future<void> pumpMap(
         tileProvider: _FakeTileProvider(),
         initialZoom: 8,
         onOpenProject: onOpenProject,
+        onConservationLayerChanged: onConservationLayerChanged,
       ),
     ),
   );
@@ -120,6 +123,41 @@ void main() {
       find.byKey(const ValueKey('explore.conservationLayer')),
       findsOneWidget,
     );
+  });
+
+  testWidgets('the floating layer card switches the layer and explains its '
+      'condition colours', (tester) async {
+    bool? enabled;
+    await pumpMap(
+      tester,
+      onConservationLayerChanged: (value) => enabled = value,
+    );
+
+    expect(find.text('Kawasan konservasi'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('explore.conservationSwitch')));
+    expect(enabled, isTrue);
+
+    await pumpMap(tester, showConservationLayer: true);
+
+    expect(find.text('Keterangan kondisi'), findsOneWidget);
+    expect(find.text('Perlu pemantauan'), findsOneWidget);
+  });
+
+  testWidgets('the legend dots use the status colours drawn on the map', (
+    tester,
+  ) async {
+    await pumpMap(tester, showConservationLayer: true);
+
+    Color dotColor(String id) {
+      final dot = tester.widget<Container>(
+        find.byKey(ValueKey('explore.legend.$id')),
+      );
+      return (dot.decoration! as BoxDecoration).color!;
+    }
+
+    expect(dotColor('baik'), AppColors.success);
+    expect(dotColor('pemantauan'), AppColors.warning);
+    expect(dotColor('kritis'), AppColors.danger);
   });
 
   testWidgets('marks the project count on the map', (tester) async {

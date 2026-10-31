@@ -9,8 +9,6 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/state/app_state.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_state.dart';
-import '../../../shared/widgets/filter_chip_row.dart';
-import '../../../shared/widgets/notification_bell.dart';
 import '../../../shared/widgets/project_card.dart';
 import '../../../shared/widgets/skeleton.dart';
 import '../../repositories.dart';
@@ -19,23 +17,25 @@ import '../data/project_repository.dart';
 import '../data/saved_project_store.dart';
 import '../domain/explore_map_data.dart';
 import '../domain/project.dart';
+import 'widgets/explore_header.dart';
 import 'widgets/explore_list_widgets.dart';
 import 'widgets/explore_map.dart';
 import 'widgets/filter_sheet.dart';
 
 /// P03 — Explore (P03 map + list).
 ///
-/// - Search, a single-select category chip row, a saved-projects toggle next to
-///   the search field (Hive), interest sorting, loading / empty / error states,
-///   notification bell.
-/// - One control represents one context: the chip row filters by category, the
-///   bookmark button filters the saved collection, and the segmented button
-///   switches the view mode.
+/// - Gradient header with search and the filter action; the notification bell
+///   lives in that header.
+/// - One control per context: the scope switch separates Jelajahi from the
+///   saved collection, the icon rail selects a category, the filter sheet owns
+///   distance and condition, and the header toggles between the list and the
+///   map.
+/// - Active filters are summarised as labelled tokens, so the user can see and
+///   remove each dimension without opening the sheet.
 /// - The list is paged: only [_pageSize] projects at a time, the next page
 ///   appended when the user scrolls near the bottom.
-/// - The filter sheet adds the distance and condition groups; both modes — list
-///   and map — read the same filtered result set, so switching never resets a
-///   filter.
+/// - The filter sheet and the list/map share one filtered result set, so
+///   switching never resets a filter.
 /// - Offline: the saved snapshots in [SavedProjectStore] replace the repository,
 ///   and the shell's banner (P00) explains why the list is short.
 class ExplorePage extends StatefulWidget {
@@ -99,9 +99,9 @@ class _ExplorePageState extends State<ExplorePage> {
   ProjectCondition? _condition;
 
   /// The saved collection is a context of its own, not a category: it lives in
-  /// [SavedProjectsController], and the bookmark button beside the search field
-  /// switches it on and off.
-  bool _savedOnly = false;
+  /// [SavedProjectsController], and the scope switch at the top of the page
+  /// moves between Jelajahi and Tersimpan.
+  bool _savedScope = false;
 
   /// How many of the filtered projects the list shows (grows by page).
   int _visibleCount = _pageSize;
@@ -121,6 +121,7 @@ class _ExplorePageState extends State<ExplorePage> {
     super.initState();
     _scrollController.addListener(_onScroll);
     OfflineController.instance.addListener(_onOfflineChanged);
+    SavedProjectsController.instance.addListener(_onSavedProjectsChanged);
     OnboardingState.interests.addListener(_onInterestsChanged);
     _load();
   }
@@ -128,12 +129,19 @@ class _ExplorePageState extends State<ExplorePage> {
   @override
   void dispose() {
     OfflineController.instance.removeListener(_onOfflineChanged);
+    SavedProjectsController.instance.removeListener(_onSavedProjectsChanged);
     OnboardingState.interests.removeListener(_onInterestsChanged);
     _scrollController
       ..removeListener(_onScroll)
       ..dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// Saving from a card, the map sheet or Project Detail changes the saved
+  /// scope count and the bookmark icons, so the page has to rebuild.
+  void _onSavedProjectsChanged() {
+    if (mounted) setState(() {});
   }
 
   /// The offline switch changes *where* the projects come from, so the list has
@@ -221,7 +229,7 @@ class _ExplorePageState extends State<ExplorePage> {
     setState(() {
       _query = '';
       _category = 'semua';
-      _savedOnly = false;
+      _savedScope = false;
       _distance = DistanceBand.semua;
       _condition = null;
     });
@@ -231,7 +239,7 @@ class _ExplorePageState extends State<ExplorePage> {
   /// the other filters stay as the user set them.
   void _showAllProjects() {
     _resetPaging();
-    setState(() => _savedOnly = false);
+    setState(() => _savedScope = false);
   }
 
   /// Map data is loaded on demand: the list never pays for an asset only the
@@ -289,6 +297,11 @@ class _ExplorePageState extends State<ExplorePage> {
       categoryIds: _categoryIds,
       selection: _selection,
       userLocationLabel: _mapData?.userLocationLabel ?? '',
+      countFor: (draft) => _applyFilters(
+        selection: draft,
+        query: _query,
+        savedScope: _savedScope,
+      ).length,
     );
     if (selection == null || !mounted) return;
     _resetPaging();
@@ -299,28 +312,40 @@ class _ExplorePageState extends State<ExplorePage> {
     });
   }
 
-  List<Project> get _visible {
-    // One context per control, applied in that order: the saved collection,
-    // then the category chip, then the search query, then the sheet groups.
+  /// One filtering rule set for the page and for the sheet's live count.
+  ///
+  /// The saved collection, category, query, condition and distance are applied
+  /// in that order. Distance/condition are skipped while the map data has not
+  /// loaded yet — the sheet only opens after it has, so a visible filter can
+  /// never silently match nothing.
+  List<Project> _applyFilters({
+    required ExploreFilterSelection selection,
+    required String query,
+    required bool savedScope,
+  }) {
     final saved = SavedProjectsController.instance.ids;
     final mapData = _mapData;
-    var list = _all.where((p) {
-      final matchesSaved = !_savedOnly || saved.contains(p.id);
-      final matchesCategory = _category == 'semua' || p.category == _category;
+    return _all.where((p) {
+      final matchesSaved = !savedScope || saved.contains(p.id);
+      final matchesCategory =
+          selection.category == 'semua' || p.category == selection.category;
       final matchesQuery =
-          _query.isEmpty ||
-          p.title.toLowerCase().contains(_query) ||
-          p.orgName.toLowerCase().contains(_query) ||
-          p.location.toLowerCase().contains(_query);
+          query.isEmpty ||
+          p.title.toLowerCase().contains(query) ||
+          p.orgName.toLowerCase().contains(query) ||
+          p.location.toLowerCase().contains(query);
       final matchesCondition =
-          _condition == null ||
+          selection.condition == null ||
           mapData == null ||
-          mapData.conditionOf(p.id) == _condition;
+          mapData.conditionOf(p.id) == selection.condition;
       final matchesDistance =
-          _distance == DistanceBand.semua ||
+          selection.distance == DistanceBand.semua ||
           mapData == null ||
-          _distance.matches(
-            distanceKm(mapData.userLocation, LatLng(p.latitude, p.longitude)),
+          selection.distance.matches(
+            distanceKm(
+              mapData.userLocation,
+              LatLng(p.latitude, p.longitude),
+            ),
           );
       return matchesSaved &&
           matchesCategory &&
@@ -328,6 +353,14 @@ class _ExplorePageState extends State<ExplorePage> {
           matchesCondition &&
           matchesDistance;
     }).toList();
+  }
+
+  List<Project> get _visible {
+    var list = _applyFilters(
+      selection: _selection,
+      query: _query,
+      savedScope: _savedScope,
+    );
 
     // Personalized sorting: interest matches first.
     if (_interests.isNotEmpty) {
@@ -347,73 +380,37 @@ class _ExplorePageState extends State<ExplorePage> {
     final savedCount = SavedProjectsController.instance.ids.length;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(context.tr('explore.title')),
-        actions: const [NotificationBell(), SizedBox(width: 8)],
-      ),
       body: Column(
         children: [
+          ExploreHeader(
+            searchController: _searchController,
+            query: _query,
+            onQueryChanged: (value) {
+              _resetPaging();
+              setState(() => _query = value.trim().toLowerCase());
+            },
+            onClearQuery: () {
+              _searchController.clear();
+              _resetPaging();
+              setState(() => _query = '');
+            },
+            filterActiveCount: _selection.activeCount,
+            onFilterPressed: _openFilterSheet,
+            mapMode: _mapMode,
+            onViewChanged: _setMapMode,
+          ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: context.tr('explore.searchHint'),
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _query.isEmpty
-                          ? null
-                          : IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _searchController.clear();
-                                _resetPaging();
-                                setState(() => _query = '');
-                              },
-                            ),
-                    ),
-                    onChanged: (value) {
-                      _resetPaging();
-                      setState(() => _query = value.trim().toLowerCase());
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                FilterButton(
-                  key: const ValueKey('explore.filterButton'),
-                  activeCount: _selection.activeCount,
-                  onPressed: _openFilterSheet,
-                ),
-                const SizedBox(width: 8),
-                SavedFilterButton(
-                  key: const ValueKey('explore.savedFilter'),
-                  active: _savedOnly,
-                  savedCount: savedCount,
-                  onChanged: (active) {
-                    _resetPaging();
-                    setState(() => _savedOnly = active);
-                  },
-                ),
-              ],
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+            child: ExploreScopeSwitch(
+              saved: _savedScope,
+              savedCount: savedCount,
+              onChanged: (saved) {
+                _resetPaging();
+                setState(() => _savedScope = saved);
+              },
             ),
           ),
-          // Categories only: the saved collection has its own control above.
-          FilterChipRow(
-            options: [
-              for (final id in _categoryIds)
-                ChipOption(id: id, label: context.tr('cat.$id')),
-            ],
-            selectedId: _category,
-            onSelected: (id) {
-              _resetPaging();
-              setState(() => _category = id);
-            },
-          ),
-          const SizedBox(height: 8),
-          ListMapToggle(mapMode: _mapMode, onChanged: _setMapMode),
-          const SizedBox(height: 4),
+          if (!_loading && !_error) ExploreResultsBar(count: visible.length),
           Expanded(child: _buildBody(visible)),
         ],
       ),
@@ -423,6 +420,7 @@ class _ExplorePageState extends State<ExplorePage> {
   Widget _buildBody(List<Project> visible) {
     if (_loading) {
       return ListView(
+        key: const ValueKey('explore.projectList'),
         padding: const EdgeInsets.all(16),
         children: const [SkeletonCard(), SizedBox(height: 16), SkeletonCard()],
       );
@@ -444,9 +442,9 @@ class _ExplorePageState extends State<ExplorePage> {
           onAction: _load,
         );
       }
-      // Two different failures behind the same bookmark toggle: nothing has
-      // been saved yet, or the saved projects do not match the other filters.
-      if (_savedOnly) {
+      // Two different failures behind the same saved scope: nothing has been
+      // saved yet, or the saved projects do not match the other filters.
+      if (_savedScope) {
         final nothingSaved = SavedProjectsController.instance.ids.isEmpty;
         return EmptyState(
           icon: nothingSaved ? Icons.bookmark_outline : Icons.search_off,
@@ -470,8 +468,8 @@ class _ExplorePageState extends State<ExplorePage> {
     }
 
     // The saved collection is already a personal selection, so the interest
-    // rail stays out of the way while it is on.
-    final forYou = (_savedOnly || _interests.isEmpty)
+    // rail stays out of the way while that scope is active.
+    final forYou = (_savedScope || _interests.isEmpty)
         ? const <Project>[]
         : visible
               .where((p) => _interests.contains(p.category))
@@ -482,9 +480,34 @@ class _ExplorePageState extends State<ExplorePage> {
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
+        key: const ValueKey('explore.projectList'),
         controller: _scrollController,
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
         children: [
+          // Secondary controls live inside the scroll view: they are useful at
+          // the top, but must not permanently eat half the viewport.
+          CategorySelector(
+            categoryIds: _categoryIds,
+            selectedId: _category,
+            onSelected: (id) {
+              _resetPaging();
+              setState(() => _category = id);
+            },
+            horizontalPadding: 0,
+          ),
+          if (_selection.activeCount > 0)
+            ActiveFilterBar(
+              selection: _selection,
+              onChanged: (value) {
+                _resetPaging();
+                setState(() {
+                  _category = value.category;
+                  _distance = value.distance;
+                  _condition = value.condition;
+                });
+              },
+              horizontalPadding: 0,
+            ),
           if (forYou.isNotEmpty && _category == 'semua' && _query.isEmpty) ...[
             exploreSectionHeader(context.tr('explore.forYou')),
             ForYouRail(
@@ -493,7 +516,6 @@ class _ExplorePageState extends State<ExplorePage> {
               onSavedChanged: () => setState(() {}),
             ),
             const SizedBox(height: 8),
-            exploreSectionHeader(context.tr('explore.projects')),
           ],
           for (final project in page) ...[
             ProjectCard(
@@ -521,40 +543,25 @@ class _ExplorePageState extends State<ExplorePage> {
     final mapData = _mapData;
     if (mapData == null) return ErrorState(onRetry: _ensureMapData);
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: FilterChip(
-              label: Text(context.tr('p03_map_layer_conservation')),
-              selected: _conservationLayer,
-              showCheckmark: false,
-              onSelected: (value) => setState(() => _conservationLayer = value),
-            ),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Expanded(
-          child: visible.isEmpty
-              ? EmptyState(
-                  icon: Icons.map_outlined,
-                  message: context.tr('p03_map_empty'),
-                  actionLabel: context.tr('explore.resetFilter'),
-                  onAction: _resetFilters,
-                )
-              : ExploreMap(
-                  projects: visible,
-                  mapData: mapData,
-                  userLocationLabel: mapData.userLocationLabel,
-                  showConservationLayer: _conservationLayer,
-                  offline: _offline,
-                  tileProvider: widget.mapTileProvider,
-                  onOpenProject: (id) => context.push('/project/$id'),
-                ),
-        ),
-      ],
+    if (visible.isEmpty) {
+      return EmptyState(
+        icon: Icons.map_outlined,
+        message: context.tr('p03_map_empty'),
+        actionLabel: context.tr('explore.resetFilter'),
+        onAction: _resetFilters,
+      );
+    }
+
+    return ExploreMap(
+      projects: visible,
+      mapData: mapData,
+      userLocationLabel: mapData.userLocationLabel,
+      showConservationLayer: _conservationLayer,
+      onConservationLayerChanged: (value) =>
+          setState(() => _conservationLayer = value),
+      offline: _offline,
+      tileProvider: widget.mapTileProvider,
+      onOpenProject: (id) => context.push('/project/$id'),
     );
   }
 }

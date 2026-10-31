@@ -1,3 +1,4 @@
+import 'package:blue_track/shared/widgets/category_icon.dart';
 import 'package:blue_track/shared/widgets/progress_bar.dart';
 import 'package:blue_track/shared/widgets/progress_ring.dart';
 import 'package:blue_track/shared/widgets/project_card.dart';
@@ -47,6 +48,18 @@ void main() {
 
     expect(find.byType(ProgressBar), findsOneWidget);
     expect(find.byType(ProgressRing), findsNothing);
+  });
+
+  testWidgets('the cover names the category and the funding percentage',
+      (tester) async {
+    await tester.pumpWidget(
+      wrapPage(phoneSized(ProjectCard(project: buildProject()))),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CategoryIcon), findsOneWidget);
+    expect(find.text('Penyu'), findsOneWidget);
+    expect(find.text('75% terkumpul'), findsOneWidget);
   });
 
   testWidgets('Donasi button opens the donation route of that project',

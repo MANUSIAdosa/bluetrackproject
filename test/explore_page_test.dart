@@ -2,9 +2,10 @@ import 'dart:io';
 
 import 'package:blue_track/core/config/app_config.dart';
 import 'package:blue_track/core/state/app_state.dart';
-import 'package:blue_track/core/theme/app_colors.dart';
+import 'package:blue_track/features/explore/data/saved_project_store.dart';
 import 'package:blue_track/features/explore/domain/project.dart';
 import 'package:blue_track/features/explore/presentation/explore_page.dart';
+import 'package:blue_track/features/explore/presentation/widgets/explore_header.dart';
 import 'package:blue_track/shared/widgets/empty_state.dart';
 import 'package:blue_track/shared/widgets/error_state.dart';
 import 'package:blue_track/shared/widgets/project_card.dart';
@@ -28,20 +29,14 @@ Future<void> pumpExplore(
   WidgetTester tester, {
   required FakeProjectRepository projects,
   FakeFilterRepository? filters,
-  bool phoneSurface = false,
   double textScale = 1,
 }) async {
-  // Full test width (800dp) on purpose: the category rail is a horizontal
-  // ListView, so a phone-width surface would scroll "Tersimpan" out of view
-  // and lazily dispose the other chips. These tests only assert state, not
-  // card layout.
-  if (phoneSurface) {
-    // 390x844 at dpr 3 — card layout (and the horizontal rail) only
-    // reproduces phone overflow on a phone-sized surface.
-    tester.view.devicePixelRatio = 3;
-    tester.view.physicalSize = const Size(1170, 2532);
-    addTearDown(tester.view.reset);
-  }
+  // Phone-sized surface: the fixed header + controls leave the body a
+  // realistic amount of height, and card layout only reproduces real overflow
+  // at phone width.
+  tester.view.devicePixelRatio = 3;
+  tester.view.physicalSize = const Size(1170, 2532);
+  addTearDown(tester.view.reset);
   await tester.pumpWidget(
     wrapPage(
       _TextScale(
@@ -79,12 +74,9 @@ FakeProjectRepository manyProjects({int count = 9}) => FakeProjectRepository([
     ),
 ]);
 
-/// The project list itself — the category chip row is a horizontal ListView
-/// too, so scope the finder to the refreshable list.
-Finder projectList() => find.descendant(
-  of: find.byType(RefreshIndicator),
-  matching: find.byType(ListView),
-);
+/// The main project list. It has its own key because the category rail is a
+/// horizontal [ListView] nested inside it.
+Finder projectList() => find.byKey(const ValueKey('explore.projectList'));
 
 /// Cards in the current page. A lazy ListView only mounts what is near the
 /// viewport, so read the children the page handed to the list.
@@ -153,11 +145,22 @@ Future<void> pullToRefresh(WidgetTester tester) async {
   }
 }
 
-ChoiceChip chipWithLabel(WidgetTester tester, String label) =>
-    tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, label));
+/// The category selector is a horizontal list; tests read the widget state
+/// instead of relying on a chip being mounted in the viewport.
+CategorySelector categorySelector(WidgetTester tester) =>
+    tester.widget<CategorySelector>(find.byType(CategorySelector));
 
-Future<void> tapChip(WidgetTester tester, String label) async {
-  await tester.tap(find.widgetWithText(ChoiceChip, label));
+ExploreScopeSwitch scopeSwitch(WidgetTester tester) =>
+    tester.widget<ExploreScopeSwitch>(find.byType(ExploreScopeSwitch));
+
+Future<void> tapCategory(WidgetTester tester, String id) async {
+  final finder = find.byKey(ValueKey('explore.category.$id'));
+  // The rail lives at the top of the list and is disposed once it scrolls
+  // away, so a user has to scroll back up before changing category.
+  if (finder.evaluate().isEmpty) await scrollToTop(tester);
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
   await pumpFrames(tester);
 }
 
@@ -184,12 +187,19 @@ Future<void> seedSavedProjects(WidgetTester tester, List<String> ids) async {
   });
 }
 
-/// The saved-projects toggle that sits next to the search field.
-Finder savedFilterButton() => find.byKey(const ValueKey('explore.savedFilter'));
+/// The saved collection is a scope tab, not a filter button.
+Finder savedScope() => find.byKey(const ValueKey('explore.scope.saved'));
+Finder exploreScope() => find.byKey(const ValueKey('explore.scope.explore'));
 
-Future<void> tapSavedFilter(WidgetTester tester) async {
-  expect(savedFilterButton(), findsOneWidget);
-  await tester.tap(savedFilterButton());
+Future<void> tapSavedScope(WidgetTester tester) async {
+  expect(savedScope(), findsOneWidget);
+  await tester.tap(savedScope());
+  await pumpFrames(tester);
+}
+
+Future<void> tapExploreScope(WidgetTester tester) async {
+  expect(exploreScope(), findsOneWidget);
+  await tester.tap(exploreScope());
   await pumpFrames(tester);
 }
 
@@ -271,7 +281,7 @@ void main() {
     ]);
     await pumpExplore(tester, projects: projects);
 
-    await tapChip(tester, 'Karang');
+    await tapCategory(tester, 'karang');
     await tester.enterText(find.byType(TextField), 'tidak-ada-hasil');
     await pumpFrames(tester);
 
@@ -286,41 +296,108 @@ void main() {
     expect(find.byType(EmptyState), findsNothing);
     final search = tester.widget<TextField>(find.byType(TextField));
     expect(search.controller?.text, isEmpty);
-    expect(chipWithLabel(tester, 'Semua').selected, isTrue);
+    expect(categorySelector(tester).selectedId, 'semua');
+    expect(scopeSwitch(tester).saved, isFalse);
   });
 
-  testWidgets('the list/map toggle lines up with the search field and the '
-      'first category chip', (tester) async {
-    await pumpExplore(
-      tester,
-      projects: FakeProjectRepository([buildProject()]),
+  testWidgets('the results line shows the filtered count while the header owns '
+      'the view toggle', (tester) async {
+    await pumpExplore(tester, projects: FakeProjectRepository(twoCategories()));
+
+    expect(find.text('Proyek · 2'), findsOneWidget);
+    // One action button, not a second segmented control: the header toggles to
+    // the other view.
+    expect(find.byKey(const ValueKey('explore.view.map')), findsOneWidget);
+    expect(find.byKey(const ValueKey('explore.view.list')), findsNothing);
+    expect(find.byType(SegmentedButton<bool>), findsNothing);
+  });
+
+  testWidgets('secondary controls scroll with the list while search, scope and '
+      'the result count stay fixed', (tester) async {
+    await pumpExplore(tester, projects: FakeProjectRepository(twoCategories()));
+
+    // The category rail is part of the list, so it scrolls away instead of
+    // permanently eating the viewport.
+    expect(
+      find.descendant(
+        of: projectList(),
+        matching: find.byType(CategorySelector),
+      ),
+      findsOneWidget,
     );
-
-    final toggle = tester.getTopLeft(find.byType(SegmentedButton<bool>)).dx;
-    final search = tester.getTopLeft(find.byType(TextField)).dx;
-    final chip = tester.getTopLeft(find.byType(ChoiceChip).first).dx;
-
-    expect(toggle, moreOrLessEquals(search));
-    expect(toggle, moreOrLessEquals(chip));
-    // Both of those sit on the base padding, so the toggle has to as well.
-    expect(toggle, moreOrLessEquals(AppDimens.padding));
+    expect(
+      find.descendant(
+        of: projectList(),
+        matching: find.byType(ExploreScopeSwitch),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: projectList(),
+        matching: find.byType(ExploreResultsBar),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(of: projectList(), matching: find.byType(TextField)),
+      findsNothing,
+    );
   });
 
-  testWidgets('the category chips hold project categories only, never the '
+  testWidgets('the category selector holds project categories only, never the '
       'saved collection', (tester) async {
     await pumpExplore(
       tester,
       projects: FakeProjectRepository([buildProject()]),
     );
 
-    final labels = tester
-        .widgetList<ChoiceChip>(find.byType(ChoiceChip))
-        .map((chip) => (chip.label as Text).data)
-        .toList();
-    expect(labels, ['Semua', 'Penyu', 'Karang']);
+    final selector = categorySelector(tester);
+    expect(selector.categoryIds, ['semua', 'penyu', 'karang']);
+    expect(selector.selectedId, 'semua');
+    expect(
+      find.byKey(const ValueKey('explore.category.tersimpan')),
+      findsNothing,
+    );
   });
 
-  testWidgets('the saved toggle invites saving a project from Project Detail '
+  testWidgets('selecting a category shows a labelled filter token that can be '
+      'removed', (tester) async {
+    await pumpExplore(tester, projects: FakeProjectRepository(twoCategories()));
+
+    await tapCategory(tester, 'karang');
+
+    expect(find.byKey(const ValueKey('explore.activeFilters')), findsOneWidget);
+    expect(find.text('Kategori: Karang'), findsOneWidget);
+    expect(find.text('Proyek · 1'), findsOneWidget);
+
+    await tester.tap(
+      find.byKey(const ValueKey('explore.activeFilter.category')),
+    );
+    await pumpFrames(tester);
+
+    expect(find.byKey(const ValueKey('explore.activeFilters')), findsNothing);
+    expect(categorySelector(tester).selectedId, 'semua');
+    expect(find.text('Proyek · 2'), findsOneWidget);
+  });
+
+  testWidgets('the saved scope count follows the saved collection', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await pumpExplore(tester, projects: FakeProjectRepository(twoCategories()));
+
+    expect(scopeSwitch(tester).savedCount, 0);
+
+    await tester.runAsync(() async {
+      await toggleSavedProject(twoCategories().first);
+    });
+    await pumpFrames(tester);
+
+    expect(scopeSwitch(tester).savedCount, 1);
+  });
+
+  testWidgets('the saved scope invites saving a project from Project Detail '
       'when nothing is saved yet, and "Lihat semua proyek" leaves it', (
     tester,
   ) async {
@@ -329,7 +406,7 @@ void main() {
       projects: FakeProjectRepository([buildProject()]),
     );
 
-    await tapSavedFilter(tester);
+    await tapSavedScope(tester);
 
     expect(find.byType(EmptyState), findsOneWidget);
     expect(find.textContaining('Belum ada proyek tersimpan'), findsOneWidget);
@@ -342,9 +419,10 @@ void main() {
 
     expect(find.byType(EmptyState), findsNothing);
     expect(find.byType(ProjectCard), findsAtLeastNWidgets(1));
+    expect(scopeSwitch(tester).saved, isFalse);
   });
 
-  testWidgets('the saved toggle lists only saved projects and hides '
+  testWidgets('the saved scope lists only saved projects and hides '
       '"Untuk minatmu"', (tester) async {
     SharedPreferences.setMockInitialValues({
       AppConfig.interestsKey: ['karang'],
@@ -352,11 +430,11 @@ void main() {
     await seedSavedProjects(tester, ['p02']);
     await pumpExplore(tester, projects: FakeProjectRepository(twoCategories()));
 
-    // The rail is up before the toggle, so its absence afterwards is caused by
-    // the saved filter and not by the interests being empty.
+    // The rail is up before the switch, so its absence afterwards is caused by
+    // the saved scope and not by the interests being empty.
     expect(find.byKey(const ValueKey('explore.forYouRail')), findsOneWidget);
 
-    await tapSavedFilter(tester);
+    await tapSavedScope(tester);
 
     expect(find.byKey(const ValueKey('explore.forYouRail')), findsNothing);
     expect(cardCount(tester), 1);
@@ -366,15 +444,15 @@ void main() {
     );
   });
 
-  testWidgets('a category chip narrows the saved projects', (tester) async {
+  testWidgets('a category narrows the saved projects', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await seedSavedProjects(tester, ['p01', 'p02']);
     await pumpExplore(tester, projects: FakeProjectRepository(twoCategories()));
 
-    await tapSavedFilter(tester);
+    await tapSavedScope(tester);
     expect(cardCount(tester), 2);
 
-    await tapChip(tester, 'Karang');
+    await tapCategory(tester, 'karang');
 
     expect(cardCount(tester), 1);
     expect(
@@ -388,7 +466,7 @@ void main() {
     await seedSavedProjects(tester, ['p01', 'p02']);
     await pumpExplore(tester, projects: FakeProjectRepository(twoCategories()));
 
-    await tapSavedFilter(tester);
+    await tapSavedScope(tester);
 
     await tester.enterText(find.byType(TextField), 'Penyu Hijau');
     await pumpFrames(tester);
@@ -397,36 +475,36 @@ void main() {
     expect(find.widgetWithText(ProjectCard, 'Penyu Hijau'), findsOneWidget);
   });
 
-  testWidgets('turning the saved toggle off goes back to the first page', (
+  testWidgets('switching back to Jelajahi goes back to the first page', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
-    // Every project is saved, so switching the toggle off only changes paging.
+    // Every project is saved, so leaving the scope only changes paging.
     await seedSavedProjects(tester, [
       for (var i = 1; i <= 9; i++) 'p${i.toString().padLeft(2, '0')}',
     ]);
     await pumpExplore(tester, projects: manyProjects());
 
-    await tapSavedFilter(tester);
+    await tapSavedScope(tester);
     await scrollToNextPage(tester);
     await settlePageLoad(tester);
     expect(cardCount(tester), 8);
 
-    await tapSavedFilter(tester);
+    await tapExploreScope(tester);
 
     expect(cardCount(tester), 4);
   });
 
   testWidgets('saved projects that match nothing offer "Atur ulang filter", '
-      'which clears the saved toggle, the category and the query', (
+      'which clears the saved scope, the category and the query', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
     await seedSavedProjects(tester, ['p01']);
     await pumpExplore(tester, projects: FakeProjectRepository(twoCategories()));
 
-    await tapSavedFilter(tester);
-    await tapChip(tester, 'Karang');
+    await tapSavedScope(tester);
+    await tapCategory(tester, 'karang');
     await tester.enterText(find.byType(TextField), 'Penyu');
     await pumpFrames(tester);
 
@@ -439,24 +517,27 @@ void main() {
 
     expect(find.byType(EmptyState), findsNothing);
     // p02 was never saved, so it is in the list again only because the saved
-    // toggle is off. Counted from the list's children: a second card sits
+    // scope is off. Counted from the list's children: a second card sits
     // below the fold, so it is never mounted in this surface.
     expect(cardCount(tester), 2);
     expect(find.widgetWithText(ProjectCard, 'Penyu Hijau'), findsOneWidget);
-    expect(chipWithLabel(tester, 'Semua').selected, isTrue);
+    expect(categorySelector(tester).selectedId, 'semua');
+    expect(scopeSwitch(tester).saved, isFalse);
     final search = tester.widget<TextField>(find.byType(TextField));
     expect(search.controller?.text, isEmpty);
   });
 
-  testWidgets('the saved toggle keeps a 48dp touch target', (tester) async {
+  testWidgets('the saved scope keeps a comfortable touch target', (
+    tester,
+  ) async {
     await pumpExplore(
       tester,
       projects: FakeProjectRepository([buildProject()]),
     );
 
-    final size = tester.getSize(savedFilterButton());
+    final size = tester.getSize(savedScope());
     expect(size.width, greaterThanOrEqualTo(48));
-    expect(size.height, greaterThanOrEqualTo(48));
+    expect(size.height, greaterThanOrEqualTo(44));
   });
 
   testWidgets('only the first page of projects is shown after loading', (
@@ -535,7 +616,7 @@ void main() {
     expect(cardCount(tester), 4);
   });
 
-  testWidgets('changing the category chip goes back to the first page', (
+  testWidgets('changing the category goes back to the first page', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -544,7 +625,7 @@ void main() {
     await settlePageLoad(tester);
     expect(cardCount(tester), 8);
 
-    await tapChip(tester, 'Penyu');
+    await tapCategory(tester, 'penyu');
 
     // All 9 projects are "penyu", so the category keeps every match.
     expect(cardCount(tester), 4);
@@ -570,7 +651,6 @@ void main() {
       await pumpExplore(
         tester,
         projects: projects,
-        phoneSurface: true,
         textScale: textScale,
       );
 

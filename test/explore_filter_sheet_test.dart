@@ -13,6 +13,7 @@ Future<void> openSheet(
   String category = 'semua',
   DistanceBand distance = DistanceBand.semua,
   ProjectCondition? condition,
+  int Function(ExploreFilterSelection)? countFor,
 }) async {
   await tester.pumpWidget(
     wrapPage(
@@ -29,6 +30,7 @@ Future<void> openSheet(
                   condition: condition,
                 ),
                 userLocationLabel: 'Jakarta',
+                countFor: countFor,
               ),
             );
           },
@@ -42,15 +44,29 @@ Future<void> openSheet(
   await tester.pumpAndSettle();
 }
 
+Future<void> tapOption(WidgetTester tester, String key) async {
+  final finder = find.byKey(ValueKey(key));
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
+  await tester.pump();
+}
+
 void main() {
-  testWidgets('the sheet shows a section per filter group', (tester) async {
+  testWidgets('the sheet groups the filters into labelled dimensions', (
+    tester,
+  ) async {
     await openSheet(tester, onResult: (_) {});
 
+    expect(find.byKey(const ValueKey('explore.filter.sheet')), findsOneWidget);
+    expect(find.text('Filter'), findsOneWidget);
     expect(find.text('Kategori'), findsOneWidget);
     expect(find.text('Jarak'), findsOneWidget);
     expect(find.text('Status kondisi'), findsOneWidget);
-    expect(find.text('Terapkan'), findsOneWidget);
     expect(find.text('Atur ulang'), findsOneWidget);
+    expect(find.byKey(const ValueKey('explore.filter.apply')), findsOneWidget);
+    // A filter sheet uses radio options, not chips.
+    expect(find.byType(ChoiceChip), findsNothing);
   });
 
   testWidgets('the distance section names the mock reference location', (
@@ -67,9 +83,8 @@ void main() {
     ExploreFilterSelection? result;
     await openSheet(tester, onResult: (value) => result = value);
 
-    await tester.tap(find.text('Kritis'));
-    await tester.pump();
-    await tester.tap(find.text('Terapkan'));
+    await tapOption(tester, 'explore.filter.condition.kritis');
+    await tester.tap(find.byKey(const ValueKey('explore.filter.apply')));
     await tester.pumpAndSettle();
 
     expect(result, isNotNull);
@@ -86,16 +101,33 @@ void main() {
       category: 'karang',
     );
 
-    await tester.tap(find.text('250–1000 km'));
-    await tester.pump();
-    await tester.tap(find.text('Terapkan'));
+    await tapOption(tester, 'explore.filter.distance.sedang');
+    await tester.tap(find.byKey(const ValueKey('explore.filter.apply')));
     await tester.pumpAndSettle();
 
     expect(result!.distance, DistanceBand.sedang);
     expect(result!.category, 'karang');
   });
 
-  testWidgets('reset clears every group', (tester) async {
+  testWidgets('the footer previews how many projects the draft keeps', (
+    tester,
+  ) async {
+    await openSheet(
+      tester,
+      onResult: (_) {},
+      countFor: (draft) => draft.condition == ProjectCondition.kritis ? 1 : 2,
+    );
+
+    expect(find.text('Tampilkan 2 proyek'), findsOneWidget);
+
+    await tapOption(tester, 'explore.filter.condition.kritis');
+
+    expect(find.text('Tampilkan 1 proyek'), findsOneWidget);
+  });
+
+  testWidgets('reset clears every group without closing the sheet', (
+    tester,
+  ) async {
     ExploreFilterSelection? result;
     await openSheet(
       tester,
@@ -105,13 +137,30 @@ void main() {
       condition: ProjectCondition.kritis,
     );
 
-    await tester.tap(find.text('Atur ulang'));
+    await tester.tap(find.byKey(const ValueKey('explore.filter.reset')));
+    await tester.pumpAndSettle();
+
+    // The sheet stays open so the user can review the cleared draft.
+    expect(find.byKey(const ValueKey('explore.filter.sheet')), findsOneWidget);
+    expect(result, isNull);
+
+    await tester.tap(find.byKey(const ValueKey('explore.filter.apply')));
     await tester.pumpAndSettle();
 
     expect(result, isNotNull);
     expect(result!.category, 'semua');
     expect(result!.distance, DistanceBand.semua);
     expect(result!.condition, isNull);
+  });
+
+  testWidgets('the close action dismisses without applying', (tester) async {
+    ExploreFilterSelection? result;
+    await openSheet(tester, onResult: (value) => result = value);
+
+    await tester.tap(find.byKey(const ValueKey('explore.filter.close')));
+    await tester.pumpAndSettle();
+
+    expect(result, isNull);
   });
 
   testWidgets('active filter count ignores the default "Semua" values', (
@@ -148,7 +197,10 @@ void main() {
     await openSheet(tester, onResult: (_) {});
     expect(OfflineController.instance.offline, isFalse);
 
-    await tester.tap(find.text('Simulasikan offline'));
+    final switchFinder = find.text('Simulasikan offline');
+    await tester.ensureVisible(switchFinder);
+    await tester.pumpAndSettle();
+    await tester.tap(switchFinder);
     await tester.pump();
 
     expect(OfflineController.instance.offline, isTrue);

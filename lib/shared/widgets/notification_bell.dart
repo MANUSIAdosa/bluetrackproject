@@ -13,7 +13,10 @@ import '../../features/notification/application/notification_providers.dart';
 /// the bell and the badge can never disagree. Zero renders no badge. The
 /// tooltip follows the active locale.
 class NotificationBell extends ConsumerWidget {
-  const NotificationBell({super.key});
+  const NotificationBell({super.key, this.color});
+
+  /// Icon colour override for headers with a coloured background.
+  final Color? color;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -21,7 +24,7 @@ class NotificationBell extends ConsumerWidget {
 
     final bell = IconButton(
       tooltip: context.tr('shell.notifications'),
-      icon: const Icon(Icons.notifications_outlined),
+      icon: Icon(Icons.notifications_outlined, color: color),
       onPressed: () => context.push('/notifications'),
     );
 
