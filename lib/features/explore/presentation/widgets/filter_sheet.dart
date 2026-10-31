@@ -178,15 +178,12 @@ class _ExploreFilterSheetState extends State<_ExploreFilterSheet> {
                       helper: context.tr('p03_filter_condition_helper'),
                       children: [
                         _FilterOption(
-                          key: const ValueKey(
-                            'explore.filter.condition.semua',
-                          ),
+                          key: const ValueKey('explore.filter.condition.semua'),
                           label: context.tr('p03_filter_all'),
                           selected: _draft.condition == null,
                           onTap: () => setState(
-                            () => _draft = _draft.copyWith(
-                              clearCondition: true,
-                            ),
+                            () =>
+                                _draft = _draft.copyWith(clearCondition: true),
                           ),
                         ),
                         for (final condition in ProjectCondition.values)
@@ -226,9 +223,8 @@ class _ExploreFilterSheetState extends State<_ExploreFilterSheet> {
                     flex: 3,
                     child: OutlinedButton(
                       key: const ValueKey('explore.filter.reset'),
-                      onPressed: () => setState(
-                        () => _draft = ExploreFilterSelection.none,
-                      ),
+                      onPressed: () =>
+                          setState(() => _draft = ExploreFilterSelection.none),
                       child: Text(context.tr('p03_filter_reset')),
                     ),
                   ),
@@ -342,10 +338,7 @@ class _FilterOption extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
           child: Row(
             children: [
-              if (leading != null) ...[
-                leading!,
-                const SizedBox(width: 10),
-              ],
+              if (leading != null) ...[leading!, const SizedBox(width: 10)],
               Expanded(
                 child: Text(
                   label,
@@ -357,9 +350,7 @@ class _FilterOption extends StatelessWidget {
                 ),
               ),
               Icon(
-                selected
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_off,
+                selected ? Icons.radio_button_checked : Icons.radio_button_off,
                 size: 20,
                 color: selected ? AppColors.ocean : AppColors.inactiveTab,
               ),
@@ -371,9 +362,9 @@ class _FilterOption extends StatelessWidget {
   }
 }
 
-/// Debug-only offline toggle. Flips the app-wide [OfflineController] so the
-/// offline banner and the saved-only list can be demoed without a network
-/// package.
+/// Debug-only offline override. Flips the app-wide [OfflineController] so the
+/// offline banner and the saved-only list can be demoed without disconnecting
+/// the device; the next real connectivity change still updates the controller.
 class _OfflineDebugSwitch extends StatelessWidget {
   const _OfflineDebugSwitch();
 

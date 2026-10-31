@@ -21,6 +21,10 @@ Future<void> main() async {
 
   await AuthController.instance.init();
 
+  // Real network state so the offline banner is automatic. Failure is ignored
+  // inside the controller, and the first frame is never blocked for long.
+  await OfflineController.instance.start();
+
   // ProviderScope hosts the Riverpod state (P13 notifications among others).
   // The unread badge loads lazily when the shell/bell/notifications page first
   // watches notificationListProvider — no eager load needed here.

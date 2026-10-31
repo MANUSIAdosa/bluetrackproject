@@ -46,6 +46,44 @@ abstract final class AppConfig {
   // --- Mock pagination -----------------------------------------------------
   /// Items per page for mock pagination (there is no real backend paging).
   static const int mockPageSize = 10;
+
+  // --- Report wizard ------------------------------------------------------
+  /// Default map centre for Step 2 (Lokasi) before the user places a pin.
+  ///
+  /// Mirrors the first entry in `assets/mock/locations.json` (Pantai
+  /// Sukamade). TODO(lapor): the product owner should choose a neutral
+  /// starting point (for example Indonesia's centre or the user's region)
+  /// instead of a project site.
+  static const double reportDefaultLatitude = -8.5236;
+  static const double reportDefaultLongitude = 114.6131;
+
+  // --- Report submission (simulation) -------------------------------------
+  /// Simulated "send to server" delay so the loading state is visible.
+  ///
+  /// TODO(lapor): remove once a real API client replaces the mock submission.
+  static const Duration reportSubmitDelay = Duration(milliseconds: 900);
+
+  /// Flip to true to force every submission to fail, so the error and
+  /// "Coba lagi" states can be checked manually. Tests inject a failing
+  /// [ReportSubmissionService] instead.
+  ///
+  /// TODO(lapor): remove together with [reportSubmitDelay].
+  static const bool reportSubmitSimulateFailure = false;
+
+  /// Reporter identity used by the simulated submission until the auth
+  /// session exposes the signed-in user.
+  ///
+  /// TODO(lapor): read the user id and display name from the auth session.
+  static const String reportCurrentUserId = 'u-me';
+  static const String reportCurrentUserName = 'Pengguna BlueTrack';
+
+  /// Location the simulated report is attached to.
+  ///
+  /// The wizard only collects coordinates; the real flow should either let the
+  /// user pick a project or let the backend resolve the nearest location.
+  ///
+  /// TODO(lapor): replace with the resolved location id from the API.
+  static const String reportSimulatedLocationId = 'p01';
 }
 
 /// Release-gate configuration for the bottom-nav tabs (P00).
@@ -59,7 +97,11 @@ abstract final class AppConfig {
 /// flags, keep every flag `true` — flipping one would desync the nav bar from
 /// the hardcoded [StatefulShellRoute] branches.
 class TabConfig {
-  const TabConfig({required this.id, required this.name, required this.enabled});
+  const TabConfig({
+    required this.id,
+    required this.name,
+    required this.enabled,
+  });
 
   /// Stable identifier used by the shell to bind this entry to its UI.
   final String id;

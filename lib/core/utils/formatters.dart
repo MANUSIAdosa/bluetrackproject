@@ -52,8 +52,10 @@ abstract final class Formatters {
 
   /// Which of the three time groups a notification belongs to, computed
   /// against [now] — never a stored category.
-  static NotificationTimeTier timeTier(DateTime time, {required DateTime now}) =>
-      _timeTier(time, now);
+  static NotificationTimeTier timeTier(
+    DateTime time, {
+    required DateTime now,
+  }) => _timeTier(time, now);
 
   static NotificationTimeTier _timeTier(DateTime time, DateTime now) {
     final dayOnly = DateTime(time.year, time.month, time.day);
@@ -92,9 +94,15 @@ abstract final class Formatters {
     final locale = _locale(localeLanguageCode);
     return NumberFormat.decimalPattern(locale).format(value);
   }
+
+  /// Date and time, for example `31 Okt 2026 14.05` in Indonesian.
+  static String dateTime(DateTime date, String localeLanguageCode) {
+    _ensureDateSymbols();
+    final locale = _locale(localeLanguageCode);
+    return DateFormat.yMMMd(locale).add_Hm().format(date.toLocal());
+  }
 }
 
 /// Groups the notification list falls into. Defined here because grouping and
 /// formatting share the same "age against `now`" rule.
 enum NotificationTimeTier { today, thisWeek, older }
-

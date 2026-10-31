@@ -1,4 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Step 2 "Lokasi" uses a one-shot foreground location fix. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <!-- OSM map tiles (Step 2 and Explore) need network access in release builds. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="blue_track"
         android:name="${applicationName}"
