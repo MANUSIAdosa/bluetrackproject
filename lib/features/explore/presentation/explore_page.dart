@@ -17,6 +17,7 @@ import '../data/project_repository.dart';
 import '../data/saved_project_store.dart';
 import '../domain/explore_map_data.dart';
 import '../domain/project.dart';
+import 'widgets/category_picker.dart';
 import 'widgets/explore_header.dart';
 import 'widgets/explore_list_widgets.dart';
 import 'widgets/explore_map.dart';
@@ -294,7 +295,6 @@ class _ExplorePageState extends State<ExplorePage> {
     if (!mounted) return;
     final selection = await showExploreFilterSheet(
       context,
-      categoryIds: _categoryIds,
       selection: _selection,
       userLocationLabel: _mapData?.userLocationLabel ?? '',
       countFor: (draft) => _applyFilters(
@@ -306,10 +306,24 @@ class _ExplorePageState extends State<ExplorePage> {
     if (selection == null || !mounted) return;
     _resetPaging();
     setState(() {
-      _category = selection.category;
+      // The sheet no longer owns category, but applying its draft keeps the
+      // rail selection intact.
       _distance = selection.distance;
       _condition = selection.condition;
     });
+  }
+
+  /// Map mode replaces the hidden rail with a compact chip. One picker, one
+  /// category state, no second set of category buttons.
+  Future<void> _pickCategory() async {
+    final id = await showCategoryPickerSheet(
+      context,
+      categoryIds: _categoryIds,
+      selectedId: _category,
+    );
+    if (id == null || !mounted) return;
+    _resetPaging();
+    setState(() => _category = id);
   }
 
   /// One filtering rule set for the page and for the sheet's live count.
@@ -410,7 +424,14 @@ class _ExplorePageState extends State<ExplorePage> {
               },
             ),
           ),
-          if (!_loading && !_error) ExploreResultsBar(count: visible.length),
+          if (!_loading && !_error)
+            ExploreResultsBar(
+              count: visible.length,
+              // Map mode hides the rail, so the result line carries the one
+              // category control. List mode leaves it to the rail below.
+              categoryId: _mapMode ? _category : null,
+              onCategoryPressed: _mapMode ? _pickCategory : null,
+            ),
           Expanded(child: _buildBody(visible)),
         ],
       ),
@@ -495,7 +516,7 @@ class _ExplorePageState extends State<ExplorePage> {
             },
             horizontalPadding: 0,
           ),
-          if (_selection.activeCount > 0)
+          if (_selection.hasAny)
             ActiveFilterBar(
               selection: _selection,
               onChanged: (value) {

@@ -638,23 +638,85 @@ class _FilterToken extends StatelessWidget {
 
 /// Slim result count above the list. It stays fixed so the effect of a filter
 /// is visible while scrolling; the view toggle lives in the header.
+///
+/// In map mode the rail is hidden, so [categoryId] adds a compact chip that
+/// opens the category picker. List mode passes null: the rail is right there,
+/// and showing both would be the duplication this layout removed.
 class ExploreResultsBar extends StatelessWidget {
-  const ExploreResultsBar({super.key, required this.count});
+  const ExploreResultsBar({
+    super.key,
+    required this.count,
+    this.categoryId,
+    this.onCategoryPressed,
+  });
 
   final int count;
+  final String? categoryId;
+  final VoidCallback? onCategoryPressed;
 
   @override
   Widget build(BuildContext context) {
+    final showCategory = categoryId != null && onCategoryPressed != null;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
-      child: Text(
-        '${context.tr('explore.projects')} · $count',
-        key: const ValueKey('explore.resultsCount'),
-        style: const TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w800,
-          color: AppColors.textPrimary,
+      child: Row(
+        children: [
+          Text(
+            '${context.tr('explore.projects')} · $count',
+            key: const ValueKey('explore.resultsCount'),
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          if (showCategory) ...[
+            const Spacer(),
+            _MapCategoryChip(
+              categoryId: categoryId!,
+              onPressed: onCategoryPressed!,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MapCategoryChip extends StatelessWidget {
+  const _MapCategoryChip({required this.categoryId, required this.onPressed});
+
+  final String categoryId;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final all = categoryId == 'semua';
+    final label = all
+        ? context.tr('p03_category_label')
+        : context.tr('cat.$categoryId');
+
+    return Tooltip(
+      message: context.tr('p03_category_label'),
+      child: ActionChip(
+        key: const ValueKey('explore.mapCategoryChip'),
+        avatar: Icon(
+          all ? Icons.grid_view_rounded : CategoryIcons.iconFor(categoryId),
+          size: 16,
+          color: AppColors.ocean,
         ),
+        label: Text(label),
+        labelStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: AppColors.ocean,
+        ),
+        visualDensity: VisualDensity.compact,
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        side: const BorderSide(color: AppColors.border),
+        backgroundColor: AppColors.surface,
+        onPressed: onPressed,
       ),
     );
   }

@@ -381,6 +381,17 @@ void main() {
     expect(find.text('Proyek · 2'), findsOneWidget);
   });
 
+  testWidgets('the filter badge ignores the category chosen on the rail', (
+    tester,
+  ) async {
+    await pumpExplore(tester, projects: FakeProjectRepository(twoCategories()));
+
+    await tapCategory(tester, 'karang');
+
+    // The badge belongs to the sheet, which no longer owns category.
+    expect(find.byKey(const ValueKey('explore.filterCount')), findsNothing);
+  });
+
   testWidgets('the saved scope count follows the saved collection', (
     tester,
   ) async {
