@@ -21,5 +21,9 @@ Future<void> main() async {
   await AuthController.instance.init();
   await NotificationsController.instance.load();
 
+  // Real network state so the offline banner is automatic. Failure is ignored
+  // inside the controller, and the first frame is never blocked for long.
+  await OfflineController.instance.start();
+
   runApp(BlueTrackApp(onboardingDone: onboardingDone));
 }

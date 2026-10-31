@@ -215,9 +215,9 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-/// Debug-only offline toggle. Flips the app-wide [OfflineController] so the
-/// offline banner and the saved-only list can be demoed without a network
-/// package.
+/// Debug-only offline override. Flips the app-wide [OfflineController] so the
+/// offline banner and the saved-only list can be demoed without disconnecting
+/// the device; the next real connectivity change still updates the controller.
 class _OfflineDebugSwitch extends StatelessWidget {
   const _OfflineDebugSwitch();
 
