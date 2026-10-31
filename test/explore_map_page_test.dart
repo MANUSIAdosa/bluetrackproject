@@ -8,6 +8,7 @@ import 'package:blue_track/features/explore/data/saved_project_store.dart';
 import 'package:blue_track/features/explore/domain/explore_map_data.dart';
 import 'package:blue_track/features/explore/domain/project.dart';
 import 'package:blue_track/features/explore/presentation/explore_page.dart';
+import 'package:blue_track/features/explore/presentation/widgets/explore_header.dart';
 import 'package:blue_track/shared/widgets/empty_state.dart';
 import 'package:blue_track/shared/widgets/project_card.dart';
 import 'package:flutter/material.dart';
@@ -100,11 +101,19 @@ Future<void> pumpExplore(
   }
 }
 
-Future<void> tapText(WidgetTester tester, String text) async {
-  await tester.tap(find.text(text));
+Future<void> tapKey(WidgetTester tester, String key) async {
+  await tester.tap(find.byKey(ValueKey(key)));
   for (var i = 0; i < 6; i++) {
     await tester.pump(const Duration(milliseconds: 100));
   }
+}
+
+Future<void> tapSheetOption(WidgetTester tester, String key) async {
+  final finder = find.byKey(ValueKey(key));
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
+  await tester.pump();
 }
 
 Future<void> openFilterSheet(WidgetTester tester) async {
@@ -140,27 +149,38 @@ void main() {
     await pumpExplore(tester, projects: FakeProjectRepository(_twoProjects()));
     expect(find.byType(ProjectCard), findsAtLeastNWidgets(1));
 
-    await tapText(tester, 'Peta');
+    await tapKey(tester, 'explore.view.map');
 
     expect(find.byKey(const ValueKey('explore.marker.p01')), findsOneWidget);
     expect(find.byType(ProjectCard), findsNothing);
 
-    await tapText(tester, 'Daftar');
+    await tapKey(tester, 'explore.view.list');
 
     expect(find.byType(ProjectCard), findsAtLeastNWidgets(1));
+  });
+
+  testWidgets('map mode hides the category rail so the map gets the space', (
+    tester,
+  ) async {
+    await pumpExplore(tester, projects: FakeProjectRepository(_twoProjects()));
+    expect(find.byType(CategorySelector), findsOneWidget);
+
+    await tapKey(tester, 'explore.view.map');
+
+    expect(find.byType(CategorySelector), findsNothing);
+    expect(find.byKey(const ValueKey('explore.marker.p01')), findsOneWidget);
   });
 
   testWidgets('the condition filter narrows the map markers as well', (
     tester,
   ) async {
     await pumpExplore(tester, projects: FakeProjectRepository(_twoProjects()));
-    await tapText(tester, 'Peta');
+    await tapKey(tester, 'explore.view.map');
     expect(find.byKey(const ValueKey('explore.marker.p02')), findsOneWidget);
 
     await openFilterSheet(tester);
-    await tester.tap(find.text('Kritis'));
-    await tester.pump();
-    await tester.tap(find.text('Terapkan'));
+    await tapSheetOption(tester, 'explore.filter.condition.kritis');
+    await tester.tap(find.byKey(const ValueKey('explore.filter.apply')));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('explore.marker.p02')), findsOneWidget);
@@ -169,11 +189,13 @@ void main() {
 
   testWidgets('the conservation layer is a toggle on the map', (tester) async {
     await pumpExplore(tester, projects: FakeProjectRepository(_twoProjects()));
-    await tapText(tester, 'Peta');
+    await tapKey(tester, 'explore.view.map');
 
     expect(find.byKey(const ValueKey('explore.conservationLayer')), findsNothing);
 
-    await tester.tap(find.text('Kawasan konservasi'));
+    await tester.tap(
+      find.byKey(const ValueKey('explore.conservationSwitch')),
+    );
     await tester.pumpAndSettle();
 
     expect(
@@ -187,9 +209,8 @@ void main() {
     expect(find.byKey(const ValueKey('explore.filterCount')), findsNothing);
 
     await openFilterSheet(tester);
-    await tester.tap(find.text('<250 km'));
-    await tester.pump();
-    await tester.tap(find.text('Terapkan'));
+    await tapSheetOption(tester, 'explore.filter.distance.dekat');
+    await tester.tap(find.byKey(const ValueKey('explore.filter.apply')));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('explore.filterCount')), findsOneWidget);
@@ -241,7 +262,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
-    await tapText(tester, 'Peta');
+    await tapKey(tester, 'explore.view.map');
     await tester.tap(find.byKey(const ValueKey('explore.filterButton')));
     await tester.pump();
     completer.complete(_mapData);

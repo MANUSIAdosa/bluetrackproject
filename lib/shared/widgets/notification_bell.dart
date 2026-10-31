@@ -11,13 +11,16 @@ import '../../core/theme/app_colors.dart';
 /// AppConfig — so the bell and the My Impact nav badge can never disagree.
 /// Zero renders no badge. The tooltip follows the active locale.
 class NotificationBell extends StatelessWidget {
-  const NotificationBell({super.key});
+  const NotificationBell({super.key, this.color});
+
+  /// Icon colour override for headers with a coloured background.
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
     final bell = IconButton(
       tooltip: context.tr('shell.notifications'),
-      icon: const Icon(Icons.notifications_outlined),
+      icon: Icon(Icons.notifications_outlined, color: color),
       onPressed: () => context.push('/notifications'),
     );
 
