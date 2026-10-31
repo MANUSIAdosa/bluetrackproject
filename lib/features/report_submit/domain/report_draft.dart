@@ -23,6 +23,10 @@ class ReportWizardDraft {
 
   /// The wizard has exactly four steps, numbered 1–4 in the UI and in storage.
   static const int firstStep = 1;
+
+  /// Step 2 places the finding pin on the map.
+  static const int locationStep = 2;
+
   static const int lastStep = 4;
 
   /// Local paths of the photos picked for this finding.
@@ -50,14 +54,16 @@ class ReportWizardDraft {
   /// Number of photos already attached.
   int get photoCount => photoPaths.length;
 
+  /// Whether step 2 already has a pin.
+  bool get hasLocation => latitude != null && longitude != null;
+
   /// Whether there is anything worth resuming.
   ///
   /// An untouched wizard (no photos, no pin, no type, still on step 1) is not
   /// a draft, so opening the page never asks to resume an empty form.
   bool get hasContent =>
       photoPaths.isNotEmpty ||
-      latitude != null ||
-      longitude != null ||
+      hasLocation ||
       category != null ||
       severity != null ||
       currentStep > firstStep;

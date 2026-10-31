@@ -512,6 +512,35 @@ class AppLocalizations {
           'Sumber foto tidak tersedia di perangkat ini.',
       'report_photo_failed': 'Foto tidak dapat diambil. Coba lagi.',
       'report_permission_dismiss': 'Mengerti',
+      'report_location_title': 'Tandai lokasi temuan',
+      'report_location_body':
+          'Gunakan lokasi saat ini atau ketuk peta untuk menempatkan pin di '
+          'titik temuan.',
+      'report_location_hint': 'Geser pin ke lokasi temuan',
+      'report_location_gps': 'Gunakan lokasi saya',
+      'report_location_gps_loading': 'Mengambil lokasi...',
+      'report_location_card_title': 'Koordinat temuan',
+      'report_location_latitude': 'Lintang',
+      'report_location_longitude': 'Bujur',
+      'report_location_empty_hint':
+          'Ketuk peta atau gunakan lokasi saya untuk mengisi koordinat.',
+      'report_location_error_title': 'Lokasi tidak tersedia',
+      'report_location_permission_denied':
+          'Izin lokasi ditolak. Kamu tetap bisa menandai lokasi manual dengan '
+          'mengetuk peta.',
+      'report_location_permission_denied_forever':
+          'Izin lokasi diblokir. Buka pengaturan untuk mengizinkannya, atau '
+          'tandai lokasi manual di peta.',
+      'report_location_service_disabled': 'Layanan lokasi mati. Aktifkan GPS, atau tandai lokasi manual di peta.',
+      'report_location_timeout':
+          'GPS tidak merespons. Geser pin secara manual di peta.',
+      'report_location_unavailable':
+          'Lokasi tidak dapat diambil. Tandai lokasi manual di peta.',
+      'report_location_manual': 'Tandai manual',
+      'report_location_open_settings': 'Buka pengaturan',
+      'report_location_open_location_settings': 'Buka pengaturan lokasi',
+      'report_location_settings_failed':
+          'Pengaturan tidak dapat dibuka. Tandai lokasi manual di peta.',
     },
     'en': {
       // --- Common ---
@@ -989,6 +1018,36 @@ class AppLocalizations {
           'The photo source is not available on this device.',
       'report_photo_failed': 'The photo could not be taken. Try again.',
       'report_permission_dismiss': 'Got it',
+      'report_location_title': 'Mark the finding location',
+      'report_location_body':
+          'Use your current location or tap the map to place a pin on the '
+          'finding.',
+      'report_location_hint': 'Drag the pin to the finding location',
+      'report_location_gps': 'Use my location',
+      'report_location_gps_loading': 'Getting location...',
+      'report_location_card_title': 'Finding coordinates',
+      'report_location_latitude': 'Latitude',
+      'report_location_longitude': 'Longitude',
+      'report_location_empty_hint':
+          'Tap the map or use my location to fill in the coordinates.',
+      'report_location_error_title': 'Location unavailable',
+      'report_location_permission_denied':
+          'Location permission was denied. You can still mark the location '
+          'manually by tapping the map.',
+      'report_location_permission_denied_forever':
+          'Location permission is blocked. Open settings to allow it, or mark '
+          'the location manually on the map.',
+      'report_location_service_disabled':
+          'Location services are off. Turn on GPS, or mark the location '
+          'manually on the map.',
+      'report_location_timeout':
+          'GPS is not responding. Drag the pin manually on the map.',
+      'report_location_unavailable':
+          'The location could not be retrieved. Mark it manually on the map.',
+      'report_location_manual': 'Mark manually',
+      'report_location_open_settings': 'Open settings',
+      'report_location_open_location_settings': 'Open location settings',
+      'report_location_settings_failed': 'Settings could not be opened. Mark the location manually on the map.',
     },
   };
 }

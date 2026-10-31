@@ -32,4 +32,14 @@ abstract final class AppConfig {
   // --- Donation (mock) ----------------------------------------------------
   // TODO(product owner): confirm the preset donation amounts below.
   static const List<int> donationPresets = [50000, 100000, 250000, 500000];
+
+  // --- Report wizard ------------------------------------------------------
+  /// Default map centre for Step 2 (Lokasi) before the user places a pin.
+  ///
+  /// Mirrors the first entry in `assets/mock/locations.json` (Pantai
+  /// Sukamade). TODO(lapor): the product owner should choose a neutral
+  /// starting point (for example Indonesia's centre or the user's region)
+  /// instead of a project site.
+  static const double reportDefaultLatitude = -8.5236;
+  static const double reportDefaultLongitude = 114.6131;
 }

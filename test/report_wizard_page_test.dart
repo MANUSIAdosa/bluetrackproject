@@ -6,11 +6,15 @@ import 'package:blue_track/core/state/app_state.dart';
 import 'package:blue_track/features/report_submit/data/report_draft_store.dart';
 import 'package:blue_track/features/report_submit/data/report_photo_picker.dart';
 import 'package:blue_track/features/report_submit/domain/report_draft.dart';
+import 'package:blue_track/features/report_submit/domain/report_location.dart';
 import 'package:blue_track/features/report_submit/presentation/pages/report_wizard_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import 'support/fake_report_location_service.dart';
+import 'support/fake_tile_provider.dart';
 import 'support/test_harness.dart';
 
 const _addPhotoKey = Key('report_add_photo');
@@ -72,6 +76,8 @@ class _FakePicker implements ReportPhotoPicker {
 void main() {
   late Directory tempDir;
   late List<String> photoPaths;
+  late FakeReportLocationService locationService;
+  late FakeTileProvider tileProvider;
 
   /// 390x844 at dpr 1 is a typical phone; the wizard must fit and its add tile
   /// must stay reachable without a scroll.
@@ -89,6 +95,8 @@ void main() {
       await file.writeAsBytes(_onePixelPng);
       photoPaths.add(file.path);
     }
+    locationService = FakeReportLocationService();
+    tileProvider = FakeTileProvider();
   });
 
   tearDown(() async {
@@ -99,11 +107,17 @@ void main() {
     WidgetTester tester, {
     required _FakeStore store,
     _FakePicker? picker,
+    FakeReportLocationService? location,
   }) async {
     phoneSurface(tester);
     await tester.pumpWidget(
       wrapPage(
-        ReportWizardPage(store: store, photoPicker: picker ?? _FakePicker()),
+        ReportWizardPage(
+          store: store,
+          photoPicker: picker ?? _FakePicker(),
+          locationService: location ?? locationService,
+          locationTileProvider: tileProvider,
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -113,6 +127,14 @@ void main() {
     await tester.tap(find.byKey(_addPhotoKey));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Galeri'));
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> tapMap(WidgetTester tester) async {
+    await tester.tapAt(tester.getCenter(find.byType(FlutterMap)));
+    // flutter_map delays single taps by 250 ms to tell them apart from double
+    // taps; pump past that before settling.
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
   }
 
@@ -156,7 +178,7 @@ void main() {
 
     await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
     await tester.pumpAndSettle();
-    expect(find.text('Segera hadir.'), findsOneWidget);
+    expect(find.text('Tandai lokasi temuan'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(OutlinedButton, 'Kembali'));
     await tester.pumpAndSettle();
@@ -231,11 +253,208 @@ void main() {
     await tester.tap(find.text('Lanjutkan draf'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Segera hadir.'), findsOneWidget);
+    expect(find.text('Tandai lokasi temuan'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(OutlinedButton, 'Kembali'));
     await tester.pumpAndSettle();
     expect(find.text('1/3 foto'), findsOneWidget);
+  });
+
+  testWidgets('step 2 enables continue only after a pin is placed', (
+    tester,
+  ) async {
+    final store = _FakeStore();
+    await pumpWizard(
+      tester,
+      store: store,
+      picker: _FakePicker(paths: photoPaths.take(1).toList()),
+    );
+
+    await addFromGallery(tester);
+    await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tandai lokasi temuan'), findsOneWidget);
+    expect(find.text('Gunakan lokasi saya'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Lanjut'))
+          .onPressed,
+      isNull,
+    );
+
+    await tapMap(tester);
+
+    expect(find.text('Geser pin ke lokasi temuan'), findsNothing);
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Lanjut'))
+          .onPressed,
+      isNotNull,
+    );
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
+    await tester.pumpAndSettle();
+    expect(find.text('Segera hadir.'), findsOneWidget);
+  });
+
+  testWidgets('keeps photos and the pin when moving back to step 1', (
+    tester,
+  ) async {
+    final store = _FakeStore();
+    await pumpWizard(
+      tester,
+      store: store,
+      picker: _FakePicker(paths: photoPaths.take(1).toList()),
+    );
+
+    await addFromGallery(tester);
+    await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
+    await tester.pumpAndSettle();
+    await tapMap(tester);
+
+    final latitude = tester
+        .widget<Text>(
+          find.byKey(const ValueKey('report_location_latitude_value')),
+        )
+        .data;
+    final longitude = tester
+        .widget<Text>(
+          find.byKey(const ValueKey('report_location_longitude_value')),
+        )
+        .data;
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Kembali'));
+    await tester.pumpAndSettle();
+    expect(find.text('1/3 foto'), findsOneWidget);
+    expect(find.byType(Image), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tandai lokasi temuan'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('report_location_pin_drag')),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<Text>(
+            find.byKey(const ValueKey('report_location_latitude_value')),
+          )
+          .data,
+      latitude,
+    );
+    expect(
+      tester
+          .widget<Text>(
+            find.byKey(const ValueKey('report_location_longitude_value')),
+          )
+          .data,
+      longitude,
+    );
+  });
+
+  testWidgets('persists the pin and restores it after reopening', (
+    tester,
+  ) async {
+    final store = _FakeStore();
+    await pumpWizard(
+      tester,
+      store: store,
+      picker: _FakePicker(paths: photoPaths.take(1).toList()),
+    );
+
+    await addFromGallery(tester);
+    await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
+    await tester.pumpAndSettle();
+    await tapMap(tester);
+    await tester.pump(const Duration(milliseconds: 600));
+
+    final saved = store.draft!;
+    expect(saved.hasLocation, isTrue);
+    expect(saved.currentStep, 2);
+    expect(saved.photoCount, 1);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+
+    await pumpWizard(tester, store: store);
+    await tester.tap(find.text('Lanjutkan draf'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tandai lokasi temuan'), findsOneWidget);
+    expect(find.text(saved.latitude!.toStringAsFixed(6)), findsOneWidget);
+    expect(find.text(saved.longitude!.toStringAsFixed(6)), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Lanjut'))
+          .onPressed,
+      isNotNull,
+    );
+  });
+
+  testWidgets('a denied GPS request still allows a manual pin', (tester) async {
+    locationService.result = const ReportLocationResult.failed(
+      ReportLocationFailure.permissionDenied,
+    );
+    final store = _FakeStore();
+    await pumpWizard(
+      tester,
+      store: store,
+      picker: _FakePicker(paths: photoPaths.take(1).toList()),
+    );
+
+    await addFromGallery(tester);
+    await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('report_location_gps')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('report_location_gps')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lokasi tidak tersedia'), findsOneWidget);
+    await tester.tap(find.text('Tandai manual'));
+    await tester.pumpAndSettle();
+
+    await tapMap(tester);
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(store.draft!.hasLocation, isTrue);
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Lanjut'))
+          .onPressed,
+      isNotNull,
+    );
+  });
+
+  testWidgets('offline still saves a manually placed pin', (tester) async {
+    OfflineController.instance.setOffline(true);
+    addTearDown(() => OfflineController.instance.setOffline(false));
+
+    final store = _FakeStore();
+    await pumpWizard(
+      tester,
+      store: store,
+      picker: _FakePicker(paths: photoPaths.take(1).toList()),
+    );
+    expect(
+      find.text('Anda sedang offline. Menampilkan data tersimpan.'),
+      findsOneWidget,
+    );
+
+    await addFromGallery(tester);
+    await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TileLayer), findsNothing);
+    await tapMap(tester);
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(store.draft!.hasLocation, isTrue);
   });
 
   testWidgets('starts a new draft when the user declines the stored one', (

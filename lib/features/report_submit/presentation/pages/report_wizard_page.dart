@@ -1,33 +1,48 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/offline_banner.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../data/report_draft_store.dart';
+import '../../data/report_location_service.dart';
 import '../../data/report_photo_picker.dart';
 import '../../domain/report_draft.dart';
 import '../../domain/report_rules.dart';
+import '../widgets/report_location_step.dart';
 import '../widgets/report_photo_grid.dart';
 import '../widgets/report_photo_source_sheet.dart';
 import '../widgets/report_step_frame.dart';
 
 /// "Lapor Temuan" — one page, four internal steps.
 ///
-/// Step 1 (photos) is implemented here. Steps 2–4 are placeholders that keep
-/// navigation and the stored step working until their tasks land. The draft is
-/// written to Hive after every change (debounced), so closing the app does not
-/// lose it.
+/// Steps 1 (photos) and 2 (location) are implemented here. Steps 3–4 are
+/// placeholders that keep navigation and the stored step working until their
+/// tasks land. The draft is written to Hive after every change (debounced), so
+/// closing the app does not lose it.
 class ReportWizardPage extends StatefulWidget {
-  const ReportWizardPage({super.key, this.store, this.photoPicker});
+  const ReportWizardPage({
+    super.key,
+    this.store,
+    this.photoPicker,
+    this.locationService,
+    this.locationTileProvider,
+  });
 
   /// Injectable for tests; defaults to the Hive-backed store.
   final ReportDraftStore? store;
 
   /// Injectable for tests; defaults to `image_picker`.
   final ReportPhotoPicker? photoPicker;
+
+  /// Injectable for tests; defaults to Geolocator.
+  final ReportLocationService? locationService;
+
+  /// Test seam for the Step 2 map; defaults to the OSM network tiles.
+  final TileProvider? locationTileProvider;
 
   @override
   State<ReportWizardPage> createState() => _ReportWizardPageState();
@@ -41,6 +56,8 @@ class _ReportWizardPageState extends State<ReportWizardPage>
       widget.store ?? HiveReportDraftStore.instance;
   late final ReportPhotoPicker _photoPicker =
       widget.photoPicker ?? ImagePickerReportPhotoPicker();
+  late final ReportLocationService _locationService =
+      widget.locationService ?? const GeolocatorReportLocationService();
 
   ReportWizardDraft _draft = const ReportWizardDraft();
 
@@ -55,9 +72,13 @@ class _ReportWizardPageState extends State<ReportWizardPage>
 
   int get _remaining => ReportRules.maxPhotos - _draft.photoCount;
 
-  bool get _canContinue =>
-      _step != ReportWizardDraft.firstStep ||
-      _draft.photoCount >= ReportRules.minPhotos;
+  bool get _canContinue {
+    if (_step == ReportWizardDraft.firstStep) {
+      return _draft.photoCount >= ReportRules.minPhotos;
+    }
+    if (_step == ReportWizardDraft.locationStep) return _draft.hasLocation;
+    return true;
+  }
 
   @override
   void initState() {
@@ -337,6 +358,8 @@ class _ReportWizardPageState extends State<ReportWizardPage>
                       showDraftBanner: _draft.hasContent,
                       child: _step == ReportWizardDraft.firstStep
                           ? _buildPhotoStep(context)
+                          : _step == ReportWizardDraft.locationStep
+                          ? _buildLocationStep(context)
                           : _buildComingSoonStep(context),
                     ),
             ),
@@ -384,6 +407,18 @@ class _ReportWizardPageState extends State<ReportWizardPage>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildLocationStep(BuildContext context) {
+    return ReportLocationStep(
+      latitude: _draft.latitude,
+      longitude: _draft.longitude,
+      locationService: _locationService,
+      tileProvider: widget.locationTileProvider,
+      onLocationChanged: (latitude, longitude) {
+        _update(_draft.copyWith(latitude: latitude, longitude: longitude));
+      },
     );
   }
 
