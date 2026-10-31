@@ -16,13 +16,14 @@ import '../widgets/report_location_step.dart';
 import '../widgets/report_photo_grid.dart';
 import '../widgets/report_photo_source_sheet.dart';
 import '../widgets/report_step_frame.dart';
+import '../widgets/report_type_step.dart';
 
 /// "Lapor Temuan" — one page, four internal steps.
 ///
-/// Steps 1 (photos) and 2 (location) are implemented here. Steps 3–4 are
-/// placeholders that keep navigation and the stored step working until their
-/// tasks land. The draft is written to Hive after every change (debounced), so
-/// closing the app does not lose it.
+/// Steps 1 (photos), 2 (location) and 3 (type and severity) are implemented
+/// here. Step 4 is a placeholder that keeps navigation and the stored step
+/// working until its task lands. The draft is written to Hive after every
+/// change (debounced), so closing the app does not lose it.
 class ReportWizardPage extends StatefulWidget {
   const ReportWizardPage({
     super.key,
@@ -66,6 +67,7 @@ class _ReportWizardPageState extends State<ReportWizardPage>
   bool _draftReady = false;
   bool _loading = true;
   bool _picking = false;
+  bool _showTypeValidation = false;
   Timer? _saveTimer;
 
   int get _step => _draft.currentStep;
@@ -77,6 +79,7 @@ class _ReportWizardPageState extends State<ReportWizardPage>
       return _draft.photoCount >= ReportRules.minPhotos;
     }
     if (_step == ReportWizardDraft.locationStep) return _draft.hasLocation;
+    if (_step == ReportWizardDraft.typeStep) return _draft.hasType;
     return true;
   }
 
@@ -164,6 +167,7 @@ class _ReportWizardPageState extends State<ReportWizardPage>
 
   void _update(ReportWizardDraft next) {
     setState(() {
+      if (next.currentStep != _draft.currentStep) _showTypeValidation = false;
       _draft = next.copyWith(updatedAt: DateTime.now().toUtc());
     });
     _scheduleSave();
@@ -220,8 +224,18 @@ class _ReportWizardPageState extends State<ReportWizardPage>
   }
 
   void _goNext() {
-    if (_step >= ReportWizardDraft.lastStep || !_canContinue) return;
+    if (_step >= ReportWizardDraft.lastStep) return;
+    if (_step == ReportWizardDraft.typeStep && !_draft.hasType) {
+      _revealTypeValidation();
+      return;
+    }
+    if (!_canContinue) return;
     _update(_draft.copyWith(currentStep: _step + 1));
+  }
+
+  void _revealTypeValidation() {
+    if (_draft.hasType || _showTypeValidation) return;
+    setState(() => _showTypeValidation = true);
   }
 
   Future<void> _addPhoto() async {
@@ -360,6 +374,8 @@ class _ReportWizardPageState extends State<ReportWizardPage>
                           ? _buildPhotoStep(context)
                           : _step == ReportWizardDraft.locationStep
                           ? _buildLocationStep(context)
+                          : _step == ReportWizardDraft.typeStep
+                          ? _buildTypeStep(context)
                           : _buildComingSoonStep(context),
                     ),
             ),
@@ -422,6 +438,20 @@ class _ReportWizardPageState extends State<ReportWizardPage>
     );
   }
 
+  Widget _buildTypeStep(BuildContext context) {
+    return ReportTypeStep(
+      category: _draft.category,
+      severity: _draft.severity,
+      showValidation: _showTypeValidation,
+      onCategoryChanged: (category) {
+        _update(_draft.copyWith(category: category));
+      },
+      onSeverityChanged: (severity) {
+        _update(_draft.copyWith(severity: severity));
+      },
+    );
+  }
+
   Widget _buildComingSoonStep(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 48),
@@ -447,6 +477,23 @@ class _ReportWizardPageState extends State<ReportWizardPage>
     );
   }
 
+  Widget _buildContinueButton(BuildContext context) {
+    final button = PrimaryButton(
+      label: context.tr('common.continue'),
+      onPressed: _canContinue ? _goNext : null,
+    );
+
+    // The CTA stays disabled until both choices are made. Tapping it anyway
+    // reveals the inline validation instead of doing nothing, so a user who
+    // missed a section learns what is missing.
+    if (_canContinue || _step != ReportWizardDraft.typeStep) return button;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _revealTypeValidation,
+      child: button,
+    );
+  }
+
   Widget _buildActions(BuildContext context) {
     final isFirst = _step == ReportWizardDraft.firstStep;
     final isLast = _step == ReportWizardDraft.lastStep;
@@ -466,13 +513,7 @@ class _ReportWizardPageState extends State<ReportWizardPage>
               ),
               if (!isLast) const SizedBox(width: 12),
             ],
-            if (!isLast)
-              Expanded(
-                child: PrimaryButton(
-                  label: context.tr('common.continue'),
-                  onPressed: _canContinue ? _goNext : null,
-                ),
-              ),
+            if (!isLast) Expanded(child: _buildContinueButton(context)),
           ],
         ),
       ),

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:blue_track/core/state/app_state.dart';
+import 'package:blue_track/features/project/domain/report.dart';
 import 'package:blue_track/features/report_submit/data/report_draft_store.dart';
 import 'package:blue_track/features/report_submit/data/report_photo_picker.dart';
 import 'package:blue_track/features/report_submit/domain/report_draft.dart';
@@ -295,7 +296,7 @@ void main() {
 
     await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
     await tester.pumpAndSettle();
-    expect(find.text('Segera hadir.'), findsOneWidget);
+    expect(find.text('Jenis temuan'), findsOneWidget);
   });
 
   testWidgets('keeps photos and the pin when moving back to step 1', (
@@ -455,6 +456,153 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
 
     expect(store.draft!.hasLocation, isTrue);
+  });
+
+  ReportWizardDraft typeStepDraft({
+    ReportCategory? category,
+    ReportSeverity? severity,
+  }) {
+    return ReportWizardDraft(
+      photoPaths: photoPaths.take(1).toList(),
+      latitude: -8.52,
+      longitude: 114.61,
+      category: category,
+      severity: severity,
+      currentStep: ReportWizardDraft.typeStep,
+      updatedAt: DateTime.utc(2026, 10, 30, 9),
+    );
+  }
+
+  Future<void> openTypeStep(WidgetTester tester, _FakeStore store) async {
+    await pumpWizard(tester, store: store);
+    await tester.tap(find.text('Lanjutkan draf'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('step 3 shows both sections and validates an empty continue', (
+    tester,
+  ) async {
+    final store = _FakeStore()..draft = typeStepDraft();
+    await openTypeStep(tester, store);
+
+    expect(find.text('Jenis temuan'), findsOneWidget);
+    expect(find.text('Sampah'), findsOneWidget);
+    expect(find.text('Terumbu rusak'), findsOneWidget);
+    expect(find.text('Mangrove'), findsOneWidget);
+    expect(find.text('Tangkapan merusak'), findsOneWidget);
+    expect(find.text('Satwa terdampak'), findsOneWidget);
+    expect(find.text('Tingkat'), findsOneWidget);
+    expect(find.text('Ringan'), findsOneWidget);
+    expect(find.text('Sedang'), findsOneWidget);
+    expect(find.text('Berat'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Lanjut'))
+          .onPressed,
+      isNull,
+    );
+
+    // Tapping the disabled CTA still explains what is missing.
+    await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pilih jenis temuan terlebih dahulu.'), findsOneWidget);
+    expect(find.text('Pilih tingkat temuan terlebih dahulu.'), findsOneWidget);
+  });
+
+  testWidgets('choosing a type and severity saves them and enables continue', (
+    tester,
+  ) async {
+    final store = _FakeStore()..draft = typeStepDraft();
+    await openTypeStep(tester, store);
+
+    final reef = find.byKey(
+      const ValueKey('report_type_category_terumbu_rusak'),
+    );
+    await tester.ensureVisible(reef);
+    await tester.tap(reef);
+    await tester.pumpAndSettle();
+
+    // The type is remembered, but continue stays disabled until a severity
+    // is picked; attempting it flags only the missing section.
+    await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
+    await tester.pumpAndSettle();
+    expect(find.text('Pilih jenis temuan terlebih dahulu.'), findsNothing);
+    expect(find.text('Pilih tingkat temuan terlebih dahulu.'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Lanjut'))
+          .onPressed,
+      isNull,
+    );
+
+    final severe = find.byKey(const ValueKey('report_type_severity_berat'));
+    await tester.ensureVisible(severe);
+    await tester.tap(severe);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pilih tingkat temuan terlebih dahulu.'), findsNothing);
+    expect(
+      find.text('Kerusakan parah dan mendesak ditangani.'),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Lanjut'))
+          .onPressed,
+      isNotNull,
+    );
+
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(store.draft!.category, ReportCategory.damagedReef);
+    expect(store.draft!.severity, ReportSeverity.high);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
+    await tester.pumpAndSettle();
+    expect(find.text('Segera hadir.'), findsOneWidget);
+  });
+
+  testWidgets('restores and updates the saved type and severity', (
+    tester,
+  ) async {
+    final store = _FakeStore()
+      ..draft = typeStepDraft(
+        category: ReportCategory.marineDebris,
+        severity: ReportSeverity.low,
+      );
+    await openTypeStep(tester, store);
+
+    expect(
+      find.text('Kerusakan kecil dan masih bisa pulih sendiri.'),
+      findsOneWidget,
+    );
+    expect(find.byIcon(Icons.check_circle), findsNWidgets(2));
+
+    final mangrove = find.byKey(
+      const ValueKey('report_type_category_mangrove_gundul'),
+    );
+    await tester.ensureVisible(mangrove);
+    await tester.tap(mangrove);
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(store.draft!.category, ReportCategory.deforestedMangrove);
+    expect(store.draft!.severity, ReportSeverity.low);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    await openTypeStep(tester, store);
+
+    expect(find.byIcon(Icons.check_circle), findsNWidgets(2));
+    expect(
+      find.text('Kerusakan kecil dan masih bisa pulih sendiri.'),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Lanjut'))
+          .onPressed,
+      isNotNull,
+    );
   });
 
   testWidgets('starts a new draft when the user declines the stored one', (

@@ -27,6 +27,9 @@ class ReportWizardDraft {
   /// Step 2 places the finding pin on the map.
   static const int locationStep = 2;
 
+  /// Step 3 picks the finding type and severity.
+  static const int typeStep = 3;
+
   static const int lastStep = 4;
 
   /// Local paths of the photos picked for this finding.
@@ -56,6 +59,9 @@ class ReportWizardDraft {
 
   /// Whether step 2 already has a pin.
   bool get hasLocation => latitude != null && longitude != null;
+
+  /// Whether step 3 has both a type and a severity.
+  bool get hasType => category != null && severity != null;
 
   /// Whether there is anything worth resuming.
   ///

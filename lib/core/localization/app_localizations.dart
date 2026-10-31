@@ -541,6 +541,34 @@ class AppLocalizations {
       'report_location_open_location_settings': 'Buka pengaturan lokasi',
       'report_location_settings_failed':
           'Pengaturan tidak dapat dibuka. Tandai lokasi manual di peta.',
+      'report_type_title': 'Jenis temuan',
+      'report_type_category_marine_debris': 'Sampah',
+      'report_type_category_marine_debris_desc':
+          'Sampah plastik atau limbah di sekitar lokasi.',
+      'report_type_category_damaged_reef': 'Terumbu rusak',
+      'report_type_category_damaged_reef_desc':
+          'Karang patah, memutih, atau rusak.',
+      'report_type_category_deforested_mangrove': 'Mangrove',
+      'report_type_category_deforested_mangrove_desc':
+          'Mangrove gundul atau area yang dibuka.',
+      'report_type_category_destructive_fishing': 'Tangkapan merusak',
+      'report_type_category_destructive_fishing_desc':
+          'Alat atau cara tangkap yang merusak.',
+      'report_type_category_affected_wildlife': 'Satwa terdampak',
+      'report_type_category_affected_wildlife_desc':
+          'Satwa laut terluka atau terjerat.',
+      'report_type_severity_title': 'Tingkat',
+      'report_type_severity_low': 'Ringan',
+      'report_type_severity_low_desc':
+          'Kerusakan kecil dan masih bisa pulih sendiri.',
+      'report_type_severity_medium': 'Sedang',
+      'report_type_severity_medium_desc':
+          'Kerusakan cukup luas dan perlu tindakan.',
+      'report_type_severity_high': 'Berat',
+      'report_type_severity_high_desc':
+          'Kerusakan parah dan mendesak ditangani.',
+      'report_type_category_error': 'Pilih jenis temuan terlebih dahulu.',
+      'report_type_severity_error': 'Pilih tingkat temuan terlebih dahulu.',
     },
     'en': {
       // --- Common ---
@@ -1048,6 +1076,34 @@ class AppLocalizations {
       'report_location_open_settings': 'Open settings',
       'report_location_open_location_settings': 'Open location settings',
       'report_location_settings_failed': 'Settings could not be opened. Mark the location manually on the map.',
+      'report_type_title': 'Finding type',
+      'report_type_category_marine_debris': 'Debris',
+      'report_type_category_marine_debris_desc':
+          'Plastic or other waste around the site.',
+      'report_type_category_damaged_reef': 'Damaged reef',
+      'report_type_category_damaged_reef_desc':
+          'Broken, bleached, or damaged coral.',
+      'report_type_category_deforested_mangrove': 'Mangrove',
+      'report_type_category_deforested_mangrove_desc':
+          'Cleared or bare mangrove area.',
+      'report_type_category_destructive_fishing': 'Destructive fishing',
+      'report_type_category_destructive_fishing_desc':
+          'Damaging gear or fishing method.',
+      'report_type_category_affected_wildlife': 'Affected wildlife',
+      'report_type_category_affected_wildlife_desc':
+          'Injured or entangled marine wildlife.',
+      'report_type_severity_title': 'Severity',
+      'report_type_severity_low': 'Minor',
+      'report_type_severity_low_desc':
+          'Small damage that can recover on its own.',
+      'report_type_severity_medium': 'Moderate',
+      'report_type_severity_medium_desc':
+          'Moderate damage that needs intervention.',
+      'report_type_severity_high': 'Severe',
+      'report_type_severity_high_desc':
+          'Severe damage that needs urgent action.',
+      'report_type_category_error': 'Choose a finding type first.',
+      'report_type_severity_error': 'Choose a severity level first.',
     },
   };
 }
