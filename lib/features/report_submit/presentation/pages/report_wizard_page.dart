@@ -2,28 +2,32 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/state/app_state.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/login_prompt_card.dart';
 import '../../../../shared/widgets/offline_banner.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../data/report_draft_store.dart';
 import '../../data/report_location_service.dart';
 import '../../data/report_photo_picker.dart';
+import '../../data/report_submission_service.dart';
 import '../../domain/report_draft.dart';
 import '../../domain/report_rules.dart';
 import '../widgets/report_location_step.dart';
 import '../widgets/report_photo_grid.dart';
 import '../widgets/report_photo_source_sheet.dart';
+import '../widgets/report_review_step.dart';
 import '../widgets/report_step_frame.dart';
 import '../widgets/report_type_step.dart';
 
 /// "Lapor Temuan" — one page, four internal steps.
 ///
-/// Steps 1 (photos), 2 (location) and 3 (type and severity) are implemented
-/// here. Step 4 is a placeholder that keeps navigation and the stored step
-/// working until its task lands. The draft is written to Hive after every
-/// change (debounced), so closing the app does not lose it.
+/// Steps 1–4 are implemented; step 4 reviews the draft and sends it. The draft
+/// lives in memory only ([InMemoryReportDraftStore]), so it survives moving
+/// between steps and a detour to the login page, but not an app restart.
 class ReportWizardPage extends StatefulWidget {
   const ReportWizardPage({
     super.key,
@@ -31,9 +35,11 @@ class ReportWizardPage extends StatefulWidget {
     this.photoPicker,
     this.locationService,
     this.locationTileProvider,
+    this.submissionService,
+    this.autoResume = false,
   });
 
-  /// Injectable for tests; defaults to the Hive-backed store.
+  /// Injectable for tests; defaults to the session-only memory store.
   final ReportDraftStore? store;
 
   /// Injectable for tests; defaults to `image_picker`.
@@ -42,8 +48,15 @@ class ReportWizardPage extends StatefulWidget {
   /// Injectable for tests; defaults to Geolocator.
   final ReportLocationService? locationService;
 
-  /// Test seam for the Step 2 map; defaults to the OSM network tiles.
+  /// Test seam for the two maps; defaults to the OSM network tiles.
   final TileProvider? locationTileProvider;
+
+  /// Injectable for tests; defaults to the simulated submission.
+  final ReportSubmissionService? submissionService;
+
+  /// When true, restores a stored draft without the resume dialog. Used when
+  /// the user returns from login and must land back on step 4.
+  final bool autoResume;
 
   @override
   State<ReportWizardPage> createState() => _ReportWizardPageState();
@@ -54,11 +67,13 @@ class _ReportWizardPageState extends State<ReportWizardPage>
   static const _saveDebounce = Duration(milliseconds: 500);
 
   late final ReportDraftStore _store =
-      widget.store ?? HiveReportDraftStore.instance;
+      widget.store ?? InMemoryReportDraftStore.instance;
   late final ReportPhotoPicker _photoPicker =
       widget.photoPicker ?? ImagePickerReportPhotoPicker();
   late final ReportLocationService _locationService =
       widget.locationService ?? const GeolocatorReportLocationService();
+  late final ReportSubmissionService _submissionService =
+      widget.submissionService ?? MockReportSubmissionService();
 
   ReportWizardDraft _draft = const ReportWizardDraft();
 
@@ -68,6 +83,8 @@ class _ReportWizardPageState extends State<ReportWizardPage>
   bool _loading = true;
   bool _picking = false;
   bool _showTypeValidation = false;
+  bool _submitting = false;
+  bool _submitError = false;
   Timer? _saveTimer;
 
   int get _step => _draft.currentStep;
@@ -112,6 +129,17 @@ class _ReportWizardPageState extends State<ReportWizardPage>
 
     if (stored == null || !stored.hasContent) {
       setState(() {
+        _loading = false;
+        _draftReady = true;
+      });
+      return;
+    }
+
+    // Returning from login must land on the step the user left, without an
+    // extra confirmation dialog.
+    if (widget.autoResume) {
+      setState(() {
+        _draft = stored;
         _loading = false;
         _draftReady = true;
       });
@@ -167,7 +195,10 @@ class _ReportWizardPageState extends State<ReportWizardPage>
 
   void _update(ReportWizardDraft next) {
     setState(() {
-      if (next.currentStep != _draft.currentStep) _showTypeValidation = false;
+      if (next.currentStep != _draft.currentStep) {
+        _showTypeValidation = false;
+        _submitError = false;
+      }
       _draft = next.copyWith(updatedAt: DateTime.now().toUtc());
     });
     _scheduleSave();
@@ -236,6 +267,85 @@ class _ReportWizardPageState extends State<ReportWizardPage>
   void _revealTypeValidation() {
     if (_draft.hasType || _showTypeValidation) return;
     setState(() => _showTypeValidation = true);
+  }
+
+  /// First step with a missing requirement, or null when the draft is ready
+  /// to send. Sending jumps to this step so the user can complete it.
+  int? _firstIncompleteStep() {
+    if (_draft.photoCount < ReportRules.minPhotos) {
+      return ReportWizardDraft.firstStep;
+    }
+    if (!_draft.hasLocation) return ReportWizardDraft.locationStep;
+    if (!_draft.hasType) return ReportWizardDraft.typeStep;
+    return null;
+  }
+
+  Future<void> _submit() async {
+    if (_submitting) return;
+
+    final missingStep = _firstIncompleteStep();
+    if (missingStep != null) {
+      _showSnack(
+        context.tr(switch (missingStep) {
+          ReportWizardDraft.firstStep => 'report_submit_missing_photos',
+          ReportWizardDraft.locationStep => 'report_submit_missing_location',
+          _ => 'report_submit_missing_type',
+        }),
+      );
+      _update(_draft.copyWith(currentStep: missingStep));
+      return;
+    }
+
+    // Never drop the draft on the way to login: it stays in the memory store
+    // and `/report?resume=1` reopens it on step 4.
+    if (!AuthController.instance.signedIn) {
+      await _openLogin();
+      return;
+    }
+
+    if (OfflineController.instance.offline) {
+      _showSnack(context.tr('report_submit_offline_body'));
+      return;
+    }
+
+    setState(() {
+      _submitting = true;
+      _submitError = false;
+    });
+
+    try {
+      final report = await _submissionService.submit(_draft);
+      if (!mounted) return;
+
+      // Cancel a pending autosave before clearing, otherwise the debounce can
+      // write the submitted draft back into the store.
+      _saveTimer?.cancel();
+      _saveTimer = null;
+      await _store.clear();
+      if (!mounted) return;
+
+      setState(() {
+        _submitting = false;
+        _draft = const ReportWizardDraft();
+      });
+      context.pushReplacement('/report/success/${report.id}');
+    } catch (_) {
+      // Keep every field so the user can retry without redoing the form.
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _submitError = true;
+      });
+    }
+  }
+
+  Future<void> _openLogin() async {
+    final redirect = Uri.encodeComponent('/report?resume=1');
+    await context.push<void>('/auth?redirect=$redirect');
+  }
+
+  void _editFromReview(int step) {
+    _update(_draft.copyWith(currentStep: step));
   }
 
   Future<void> _addPhoto() async {
@@ -376,7 +486,7 @@ class _ReportWizardPageState extends State<ReportWizardPage>
                           ? _buildLocationStep(context)
                           : _step == ReportWizardDraft.typeStep
                           ? _buildTypeStep(context)
-                          : _buildComingSoonStep(context),
+                          : _buildReviewStep(context),
                     ),
             ),
           ],
@@ -452,28 +562,43 @@ class _ReportWizardPageState extends State<ReportWizardPage>
     );
   }
 
-  Widget _buildComingSoonStep(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 48),
-      child: Center(
-        child: Column(
+  Widget _buildReviewStep(BuildContext context) {
+    return ListenableBuilder(
+      listenable: AuthController.instance,
+      builder: (context, _) {
+        final signedIn = AuthController.instance.signedIn;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(
-              Icons.construction_outlined,
-              size: 48,
-              color: AppColors.textSecondary,
+            ReportReviewStep(
+              photoPaths: _draft.photoPaths,
+              latitude: _draft.latitude,
+              longitude: _draft.longitude,
+              category: _draft.category,
+              severity: _draft.severity,
+              reportedAt: _draft.updatedAt?.toLocal() ?? DateTime.now(),
+              onEditPhotos: () => _editFromReview(ReportWizardDraft.firstStep),
+              onEditLocation: () =>
+                  _editFromReview(ReportWizardDraft.locationStep),
+              onEditType: () => _editFromReview(ReportWizardDraft.typeStep),
+              onEditSeverity: () => _editFromReview(ReportWizardDraft.typeStep),
+              showSubmitError: _submitError,
+              onRetry: _submitting ? null : () => unawaited(_submit()),
+              tileProvider: widget.locationTileProvider,
             ),
-            const SizedBox(height: 12),
-            Text(
-              context.tr('report_coming_soon'),
-              style: const TextStyle(
-                fontSize: 15,
-                color: AppColors.textSecondary,
+            if (!signedIn) ...[
+              const SizedBox(height: 16),
+              LoginPromptCard(
+                // Encoded because LoginPage reads `redirect` as one query
+                // value and the wizard needs `resume=1` to skip the dialog.
+                returnLocation: Uri.encodeComponent('/report?resume=1'),
+                title: context.tr('report_review_login_title'),
+                body: context.tr('report_review_login_body'),
               ),
-            ),
+            ],
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -511,9 +636,20 @@ class _ReportWizardPageState extends State<ReportWizardPage>
                   child: Text(context.tr('report_back')),
                 ),
               ),
-              if (!isLast) const SizedBox(width: 12),
+              const SizedBox(width: 12),
             ],
-            if (!isLast) Expanded(child: _buildContinueButton(context)),
+            Expanded(
+              child: isLast
+                  ? PrimaryButton(
+                      key: const ValueKey('report_submit_button'),
+                      label: context.tr('report_submit'),
+                      loading: _submitting,
+                      onPressed: _submitting
+                          ? null
+                          : () => unawaited(_submit()),
+                    )
+                  : _buildContinueButton(context),
+            ),
           ],
         ),
       ),

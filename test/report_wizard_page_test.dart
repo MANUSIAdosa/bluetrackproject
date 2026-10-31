@@ -559,7 +559,7 @@ void main() {
 
     await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
     await tester.pumpAndSettle();
-    expect(find.text('Segera hadir.'), findsOneWidget);
+    expect(find.text('Tinjau laporan'), findsOneWidget);
   });
 
   testWidgets('restores and updates the saved type and severity', (

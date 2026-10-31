@@ -569,6 +569,48 @@ class AppLocalizations {
           'Kerusakan parah dan mendesak ditangani.',
       'report_type_category_error': 'Pilih jenis temuan terlebih dahulu.',
       'report_type_severity_error': 'Pilih tingkat temuan terlebih dahulu.',
+      'report_review_title': 'Tinjau laporan',
+      'report_review_subtitle': 'Periksa kembali isianmu sebelum mengirim.',
+      'report_review_photos': 'Foto',
+      'report_review_location': 'Lokasi',
+      'report_review_type': 'Jenis temuan',
+      'report_review_severity': 'Tingkat kerusakan',
+      'report_review_time': 'Waktu',
+      'report_review_edit': 'Ubah',
+      'report_review_empty_value': 'Belum diisi',
+      'report_review_photo_label': 'Perbesar foto {n}',
+      'report_review_verification_note':
+          'Laporan akan diverifikasi sebelum tayang ke publik.',
+      'report_review_login_title': 'Masuk untuk mengirim laporan',
+      'report_review_login_body':
+          'Laporanmu tetap tersimpan. Masuk dulu, lalu kembali ke langkah ini.',
+      'report_submit': 'Kirim Laporan',
+      'report_submit_retry': 'Coba lagi',
+      'report_submit_error_title': 'Gagal mengirim laporan',
+      'report_submit_error_body':
+          'Laporanmu masih tersimpan. Periksa koneksi lalu coba lagi.',
+      'report_submit_offline_title': 'Butuh koneksi internet',
+      'report_submit_offline_body':
+          'Sambungkan perangkat ke internet untuk mengirim laporan.',
+      'report_submit_missing_photos': 'Lengkapi foto temuan terlebih dahulu.',
+      'report_submit_missing_location': 'Tandai lokasi temuan terlebih dahulu.',
+      'report_submit_missing_type':
+          'Pilih jenis dan tingkat temuan terlebih dahulu.',
+      'report_success_title': 'Laporan terkirim',
+      'report_success_body':
+          'Terima kasih. Laporanmu akan diverifikasi sebelum tayang ke publik.',
+      'report_success_coordinates': 'Koordinat',
+      'report_success_number': 'Nomor laporan',
+      'report_success_status': 'Status',
+      'report_success_view_reports': 'Lihat Laporan Saya',
+      'report_success_new_report': 'Buat Laporan Lain',
+      'report_success_not_found': 'Laporan tidak ditemukan di sesi ini.',
+      'report_mine_title': 'Laporan Saya',
+      'report_mine_empty':
+          'Belum ada laporan. Laporan yang kamu kirim akan muncul di sini.',
+      'report_mine_new': 'Buat Laporan',
+      'report_photo_viewer_counter': '{current}/{total}',
+      'report_photo_viewer_close': 'Tutup',
     },
     'en': {
       // --- Common ---
@@ -1104,6 +1146,48 @@ class AppLocalizations {
           'Severe damage that needs urgent action.',
       'report_type_category_error': 'Choose a finding type first.',
       'report_type_severity_error': 'Choose a severity level first.',
+      'report_review_title': 'Review report',
+      'report_review_subtitle': 'Check your answers before sending.',
+      'report_review_photos': 'Photos',
+      'report_review_location': 'Location',
+      'report_review_type': 'Finding type',
+      'report_review_severity': 'Damage severity',
+      'report_review_time': 'Time',
+      'report_review_edit': 'Edit',
+      'report_review_empty_value': 'Not set',
+      'report_review_photo_label': 'Enlarge photo {n}',
+      'report_review_verification_note':
+          'The report will be verified before it is published.',
+      'report_review_login_title': 'Sign in to send the report',
+      'report_review_login_body':
+          'Your report is kept. Sign in first, then come back to this step.',
+      'report_submit': 'Send Report',
+      'report_submit_retry': 'Try again',
+      'report_submit_error_title': 'Could not send the report',
+      'report_submit_error_body':
+          'Your report is still saved. Check your connection and try again.',
+      'report_submit_offline_title': 'Internet connection required',
+      'report_submit_offline_body':
+          'Connect the device to the internet to send the report.',
+      'report_submit_missing_photos': 'Add the finding photo first.',
+      'report_submit_missing_location': 'Mark the finding location first.',
+      'report_submit_missing_type':
+          'Choose the finding type and severity first.',
+      'report_success_title': 'Report sent',
+      'report_success_body':
+          'Thank you. Your report will be verified before it is published.',
+      'report_success_coordinates': 'Coordinates',
+      'report_success_number': 'Report number',
+      'report_success_status': 'Status',
+      'report_success_view_reports': 'View My Reports',
+      'report_success_new_report': 'Create Another Report',
+      'report_success_not_found':
+          'This report is no longer available in this session.',
+      'report_mine_title': 'My Reports',
+      'report_mine_empty': 'No reports yet. Reports you send will appear here.',
+      'report_mine_new': 'Create Report',
+      'report_photo_viewer_counter': '{current}/{total}',
+      'report_photo_viewer_close': 'Close',
     },
   };
 }

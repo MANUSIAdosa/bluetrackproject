@@ -73,6 +73,15 @@ class AuthController extends ChangeNotifier {
     _signedIn = false;
     notifyListeners();
   }
+
+  /// Sets the session flag without touching secure storage. Only for tests:
+  /// widget tests cannot reach the platform channel behind the token store.
+  @visibleForTesting
+  void setSignedIn(bool value) {
+    if (_signedIn == value) return;
+    _signedIn = value;
+    notifyListeners();
+  }
 }
 
 /// Saved projects backed by the Hive box `saved_projects`.

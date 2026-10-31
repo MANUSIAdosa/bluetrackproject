@@ -30,4 +30,10 @@ abstract final class Formatters {
     final locale = localeLanguageCode == 'en' ? 'en_US' : 'id_ID';
     return DateFormat.yMMMMd(locale).format(date);
   }
+
+  /// Date and time, for example `31 Okt 2026 14.05` in Indonesian.
+  static String dateTime(DateTime date, String localeLanguageCode) {
+    final locale = localeLanguageCode == 'en' ? 'en_US' : 'id_ID';
+    return DateFormat.yMMMd(locale).add_Hm().format(date.toLocal());
+  }
 }

@@ -12,6 +12,8 @@ import '../../features/onboarding/presentation/onboarding_page.dart';
 import '../../features/organization/presentation/org_profile_page.dart';
 import '../../features/profile/presentation/profile_page.dart';
 import '../../features/project/presentation/project_detail_page.dart';
+import '../../features/report_submit/presentation/pages/my_reports_page.dart';
+import '../../features/report_submit/presentation/pages/report_success_page.dart';
 import '../../features/report_submit/presentation/pages/report_wizard_page.dart';
 import '../../features/shell/app_shell.dart';
 import '../../features/transparency/presentation/transparency_page.dart';
@@ -35,9 +37,8 @@ GoRouter createRouter({required bool onboardingDone}) {
       ),
       GoRoute(
         path: '/auth',
-        builder: (context, state) => LoginPage(
-          redirect: state.uri.queryParameters['redirect'],
-        ),
+        builder: (context, state) =>
+            LoginPage(redirect: state.uri.queryParameters['redirect']),
       ),
       GoRoute(
         path: '/notifications',
@@ -47,19 +48,31 @@ GoRouter createRouter({required bool onboardingDone}) {
       GoRoute(
         path: '/legal/privacy',
         parentNavigatorKey: rootKey,
-        builder: (context, state) =>
-            const LegalPage(documentKey: 'privacy'),
+        builder: (context, state) => const LegalPage(documentKey: 'privacy'),
       ),
       GoRoute(
         path: '/legal/terms',
         parentNavigatorKey: rootKey,
+        builder: (context, state) => const LegalPage(documentKey: 'terms'),
+      ),
+      GoRoute(
+        path: '/report/success/:id',
+        parentNavigatorKey: rootKey,
         builder: (context, state) =>
-            const LegalPage(documentKey: 'terms'),
+            ReportSuccessPage(reportId: state.pathParameters['id'] ?? ''),
+      ),
+      GoRoute(
+        path: '/my-reports',
+        parentNavigatorKey: rootKey,
+        builder: (context, state) => const MyReportsPage(),
       ),
       GoRoute(
         path: '/report',
         parentNavigatorKey: rootKey,
-        builder: (context, state) => const ReportWizardPage(),
+        builder: (context, state) => ReportWizardPage(
+          // Set by the login round trip so the draft reopens on step 4.
+          autoResume: state.uri.queryParameters['resume'] == '1',
+        ),
       ),
       GoRoute(
         path: '/project/:id',
