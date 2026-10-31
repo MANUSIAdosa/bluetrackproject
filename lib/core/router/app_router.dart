@@ -12,7 +12,6 @@ import '../../features/onboarding/presentation/onboarding_page.dart';
 import '../../features/organization/presentation/org_profile_page.dart';
 import '../../features/profile/presentation/profile_page.dart';
 import '../../features/project/presentation/project_detail_page.dart';
-import '../../features/report_submit/presentation/pages/my_reports_page.dart';
 import '../../features/report_submit/presentation/pages/report_success_page.dart';
 import '../../features/report_submit/presentation/pages/report_wizard_page.dart';
 import '../../features/shell/app_shell.dart';
@@ -60,11 +59,6 @@ GoRouter createRouter({required bool onboardingDone}) {
         parentNavigatorKey: rootKey,
         builder: (context, state) =>
             ReportSuccessPage(reportId: state.pathParameters['id'] ?? ''),
-      ),
-      GoRoute(
-        path: '/my-reports',
-        parentNavigatorKey: rootKey,
-        builder: (context, state) => const MyReportsPage(),
       ),
       GoRoute(
         path: '/report',

@@ -11,8 +11,9 @@ import '../../data/my_reports_store.dart';
 
 /// Terminal screen shown after a report is sent.
 ///
-/// Back (system gesture or the close button) goes to "Laporan Saya" and never
-/// returns to the wizard, so a submitted draft cannot be re-sent by accident.
+/// Back (system gesture or the close button) goes to Explore and never returns
+/// to the wizard, so a submitted draft cannot be re-sent by accident. The
+/// report list is planned for a later update, so there is no link to it yet.
 class ReportSuccessPage extends StatelessWidget {
   const ReportSuccessPage({super.key, required this.reportId, this.store});
 
@@ -29,7 +30,7 @@ class ReportSuccessPage extends StatelessWidget {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        context.go('/my-reports');
+        context.go('/explore');
       },
       child: Scaffold(
         body: SafeArea(
@@ -37,7 +38,7 @@ class ReportSuccessPage extends StatelessWidget {
             children: [
               Positioned.fill(
                 child: report == null
-                    ? _ReportNotFound(onBack: () => context.go('/my-reports'))
+                    ? _ReportNotFound(onBack: () => context.go('/explore'))
                     : _SuccessBody(report: report),
               ),
               Positioned(
@@ -50,7 +51,7 @@ class ReportSuccessPage extends StatelessWidget {
                     key: const ValueKey('report_success_close'),
                     tooltip: MaterialLocalizations.of(context)
                         .closeButtonTooltip,
-                    onPressed: () => context.go('/my-reports'),
+                    onPressed: () => context.go('/explore'),
                     icon: const Icon(Icons.close),
                   ),
                 ),
@@ -172,7 +173,9 @@ class _SuccessBody extends StatelessWidget {
           PrimaryButton(
             key: const ValueKey('report_success_view_reports'),
             label: context.tr('report_success_view_reports'),
-            onPressed: () => context.go('/my-reports'),
+            // The report list is planned for a later update, so this entry
+            // point stays inactive for now.
+            onPressed: null,
           ),
           const SizedBox(height: 12),
           OutlinedButton(

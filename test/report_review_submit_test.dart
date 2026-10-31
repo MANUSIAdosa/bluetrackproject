@@ -170,6 +170,10 @@ void main() {
           builder: (context, state) => MyReportsPage(store: reports),
         ),
         GoRoute(
+          path: '/explore',
+          builder: (context, state) => const Scaffold(body: Text('EXPLORE')),
+        ),
+        GoRoute(
           path: '/auth',
           builder: (context, state) => Scaffold(
             body: Center(
@@ -285,14 +289,20 @@ void main() {
     expect(store.draft, isNull);
     expect(reports.reports, hasLength(1));
 
-    await tester.tap(find.byKey(const ValueKey('report_success_view_reports')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Laporan Saya'), findsOneWidget);
-    expect(
-      find.byKey(const ValueKey('report_mine_item_RPT-0001')),
-      findsOneWidget,
+    // "Lihat Laporan Saya" stays inactive until the list page ships.
+    final viewReports = tester.widget<FilledButton>(
+      find.descendant(
+        of: find.byKey(const ValueKey('report_success_view_reports')),
+        matching: find.byType(FilledButton),
+      ),
     );
+    expect(viewReports.onPressed, isNull);
+
+    // Closing the success screen returns to Explore, never to the form.
+    await tester.tap(find.byKey(const ValueKey('report_success_close')));
+    await tester.pumpAndSettle();
+    expect(find.text('EXPLORE'), findsOneWidget);
+    expect(find.text('Tinjau laporan'), findsNothing);
   });
 
   testWidgets('a failed send keeps the draft and retry sends it', (
@@ -411,7 +421,7 @@ void main() {
     expect(store.draft!.currentStep, ReportWizardDraft.typeStep);
   });
 
-  testWidgets('system back on success goes to My Reports, not the form', (
+  testWidgets('system back on success goes to Explore, not the form', (
     tester,
   ) async {
     AuthController.instance.setSignedIn(true);
@@ -431,7 +441,7 @@ void main() {
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
 
-    expect(find.text('Laporan Saya'), findsOneWidget);
+    expect(find.text('EXPLORE'), findsOneWidget);
     expect(find.text('Tinjau laporan'), findsNothing);
   });
 
