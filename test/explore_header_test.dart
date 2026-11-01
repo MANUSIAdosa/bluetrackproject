@@ -9,7 +9,9 @@ import 'support/test_harness.dart';
 
 void main() {
   group('ExploreHeader', () {
-    testWidgets('carries the title, search, bell and filter', (tester) async {
+    testWidgets('carries the title, search, bell, filter and saved action', (
+      tester,
+    ) async {
       final controller = TextEditingController();
       addTearDown(controller.dispose);
 
@@ -22,6 +24,9 @@ void main() {
             onClearQuery: () {},
             filterActiveCount: 0,
             onFilterPressed: () {},
+            saved: false,
+            savedCount: 2,
+            onSavedChanged: (_) {},
           ),
         ),
       );
@@ -32,9 +37,35 @@ void main() {
       expect(find.byType(TextField), findsOneWidget);
       expect(find.byType(NotificationBell), findsOneWidget);
       expect(find.byKey(const ValueKey('explore.filterButton')), findsOneWidget);
-      // The view action belongs to the controls row below the header, not to
-      // the title row where it competed with the notification bell.
+      expect(find.byKey(const ValueKey('explore.scope.saved')), findsOneWidget);
+      // The view switch belongs to the results line, not the title row.
       expect(find.byKey(const ValueKey('explore.view.map')), findsNothing);
+    });
+
+    testWidgets('wires the saved action in the title row', (tester) async {
+      final controller = TextEditingController();
+      addTearDown(controller.dispose);
+      bool? picked;
+
+      await tester.pumpWidget(
+        wrapPage(
+          ExploreHeader(
+            searchController: controller,
+            query: '',
+            onQueryChanged: (_) {},
+            onClearQuery: () {},
+            filterActiveCount: 0,
+            onFilterPressed: () {},
+            saved: false,
+            savedCount: 2,
+            onSavedChanged: (value) => picked = value,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byKey(const ValueKey('explore.scope.saved')));
+      expect(picked, isTrue);
     });
 
     testWidgets('reports search changes and clears the query', (tester) async {
@@ -52,6 +83,9 @@ void main() {
             onClearQuery: () => cleared++,
             filterActiveCount: 0,
             onFilterPressed: () {},
+            saved: false,
+            savedCount: 0,
+            onSavedChanged: (_) {},
           ),
         ),
       );
@@ -71,6 +105,9 @@ void main() {
             onClearQuery: () => cleared++,
             filterActiveCount: 0,
             onFilterPressed: () {},
+            saved: false,
+            savedCount: 0,
+            onSavedChanged: (_) {},
           ),
         ),
       );
@@ -94,6 +131,9 @@ void main() {
             onClearQuery: () {},
             filterActiveCount: 2,
             onFilterPressed: () {},
+            saved: false,
+            savedCount: 0,
+            onSavedChanged: (_) {},
           ),
         ),
       );
@@ -104,16 +144,16 @@ void main() {
     });
   });
 
-  group('ExploreScopeSwitch', () {
-    testWidgets('offers the saved collection as a single toggle', (
-      tester,
-    ) async {
+  group('SavedScopeButton', () {
+    testWidgets('shows the saved count and toggles the scope', (tester) async {
+      bool? picked;
+
       await tester.pumpWidget(
         wrapPage(
-          ExploreScopeSwitch(
+          SavedScopeButton(
             saved: false,
             savedCount: 3,
-            onChanged: (_) {},
+            onChanged: (value) => picked = value,
           ),
         ),
       );
@@ -122,27 +162,8 @@ void main() {
       expect(find.byKey(const ValueKey('explore.scope.saved')), findsOneWidget);
       // The page is already Explore, so a second tab for it was redundant.
       expect(find.byKey(const ValueKey('explore.scope.explore')), findsNothing);
-      expect(find.text('Tersimpan'), findsOneWidget);
-      expect(find.text('Jelajahi'), findsNothing);
       // The saved count is information about the collection, not a filter.
       expect(find.text('3'), findsOneWidget);
-    });
-
-    testWidgets('pressing the saved toggle enters and leaves the saved scope', (
-      tester,
-    ) async {
-      bool? picked;
-
-      await tester.pumpWidget(
-        wrapPage(
-          ExploreScopeSwitch(
-            saved: false,
-            savedCount: 0,
-            onChanged: (value) => picked = value,
-          ),
-        ),
-      );
-      await tester.pump();
 
       await tester.tap(find.byKey(const ValueKey('explore.scope.saved')));
       expect(picked, isTrue);
@@ -151,9 +172,9 @@ void main() {
       picked = null;
       await tester.pumpWidget(
         wrapPage(
-          ExploreScopeSwitch(
+          SavedScopeButton(
             saved: true,
-            savedCount: 0,
+            savedCount: 3,
             onChanged: (value) => picked = value,
           ),
         ),
@@ -167,7 +188,7 @@ void main() {
     testWidgets('keeps a comfortable touch target', (tester) async {
       await tester.pumpWidget(
         wrapPage(
-          ExploreScopeSwitch(saved: false, savedCount: 0, onChanged: (_) {}),
+          SavedScopeButton(saved: false, savedCount: 0, onChanged: (_) {}),
         ),
       );
       await tester.pump();
@@ -176,156 +197,82 @@ void main() {
         find.byKey(const ValueKey('explore.scope.saved')),
       );
       expect(size.height, greaterThanOrEqualTo(44));
+      expect(size.width, greaterThanOrEqualTo(44));
     });
   });
 
-  group('ExploreControlsBar', () {
-    testWidgets('keeps the saved toggle and the view action on one tidy row', (
+  group('ExploreViewSwitch', () {
+    testWidgets('shows both views with the current one selected', (
       tester,
     ) async {
       await tester.pumpWidget(
-        wrapPage(
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: ExploreControlsBar(
-              saved: false,
-              savedCount: 2,
-              onSavedChanged: (_) {},
-              mapMode: false,
-              onViewChanged: (_) {},
-            ),
-          ),
-        ),
+        wrapPage(ExploreViewSwitch(mapMode: false, onChanged: (_) {})),
       );
       await tester.pump();
 
-      final saved = find.byKey(const ValueKey('explore.scope.saved'));
-      final view = find.byKey(const ValueKey('explore.view.map'));
-      expect(saved, findsOneWidget);
-      expect(view, findsOneWidget);
-
-      final savedRect = tester.getRect(saved);
-      final viewRect = tester.getRect(view);
-      final screen = tester.getSize(find.byType(Scaffold));
-
-      // Same row, same height: the two controls read as one family.
+      expect(find.byKey(const ValueKey('explore.view.list')), findsOneWidget);
+      expect(find.byKey(const ValueKey('explore.view.map')), findsOneWidget);
       expect(
-        savedRect.center.dy,
-        moreOrLessEquals(viewRect.center.dy, epsilon: 0.5),
+        tester
+            .widget<ExploreViewSwitch>(find.byType(ExploreViewSwitch))
+            .mapMode,
+        isFalse,
       );
-      expect(
-        savedRect.height,
-        moreOrLessEquals(viewRect.height, epsilon: 0.5),
+
+      await tester.pumpWidget(
+        wrapPage(ExploreViewSwitch(mapMode: true, onChanged: (_) {})),
       );
-      // Saved on the left, view pinned to the right gutter.
-      expect(savedRect.left, 16);
-      expect(viewRect.left, greaterThan(savedRect.right));
+      await tester.pump();
+
       expect(
-        viewRect.right,
-        moreOrLessEquals(screen.width - 16, epsilon: 0.5),
+        tester
+            .widget<ExploreViewSwitch>(find.byType(ExploreViewSwitch))
+            .mapMode,
+        isTrue,
       );
     });
 
-    testWidgets('the view action names the destination and reports it', (
-      tester,
-    ) async {
+    testWidgets('reports the view the user picked', (tester) async {
       bool? picked;
 
       await tester.pumpWidget(
         wrapPage(
-          ExploreControlsBar(
-            saved: false,
-            savedCount: 0,
-            onSavedChanged: (_) {},
-            mapMode: false,
-            onViewChanged: (value) => picked = value,
-          ),
+          ExploreViewSwitch(mapMode: false, onChanged: (value) => picked = value),
         ),
       );
       await tester.pump();
 
-      expect(find.text('Peta'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('explore.view.map')));
       expect(picked, isTrue);
 
+      picked = null;
       await tester.pumpWidget(
         wrapPage(
-          ExploreControlsBar(
-            saved: false,
-            savedCount: 0,
-            onSavedChanged: (_) {},
-            mapMode: true,
-            onViewChanged: (value) => picked = value,
-          ),
+          ExploreViewSwitch(mapMode: true, onChanged: (value) => picked = value),
         ),
       );
       await tester.pump();
 
-      expect(find.text('Daftar'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('explore.view.list')));
       expect(picked, isFalse);
     });
 
-    testWidgets('wires the saved toggle and the view action separately', (
+    testWidgets('keeps each segment at a comfortable touch target', (
       tester,
     ) async {
-      bool? savedPicked;
-      bool? viewPicked;
-
       await tester.pumpWidget(
-        wrapPage(
-          ExploreControlsBar(
-            saved: false,
-            savedCount: 1,
-            onSavedChanged: (value) => savedPicked = value,
-            mapMode: false,
-            onViewChanged: (value) => viewPicked = value,
-          ),
-        ),
+        wrapPage(ExploreViewSwitch(mapMode: false, onChanged: (_) {})),
       );
       await tester.pump();
 
-      await tester.tap(find.byKey(const ValueKey('explore.scope.saved')));
-      expect(savedPicked, isTrue);
-      expect(viewPicked, isNull);
-
-      await tester.tap(find.byKey(const ValueKey('explore.view.map')));
-      expect(viewPicked, isTrue);
-    });
-
-    testWidgets('does not overflow when the controls have to wrap', (
-      tester,
-    ) async {
-      tester.view.devicePixelRatio = 1;
-      tester.view.physicalSize = const Size(320, 640);
-      addTearDown(tester.view.reset);
-
-      await tester.pumpWidget(
-        wrapPage(
-          MediaQuery(
-            data: const MediaQueryData(textScaler: TextScaler.linear(1.3)),
-            child: ExploreControlsBar(
-              saved: false,
-              savedCount: 2,
-              onSavedChanged: (_) {},
-              mapMode: false,
-              onViewChanged: (_) {},
-            ),
-          ),
-        ),
+      final list = tester.getSize(
+        find.byKey(const ValueKey('explore.view.list')),
       );
-      await tester.pump();
-
-      expect(tester.takeException(), isNull);
-      final saved = find.byKey(const ValueKey('explore.scope.saved'));
-      final view = find.byKey(const ValueKey('explore.view.map'));
-      expect(saved, findsOneWidget);
-      expect(view, findsOneWidget);
-      // Graceful fallback: the view action moves below instead of clipping.
-      expect(
-        tester.getTopLeft(view).dy,
-        greaterThanOrEqualTo(tester.getBottomLeft(saved).dy),
+      final map = tester.getSize(
+        find.byKey(const ValueKey('explore.view.map')),
       );
+      expect(list.height, greaterThanOrEqualTo(40));
+      expect(map.height, greaterThanOrEqualTo(40));
     });
   });
 
@@ -466,16 +413,106 @@ void main() {
   });
 
   group('ExploreResultsBar', () {
-    testWidgets('states how many projects the filters leave', (tester) async {
+    testWidgets('states the count and offers both views on one line', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        wrapPage(const ExploreResultsBar(count: 4)),
+        wrapPage(
+          ExploreResultsBar(
+            count: 4,
+            mapMode: false,
+            onViewChanged: (_) {},
+          ),
+        ),
       );
       await tester.pump();
 
       expect(find.text('Proyek · 4'), findsOneWidget);
-      // The view mode lives in the header, so the results line stays slim.
-      expect(find.byKey(const ValueKey('explore.view.list')), findsNothing);
-      expect(find.byKey(const ValueKey('explore.view.map')), findsNothing);
+      expect(find.byKey(const ValueKey('explore.view.list')), findsOneWidget);
+      expect(find.byKey(const ValueKey('explore.view.map')), findsOneWidget);
+
+      final count = tester.getRect(
+        find.byKey(const ValueKey('explore.resultsCount')),
+      );
+      final view = tester.getRect(find.byType(ExploreViewSwitch));
+      final screen = tester.getSize(find.byType(Scaffold));
+
+      expect(count.left, 16);
+      expect(view.right, moreOrLessEquals(screen.width - 16, epsilon: 0.5));
+      expect(count.center.dy, moreOrLessEquals(view.center.dy, epsilon: 0.5));
+    });
+
+    testWidgets('shows the category chip only in map mode', (tester) async {
+      await tester.pumpWidget(
+        wrapPage(
+          ExploreResultsBar(
+            count: 4,
+            mapMode: false,
+            onViewChanged: (_) {},
+            categoryId: 'penyu',
+            onCategoryPressed: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        find.byKey(const ValueKey('explore.mapCategoryChip')),
+        findsNothing,
+      );
+
+      await tester.pumpWidget(
+        wrapPage(
+          ExploreResultsBar(
+            count: 4,
+            mapMode: true,
+            onViewChanged: (_) {},
+            categoryId: 'penyu',
+            onCategoryPressed: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        find.byKey(const ValueKey('explore.mapCategoryChip')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('keeps the map category readable on a phone', (tester) async {
+      // A large phone width still leaves the chip and the view switch sharing
+      // one line. The test font is wider than Plus Jakarta Sans, so this is a
+      // stricter surface than the real 390dp device.
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(430, 932);
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        wrapPage(
+          ExploreResultsBar(
+            count: 3,
+            mapMode: true,
+            onViewChanged: (_) {},
+            categoryId: 'penyu',
+            onCategoryPressed: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // The chip used to split the free space with the spacer, which cut the
+      // label down to "Kateg…" at phone width.
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getSize(find.text('Penyu')).width,
+        greaterThanOrEqualTo(55),
+      );
+      final chip = tester.getRect(
+        find.byKey(const ValueKey('explore.mapCategoryChip')),
+      );
+      final view = tester.getRect(find.byType(ExploreViewSwitch));
+      expect(chip.right, lessThanOrEqualTo(view.left));
     });
   });
 }

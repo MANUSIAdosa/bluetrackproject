@@ -410,23 +410,18 @@ class _ExplorePageState extends State<ExplorePage> {
             },
             filterActiveCount: _selection.activeCount,
             onFilterPressed: _openFilterSheet,
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-            child: ExploreControlsBar(
-              saved: _savedScope,
-              savedCount: savedCount,
-              onSavedChanged: (saved) {
-                _resetPaging();
-                setState(() => _savedScope = saved);
-              },
-              mapMode: _mapMode,
-              onViewChanged: _setMapMode,
-            ),
+            saved: _savedScope,
+            savedCount: savedCount,
+            onSavedChanged: (saved) {
+              _resetPaging();
+              setState(() => _savedScope = saved);
+            },
           ),
           if (!_loading && !_error)
             ExploreResultsBar(
               count: visible.length,
+              mapMode: _mapMode,
+              onViewChanged: _setMapMode,
               // Map mode hides the rail, so the result line carries the one
               // category control. List mode leaves it to the rail below.
               categoryId: _mapMode ? _category : null,

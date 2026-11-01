@@ -150,8 +150,8 @@ Future<void> pullToRefresh(WidgetTester tester) async {
 CategorySelector categorySelector(WidgetTester tester) =>
     tester.widget<CategorySelector>(find.byType(CategorySelector));
 
-ExploreScopeSwitch scopeSwitch(WidgetTester tester) =>
-    tester.widget<ExploreScopeSwitch>(find.byType(ExploreScopeSwitch));
+SavedScopeButton savedButton(WidgetTester tester) =>
+    tester.widget<SavedScopeButton>(find.byType(SavedScopeButton));
 
 Future<void> tapCategory(WidgetTester tester, String id) async {
   final finder = find.byKey(ValueKey('explore.category.$id'));
@@ -290,31 +290,40 @@ void main() {
     final search = tester.widget<TextField>(find.byType(TextField));
     expect(search.controller?.text, isEmpty);
     expect(categorySelector(tester).selectedId, 'semua');
-    expect(scopeSwitch(tester).saved, isFalse);
+    expect(savedButton(tester).saved, isFalse);
   });
 
-  testWidgets('the results line shows the filtered count while the controls '
-      'row owns the view toggle', (tester) async {
+  testWidgets('the results line shows the filtered count and owns the view '
+      'switch', (tester) async {
     await pumpExplore(tester, projects: FakeProjectRepository(twoCategories()));
 
     expect(find.text('Proyek · 2'), findsOneWidget);
-    // One action button, not a second segmented control: the controls row
-    // toggles to the other view, beside the saved scope.
+    // Both views are visible as a segmented switch, next to the results they
+    // control.
     expect(
       find.descendant(
-        of: find.byType(ExploreControlsBar),
-        matching: find.byKey(const ValueKey('explore.view.map')),
+        of: find.byType(ExploreResultsBar),
+        matching: find.byType(ExploreViewSwitch),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('explore.view.list')), findsOneWidget);
+    expect(find.byKey(const ValueKey('explore.view.map')), findsOneWidget);
+    // The saved scope is a header action; the view switch is not.
+    expect(
+      find.descendant(
+        of: find.byType(ExploreHeader),
+        matching: find.byType(SavedScopeButton),
       ),
       findsOneWidget,
     );
     expect(
       find.descendant(
         of: find.byType(ExploreHeader),
-        matching: find.byKey(const ValueKey('explore.view.map')),
+        matching: find.byType(ExploreViewSwitch),
       ),
       findsNothing,
     );
-    expect(find.byKey(const ValueKey('explore.view.list')), findsNothing);
     expect(find.byType(SegmentedButton<bool>), findsNothing);
   });
 
@@ -334,7 +343,7 @@ void main() {
     expect(
       find.descendant(
         of: projectList(),
-        matching: find.byType(ExploreScopeSwitch),
+        matching: find.byType(SavedScopeButton),
       ),
       findsNothing,
     );
@@ -404,14 +413,14 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     await pumpExplore(tester, projects: FakeProjectRepository(twoCategories()));
 
-    expect(scopeSwitch(tester).savedCount, 0);
+    expect(savedButton(tester).savedCount, 0);
 
     await tester.runAsync(() async {
       await toggleSavedProject(twoCategories().first);
     });
     await pumpFrames(tester);
 
-    expect(scopeSwitch(tester).savedCount, 1);
+    expect(savedButton(tester).savedCount, 1);
   });
 
   testWidgets('the saved scope invites saving a project from Project Detail '
@@ -436,7 +445,7 @@ void main() {
 
     expect(find.byType(EmptyState), findsNothing);
     expect(find.byType(ProjectCard), findsAtLeastNWidgets(1));
-    expect(scopeSwitch(tester).saved, isFalse);
+    expect(savedButton(tester).saved, isFalse);
   });
 
   testWidgets('the saved scope lists only saved projects and hides '
@@ -540,7 +549,7 @@ void main() {
     expect(cardCount(tester), 2);
     expect(find.widgetWithText(ProjectCard, 'Penyu Hijau'), findsOneWidget);
     expect(categorySelector(tester).selectedId, 'semua');
-    expect(scopeSwitch(tester).saved, isFalse);
+    expect(savedButton(tester).saved, isFalse);
     final search = tester.widget<TextField>(find.byType(TextField));
     expect(search.controller?.text, isEmpty);
   });
