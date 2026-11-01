@@ -8,12 +8,11 @@ import '../../domain/explore_map_data.dart';
 import 'condition_label.dart';
 import 'filter_sheet.dart';
 
-/// Compact gradient header of Jelajahi: identity, search, filter and the
-/// list/map action.
+/// Compact gradient header of Jelajahi: identity, search and filter.
 ///
-/// The header is intentionally short: search, filter and the view toggle are
-/// primary actions and stay reachable, while the category rail and active
-/// filter tokens live in the scrollable list so they never eat the viewport.
+/// The header is intentionally short: search and filter are primary actions and
+/// stay reachable, while the scope/view controls, category rail and active
+/// filter tokens live below it so they never eat the viewport.
 class ExploreHeader extends StatelessWidget {
   const ExploreHeader({
     super.key,
@@ -23,8 +22,6 @@ class ExploreHeader extends StatelessWidget {
     required this.onClearQuery,
     required this.filterActiveCount,
     required this.onFilterPressed,
-    required this.mapMode,
-    required this.onViewChanged,
   });
 
   final TextEditingController searchController;
@@ -33,8 +30,6 @@ class ExploreHeader extends StatelessWidget {
   final VoidCallback onClearQuery;
   final int filterActiveCount;
   final VoidCallback onFilterPressed;
-  final bool mapMode;
-  final ValueChanged<bool> onViewChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -68,11 +63,6 @@ class ExploreHeader extends StatelessWidget {
                       ),
                     ),
                   ),
-                  _ViewModeButton(
-                    mapMode: mapMode,
-                    onChanged: onViewChanged,
-                  ),
-                  const SizedBox(width: 2),
                   const NotificationBell(color: Colors.white),
                 ],
               ),
@@ -135,8 +125,8 @@ class ExploreHeader extends StatelessWidget {
 }
 
 /// One action that switches to the other view. Showing the destination (map
-/// when in list mode, list when on the map) keeps the header to a single
-/// button instead of a second segmented control.
+/// when in list mode, list when on the map) keeps the row to a single button
+/// instead of a second segmented control.
 class _ViewModeButton extends StatelessWidget {
   const _ViewModeButton({required this.mapMode, required this.onChanged});
 
@@ -146,23 +136,52 @@ class _ViewModeButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final nextMap = !mapMode;
+    final label = context.tr(nextMap ? 'explore.viewMap' : 'explore.viewList');
 
-    return IconButton(
-      key: ValueKey(nextMap ? 'explore.view.map' : 'explore.view.list'),
-      tooltip: context.tr(nextMap ? 'explore.viewMap' : 'explore.viewList'),
-      icon: Icon(
-        nextMap ? Icons.map_outlined : Icons.view_agenda_outlined,
-        color: Colors.white,
-      ),
-      style: IconButton.styleFrom(
-        backgroundColor: Colors.white.withValues(alpha: 0.14),
-        minimumSize: const Size.square(44),
-        maximumSize: const Size.square(44),
-        shape: RoundedRectangleBorder(
+    return Semantics(
+      button: true,
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: Material(
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(14),
+          child: InkWell(
+            key: ValueKey(nextMap ? 'explore.view.map' : 'explore.view.list'),
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => onChanged(nextMap),
+            child: Container(
+              height: 44,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    nextMap ? Icons.map_outlined : Icons.view_agenda_outlined,
+                    size: 18,
+                    color: AppColors.ocean,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ocean,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
-      onPressed: () => onChanged(nextMap),
     );
   }
 }
@@ -233,38 +252,37 @@ class ExploreScopeSwitch extends StatelessWidget {
   Widget build(BuildContext context) {
     final foreground = saved ? Colors.white : AppColors.textSecondary;
 
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Semantics(
-        button: true,
-        toggled: saved,
-        label: context.tr('p03_scope_saved'),
-        child: Material(
-          color: saved ? AppColors.ocean : AppColors.surface,
+    return Semantics(
+      button: true,
+      toggled: saved,
+      label: context.tr('p03_scope_saved'),
+      child: Material(
+        color: saved ? AppColors.ocean : AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          key: const ValueKey('explore.scope.saved'),
           borderRadius: BorderRadius.circular(14),
-          child: InkWell(
-            key: const ValueKey('explore.scope.saved'),
-            borderRadius: BorderRadius.circular(14),
-            onTap: () => onChanged(!saved),
-            child: Container(
-              height: 44,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: saved ? AppColors.ocean : AppColors.border,
-                ),
+          onTap: () => onChanged(!saved),
+          child: Container(
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: saved ? AppColors.ocean : AppColors.border,
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    saved ? Icons.bookmark : Icons.bookmark_outline,
-                    size: 18,
-                    color: foreground,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  saved ? Icons.bookmark : Icons.bookmark_outline,
+                  size: 18,
+                  color: foreground,
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
                     context.tr('p03_scope_saved'),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -274,34 +292,77 @@ class ExploreScopeSwitch extends StatelessWidget {
                       color: foreground,
                     ),
                   ),
-                  if (savedCount > 0) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: saved
-                            ? Colors.white.withValues(alpha: 0.22)
-                            : AppColors.ocean.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        '$savedCount',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: saved ? Colors.white : AppColors.ocean,
-                        ),
+                ),
+                if (savedCount > 0) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: saved
+                          ? Colors.white.withValues(alpha: 0.22)
+                          : AppColors.ocean.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      '$savedCount',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: saved ? Colors.white : AppColors.ocean,
                       ),
                     ),
-                  ],
+                  ),
                 ],
-              ),
+              ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The controls row below the header: saved scope on the left, the view action
+/// on the right, both in the same pill language.
+class ExploreControlsBar extends StatelessWidget {
+  const ExploreControlsBar({
+    super.key,
+    required this.saved,
+    required this.savedCount,
+    required this.onSavedChanged,
+    required this.mapMode,
+    required this.onViewChanged,
+  });
+
+  final bool saved;
+  final int savedCount;
+  final ValueChanged<bool> onSavedChanged;
+  final bool mapMode;
+  final ValueChanged<bool> onViewChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    // spaceBetween pins the saved toggle to the left gutter and the view action
+    // to the right gutter. On an extremely narrow surface the view action drops
+    // to a second line instead of overflowing.
+    return SizedBox(
+      width: double.infinity,
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 12,
+        runSpacing: 8,
+        children: [
+          ExploreScopeSwitch(
+            saved: saved,
+            savedCount: savedCount,
+            onChanged: onSavedChanged,
+          ),
+          _ViewModeButton(mapMode: mapMode, onChanged: onViewChanged),
+        ],
       ),
     );
   }

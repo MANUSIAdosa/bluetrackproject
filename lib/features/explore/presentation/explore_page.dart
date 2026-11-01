@@ -410,18 +410,18 @@ class _ExplorePageState extends State<ExplorePage> {
             },
             filterActiveCount: _selection.activeCount,
             onFilterPressed: _openFilterSheet,
-            mapMode: _mapMode,
-            onViewChanged: _setMapMode,
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-            child: ExploreScopeSwitch(
+            child: ExploreControlsBar(
               saved: _savedScope,
               savedCount: savedCount,
-              onChanged: (saved) {
+              onSavedChanged: (saved) {
                 _resetPaging();
                 setState(() => _savedScope = saved);
               },
+              mapMode: _mapMode,
+              onViewChanged: _setMapMode,
             ),
           ),
           if (!_loading && !_error)

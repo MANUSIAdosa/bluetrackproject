@@ -293,14 +293,27 @@ void main() {
     expect(scopeSwitch(tester).saved, isFalse);
   });
 
-  testWidgets('the results line shows the filtered count while the header owns '
-      'the view toggle', (tester) async {
+  testWidgets('the results line shows the filtered count while the controls '
+      'row owns the view toggle', (tester) async {
     await pumpExplore(tester, projects: FakeProjectRepository(twoCategories()));
 
     expect(find.text('Proyek · 2'), findsOneWidget);
-    // One action button, not a second segmented control: the header toggles to
-    // the other view.
-    expect(find.byKey(const ValueKey('explore.view.map')), findsOneWidget);
+    // One action button, not a second segmented control: the controls row
+    // toggles to the other view, beside the saved scope.
+    expect(
+      find.descendant(
+        of: find.byType(ExploreControlsBar),
+        matching: find.byKey(const ValueKey('explore.view.map')),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(ExploreHeader),
+        matching: find.byKey(const ValueKey('explore.view.map')),
+      ),
+      findsNothing,
+    );
     expect(find.byKey(const ValueKey('explore.view.list')), findsNothing);
     expect(find.byType(SegmentedButton<bool>), findsNothing);
   });
