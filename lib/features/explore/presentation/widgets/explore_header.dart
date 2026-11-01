@@ -659,16 +659,23 @@ class ExploreResultsBar extends StatelessWidget {
     final showCategory = categoryId != null && onCategoryPressed != null;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
       child: Row(
         children: [
-          Text(
-            '${context.tr('explore.projects')} · $count',
-            key: const ValueKey('explore.resultsCount'),
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.ocean.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '${context.tr('explore.projects')} · $count',
+              key: const ValueKey('explore.resultsCount'),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.ocean,
+              ),
             ),
           ),
           if (showCategory) ...[
