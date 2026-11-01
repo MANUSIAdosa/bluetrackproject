@@ -14,6 +14,7 @@ Future<String?> showCategoryPickerSheet(
   required String selectedId,
 }) => showModalBottomSheet<String>(
   context: context,
+  isScrollControlled: true,
   showDragHandle: true,
   backgroundColor: AppColors.surface,
   builder: (_) =>
@@ -30,43 +31,45 @@ class _CategoryPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
-      child: Padding(
-        key: const ValueKey('explore.categoryPicker'),
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              context.tr('p03_category_label'),
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.8,
+        ),
+        child: Padding(
+          key: const ValueKey('explore.categoryPicker'),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                context.tr('p03_category_label'),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: categoryIds.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
-                childAspectRatio: 1.45,
+              const SizedBox(height: 12),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.zero,
+                  itemCount: categoryIds.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final id = categoryIds[index];
+                    return _CategoryTile(
+                      key: ValueKey('explore.categoryPicker.$id'),
+                      categoryId: id,
+                      selected: id == selectedId,
+                      onTap: () => Navigator.of(context).pop(id),
+                    );
+                  },
+                ),
               ),
-              itemBuilder: (context, index) {
-                final id = categoryIds[index];
-                return _CategoryTile(
-                  key: ValueKey('explore.categoryPicker.$id'),
-                  categoryId: id,
-                  selected: id == selectedId,
-                  onTap: () => Navigator.of(context).pop(id),
-                );
-              },
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -89,6 +92,10 @@ class _CategoryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final all = categoryId == 'semua';
     final label = context.tr('cat.$categoryId');
+    final color = all ? AppColors.ocean : CategoryIcons.colorFor(categoryId);
+    final icon = all
+        ? Icons.grid_view_rounded
+        : CategoryIcons.iconFor(categoryId);
 
     return Semantics(
       button: true,
@@ -96,42 +103,47 @@ class _CategoryTile extends StatelessWidget {
       label: label,
       child: Material(
         color: selected
-            ? AppColors.ocean.withValues(alpha: 0.10)
-            : AppColors.background,
+            ? AppColors.ocean.withValues(alpha: 0.08)
+            : AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
           onTap: onTap,
           child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: selected ? AppColors.ocean : AppColors.border,
-                width: selected ? 2 : 1,
+                width: selected ? 1.5 : 1,
               ),
-              borderRadius: BorderRadius.circular(14),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+            child: Row(
               children: [
-                all
-                    ? const Icon(
-                        Icons.grid_view_rounded,
-                        size: 22,
-                        color: AppColors.ocean,
-                      )
-                    : CategoryIcon(category: categoryId, size: 22),
-                const SizedBox(height: 4),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                    color: selected ? AppColors.ocean : AppColors.textPrimary,
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
                   ),
+                  child: Icon(icon, size: 20, color: color),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                      color: selected ? AppColors.ocean : AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                Icon(
+                  selected ? Icons.check_circle_rounded : Icons.circle_outlined,
+                  size: 20,
+                  color: selected ? AppColors.ocean : AppColors.inactiveTab,
                 ),
               ],
             ),
