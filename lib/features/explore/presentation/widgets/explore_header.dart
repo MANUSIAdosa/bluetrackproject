@@ -212,10 +212,11 @@ class FilterButton extends StatelessWidget {
   }
 }
 
-/// Jelajahi / Tersimpan — two contexts, not two filters.
+/// Tersimpan — one toggle, not a two-tab switch.
 ///
-/// The saved collection is a personal scope, so it gets its own switch instead
-/// of sharing the category row or the filter sheet.
+/// The page already is Explore, so a second "Jelajahi" tab only repeated the
+/// current context. The saved collection is a personal scope: tapping the
+/// toggle enters it, tapping it again returns to the full list.
 class ExploreScopeSwitch extends StatelessWidget {
   const ExploreScopeSwitch({
     super.key,
@@ -230,111 +231,68 @@ class ExploreScopeSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _ScopeTab(
-              key: const ValueKey('explore.scope.explore'),
-              icon: Icons.explore_outlined,
-              label: context.tr('p03_scope_explore'),
-              selected: !saved,
-              onTap: () => onChanged(false),
-            ),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: _ScopeTab(
-              key: const ValueKey('explore.scope.saved'),
-              icon: Icons.bookmark_outline,
-              label: context.tr('p03_scope_saved'),
-              count: savedCount,
-              selected: saved,
-              onTap: () => onChanged(true),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+    final foreground = saved ? Colors.white : AppColors.textSecondary;
 
-class _ScopeTab extends StatelessWidget {
-  const _ScopeTab({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    this.count,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  final int? count;
-
-  @override
-  Widget build(BuildContext context) {
-    final foreground = selected ? Colors.white : AppColors.textSecondary;
-
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: label,
-      child: Material(
-        color: selected ? AppColors.ocean : Colors.transparent,
-        borderRadius: BorderRadius.circular(13),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(13),
-          onTap: onTap,
-          child: SizedBox(
-            height: 46,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Semantics(
+        button: true,
+        toggled: saved,
+        label: context.tr('p03_scope_saved'),
+        child: Material(
+          color: saved ? AppColors.ocean : AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          child: InkWell(
+            key: const ValueKey('explore.scope.saved'),
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => onChanged(!saved),
+            child: Container(
+              height: 44,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: saved ? AppColors.ocean : AppColors.border,
+                ),
+              ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon, size: 18, color: foreground),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: foreground,
-                      ),
+                  Icon(
+                    saved ? Icons.bookmark : Icons.bookmark_outline,
+                    size: 18,
+                    color: foreground,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    context.tr('p03_scope_saved'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: foreground,
                     ),
                   ),
-                  if (count != null && count! > 0) ...[
-                    const SizedBox(width: 6),
+                  if (savedCount > 0) ...[
+                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
+                        horizontal: 7,
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: selected
+                        color: saved
                             ? Colors.white.withValues(alpha: 0.22)
                             : AppColors.ocean.withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
-                        '$count',
+                        '$savedCount',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
-                          color: selected ? Colors.white : AppColors.ocean,
+                          color: saved ? Colors.white : AppColors.ocean,
                         ),
                       ),
                     ),

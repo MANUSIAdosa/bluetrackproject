@@ -187,19 +187,12 @@ Future<void> seedSavedProjects(WidgetTester tester, List<String> ids) async {
   });
 }
 
-/// The saved collection is a scope tab, not a filter button.
+/// The saved collection is a scope toggle, not a filter button.
 Finder savedScope() => find.byKey(const ValueKey('explore.scope.saved'));
-Finder exploreScope() => find.byKey(const ValueKey('explore.scope.explore'));
 
 Future<void> tapSavedScope(WidgetTester tester) async {
   expect(savedScope(), findsOneWidget);
   await tester.tap(savedScope());
-  await pumpFrames(tester);
-}
-
-Future<void> tapExploreScope(WidgetTester tester) async {
-  expect(exploreScope(), findsOneWidget);
-  await tester.tap(exploreScope());
   await pumpFrames(tester);
 }
 
@@ -486,7 +479,7 @@ void main() {
     expect(find.widgetWithText(ProjectCard, 'Penyu Hijau'), findsOneWidget);
   });
 
-  testWidgets('switching back to Jelajahi goes back to the first page', (
+  testWidgets('pressing Tersimpan again returns to the first page of Explore', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -501,7 +494,8 @@ void main() {
     await settlePageLoad(tester);
     expect(cardCount(tester), 8);
 
-    await tapExploreScope(tester);
+    // Same button: it is a toggle, so a second press leaves the saved scope.
+    await tapSavedScope(tester);
 
     expect(cardCount(tester), 4);
   });

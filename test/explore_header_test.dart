@@ -160,7 +160,9 @@ void main() {
   });
 
   group('ExploreScopeSwitch', () {
-    testWidgets('separates the explore and saved contexts', (tester) async {
+    testWidgets('offers the saved collection as a single toggle', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         wrapPage(
           ExploreScopeSwitch(
@@ -172,15 +174,18 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byKey(const ValueKey('explore.scope.explore')), findsOneWidget);
       expect(find.byKey(const ValueKey('explore.scope.saved')), findsOneWidget);
-      expect(find.text('Jelajahi'), findsOneWidget);
+      // The page is already Explore, so a second tab for it was redundant.
+      expect(find.byKey(const ValueKey('explore.scope.explore')), findsNothing);
       expect(find.text('Tersimpan'), findsOneWidget);
+      expect(find.text('Jelajahi'), findsNothing);
       // The saved count is information about the collection, not a filter.
       expect(find.text('3'), findsOneWidget);
     });
 
-    testWidgets('reports which scope the user picked', (tester) async {
+    testWidgets('pressing the saved toggle enters and leaves the saved scope', (
+      tester,
+    ) async {
       bool? picked;
 
       await tester.pumpWidget(
@@ -197,7 +202,20 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('explore.scope.saved')));
       expect(picked, isTrue);
 
-      await tester.tap(find.byKey(const ValueKey('explore.scope.explore')));
+      // Same button, now active: pressing it again leaves the saved scope.
+      picked = null;
+      await tester.pumpWidget(
+        wrapPage(
+          ExploreScopeSwitch(
+            saved: true,
+            savedCount: 0,
+            onChanged: (value) => picked = value,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byKey(const ValueKey('explore.scope.saved')));
       expect(picked, isFalse);
     });
 
