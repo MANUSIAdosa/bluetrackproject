@@ -273,11 +273,11 @@ class FilterButton extends StatelessWidget {
   }
 }
 
-/// Saved scope as a compact header action: bookmark + count, with the active
-/// state filled white so it reads as a toggle, not as another tab.
+/// Saved scope as a compact header action: bookmark + count.
 ///
-/// The label lives in the tooltip and semantics; the count keeps it legible
-/// without spending a whole row on a labeled pill.
+/// At rest the button is transparent so it sits directly on the header
+/// gradient, exactly like the notification bell. Only the active state fills
+/// white: that fill is the toggle's state cue, not a second surface.
 class SavedScopeButton extends StatelessWidget {
   const SavedScopeButton({
     super.key,
@@ -293,9 +293,7 @@ class SavedScopeButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foreground = saved ? AppColors.ocean : Colors.white;
-    final background = saved
-        ? AppColors.surface
-        : Colors.white.withValues(alpha: 0.14);
+    final background = saved ? AppColors.surface : Colors.transparent;
 
     return Semantics(
       button: true,

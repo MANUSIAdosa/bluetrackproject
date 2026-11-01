@@ -1,3 +1,4 @@
+import 'package:blue_track/core/theme/app_colors.dart';
 import 'package:blue_track/features/explore/domain/explore_map_data.dart';
 import 'package:blue_track/features/explore/presentation/widgets/explore_header.dart';
 import 'package:blue_track/features/explore/presentation/widgets/filter_sheet.dart';
@@ -198,6 +199,39 @@ void main() {
       );
       expect(size.height, greaterThanOrEqualTo(44));
       expect(size.width, greaterThanOrEqualTo(44));
+    });
+
+    testWidgets('rests on the gradient and fills only when active', (
+      tester,
+    ) async {
+      Future<Color?> backgroundOf(bool saved) async {
+        await tester.pumpWidget(
+          wrapPage(
+            SavedScopeButton(
+              saved: saved,
+              savedCount: 2,
+              onChanged: (_) {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        return tester
+            .widget<Material>(
+              find
+                  .descendant(
+                    of: find.byType(SavedScopeButton),
+                    matching: find.byType(Material),
+                  )
+                  .first,
+            )
+            .color;
+      }
+
+      // At rest there is no surface of its own, so the header gradient shows
+      // through without a lighter square around the bookmark.
+      expect(await backgroundOf(false), Colors.transparent);
+      expect(await backgroundOf(true), AppColors.surface);
     });
   });
 
