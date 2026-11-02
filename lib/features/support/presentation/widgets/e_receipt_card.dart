@@ -34,77 +34,122 @@ class _ReceiptCard extends StatelessWidget {
     return Container(
       key: const ValueKey('p08-receipt-card'),
       width: double.infinity,
-      padding: const EdgeInsets.all(AppDimens.padding),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppDimens.cardRadius),
         border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.textPrimary.withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.ocean.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.ocean.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.receipt_long_outlined,
+                    size: 20,
+                    color: AppColors.ocean,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.receipt_long_outlined,
-                  size: 20,
-                  color: AppColors.ocean,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    context.tr('p08_receipt_title'),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                context.tr('p08_receipt_title'),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-          const Divider(height: 24),
-          _ReceiptRow(
-            label: context.tr('p08_receipt_number'),
-            value: trace.receiptNumber,
-          ),
-          _ReceiptRow(
-            label: context.tr('p08_receipt_date'),
-            value: Formatters.date(trace.donatedAt, lang),
-          ),
-          _ReceiptRow(
-            label: context.tr('p08_receipt_amount'),
-            valueWidget: Text(
-              Formatters.currency(trace.amount, lang),
-              textAlign: TextAlign.right,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-                color: AppColors.ocean,
-              ),
+                const SizedBox(width: 8),
+                _StatusChip(status: trace.status),
+              ],
             ),
           ),
-          _ReceiptRow(
-            label: context.tr('p08_receipt_project'),
-            value: trace.projectTitle,
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Divider(height: 1),
           ),
-          _ReceiptRow(
-            label: context.tr('p08_receipt_organization'),
-            value: trace.organization,
-          ),
-          _ReceiptRow(
-            label: context.tr('p08_receipt_method'),
-            value: _methodLabel(context, trace.paymentMethod),
-          ),
-          _ReceiptRow(
-            label: context.tr('p08_receipt_status'),
-            valueWidget: _StatusChip(status: trace.status),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              children: [
+                _ReceiptRow(
+                  label: context.tr('p08_receipt_number'),
+                  value: trace.receiptNumber,
+                ),
+                _ReceiptRow(
+                  label: context.tr('p08_receipt_date'),
+                  value: Formatters.date(trace.donatedAt, lang),
+                ),
+                _ReceiptRow(
+                  label: context.tr('p08_receipt_project'),
+                  value: trace.projectTitle,
+                ),
+                _ReceiptRow(
+                  label: context.tr('p08_receipt_organization'),
+                  value: trace.organization,
+                ),
+                _ReceiptRow(
+                  label: context.tr('p08_receipt_method'),
+                  value: _methodLabel(context, trace.paymentMethod),
+                ),
+                const SizedBox(height: 12),
+                const _DashedDivider(),
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.ocean.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        context.tr('p08_receipt_amount'),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          Formatters.currency(trace.amount, lang),
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.ocean,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -127,6 +172,10 @@ class _ReceiptUnavailable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = status == DonationStatus.pending
+        ? AppColors.warning
+        : AppColors.danger;
+
     return Container(
       key: const ValueKey('p08-receipt-unavailable'),
       width: double.infinity,
@@ -139,9 +188,14 @@ class _ReceiptUnavailable extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.receipt_long_outlined,
-            color: AppColors.textSecondary,
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(Icons.receipt_long_outlined, size: 20, color: color),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -177,16 +231,15 @@ class _ReceiptUnavailable extends StatelessWidget {
 }
 
 class _ReceiptRow extends StatelessWidget {
-  const _ReceiptRow({required this.label, this.value, this.valueWidget});
+  const _ReceiptRow({required this.label, this.value});
 
   final String label;
   final String? value;
-  final Widget? valueWidget;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -203,24 +256,46 @@ class _ReceiptRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Align(
-              alignment: Alignment.centerRight,
-              child:
-                  valueWidget ??
-                  Text(
-                    value ?? '',
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      height: 1.4,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
+            child: Text(
+              value ?? '',
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                fontSize: 13,
+                height: 1.4,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Dashed rule that gives the E-Receipt a receipt-like separation before the
+/// amount total.
+class _DashedDivider extends StatelessWidget {
+  const _DashedDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const dashWidth = 5.0;
+        const gap = 4.0;
+        final count = (constraints.maxWidth / (dashWidth + gap)).floor();
+        if (count <= 0) return const SizedBox(height: 1);
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: List.generate(
+            count,
+            (_) =>
+                Container(width: dashWidth, height: 1, color: AppColors.border),
+          ),
+        );
+      },
     );
   }
 }
