@@ -21,7 +21,14 @@ const double _topPadding = 32;
 
 const double _bottomPadding = 24;
 
-/// Gap between a field and its button. Wider than the usual 20 so the form
+/// Gap between the heading block and the first field.
+const double _headingToFieldGap = 32;
+
+/// Gap above and below the "OR" rule, so it reads as a separator rather than
+/// as part of either field.
+const double _dividerGap = 20;
+
+/// Gap between the form and its button. Wider than the usual 20 so the form
 /// does not read as one solid block.
 const double _fieldToButtonGap = 28;
 
@@ -29,14 +36,21 @@ const double _fieldToButtonGap = 28;
 /// to the form, far enough not to look glued to the button.
 const double _noticeGap = 32;
 
+/// Indonesian mobile prefix. Kept in one place so the input box and the
+/// identifier sent to the mock sign-in can never drift apart.
+const String _countryCode = '+62';
+
 /// P02 — Login and account verification.
 ///
-/// Steps: email → phone (+62) → 6-digit OTP (mock: 123456).
-/// On success returns to the origin page via the `redirect` query parameter.
+/// Email and phone live on one page, separated by a thin "OR" rule: the user
+/// fills whichever channel they prefer and taps Continue. The mock 6-digit
+/// code (123456) is then entered on the OTP step, which replaces the form in
+/// place. On success the page returns to the origin via `redirect`.
 ///
-/// The three steps are self-explanatory, so the page carries no step
-/// indicator. The app-bar back arrow is the single way out — it steps back
-/// through the flow, and leaves the page when already on the first step.
+/// The page stays top-aligned and scrollable. A centred form is what the
+/// mobile keyboard covers, so the heading starts near the app bar and the
+/// page only scrolls when the form (or the legal notice) outgrows the space
+/// left above the keyboard.
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key, this.redirect});
 
@@ -47,20 +61,37 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
+/// The page has two stages: the combined identifier form and the OTP step.
+enum _AuthStage { identifier, otp }
+
 class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _otpControllers = List.generate(6, (_) => TextEditingController());
   final _otpFocusNodes = List.generate(6, (_) => FocusNode());
 
-  int _step = 0;
+  _AuthStage _stage = _AuthStage.identifier;
   bool _loading = false;
-  String? _errorKey;
+
+  String? _emailErrorKey;
+  String? _phoneErrorKey;
+
+  /// Error for the "nothing filled yet" case, shown once below the phone row.
+  String? _identifierErrorKey;
+
+  String? _otpErrorKey;
+
+  /// Email or `+62` phone that the OTP was sent to. Resolved when the user
+  /// continues, then reused for the subtitle and the mock sign-in token.
+  String? _identifier;
 
   // OTP state.
   int _attemptsLeft = AppConfig.otpMaxAttempts;
   int _resendSeconds = 0;
   Timer? _timer;
+
+  static final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+  static final _phonePattern = RegExp(r'^\d{8,12}$');
 
   @override
   void dispose() {
@@ -78,37 +109,72 @@ class _LoginPageState extends State<LoginPage> {
 
   bool get _otpLocked => _attemptsLeft <= 0;
 
-  String get _fullPhone => '+62${_phoneController.text}';
+  String get _otpCode => _otpControllers.map((c) => c.text).join();
 
-  // --- Step 1: email -------------------------------------------------------
+  // --- Combined email + phone form ----------------------------------------
 
-  void _submitEmail() {
-    final email = _emailController.text.trim();
-    final valid = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
-    if (!valid) {
-      setState(() => _errorKey = 'auth.email.invalid');
-      return;
-    }
+  void _onEmailChanged(String _) {
+    if (_emailErrorKey == null && _identifierErrorKey == null) return;
     setState(() {
-      _errorKey = null;
-      _step = 1;
+      _emailErrorKey = null;
+      _identifierErrorKey = null;
     });
   }
 
-  // --- Step 2: phone -------------------------------------------------------
+  void _onPhoneChanged(String _) {
+    if (_phoneErrorKey == null && _identifierErrorKey == null) return;
+    setState(() {
+      _phoneErrorKey = null;
+      _identifierErrorKey = null;
+    });
+  }
 
-  void _sendCode() {
+  /// Validates both fields, then opens the OTP step for the filled channel.
+  ///
+  /// At least one field must be valid. Empty fields are optional; a field with
+  /// content must be valid, so a half-typed number cannot be sent by mistake.
+  /// When both are valid, email wins because it is the first field on screen.
+  void _continue() {
+    final email = _emailController.text.trim();
     final phone = _phoneController.text.trim();
-    if (!RegExp(r'^\d{8,12}$').hasMatch(phone)) {
-      setState(() => _errorKey = 'auth.phone.invalid');
+
+    final emailError = email.isEmpty || _emailPattern.hasMatch(email)
+        ? null
+        : 'auth.email.invalid';
+    final phoneError = phone.isEmpty || _phonePattern.hasMatch(phone)
+        ? null
+        : 'auth.phone.invalid';
+    final nothingFilled = email.isEmpty && phone.isEmpty;
+
+    if (emailError != null || phoneError != null || nothingFilled) {
+      setState(() {
+        _emailErrorKey = emailError;
+        _phoneErrorKey = phoneError;
+        _identifierErrorKey = nothingFilled ? 'auth.identifier.missing' : null;
+      });
       return;
     }
+
+    final identifier = email.isNotEmpty ? email : '$_countryCode$phone';
     setState(() {
-      _errorKey = null;
-      _step = 2;
+      _identifier = identifier;
+      _stage = _AuthStage.otp;
       _attemptsLeft = AppConfig.otpMaxAttempts;
+      _otpErrorKey = null;
+      _emailErrorKey = null;
+      _phoneErrorKey = null;
+      _identifierErrorKey = null;
+      for (final c in _otpControllers) {
+        c.clear();
+      }
     });
     _startResendCountdown();
+    _showCodeSentSnackBar();
+  }
+
+  // --- OTP -----------------------------------------------------------------
+
+  void _showCodeSentSnackBar() {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(context.tr('auth.otp.sent'))));
@@ -129,15 +195,23 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 
-  // --- Step 3: OTP ---------------------------------------------------------
-
-  String get _otpCode => _otpControllers.map((c) => c.text).join();
+  void _resendCode() {
+    setState(() {
+      _attemptsLeft = AppConfig.otpMaxAttempts;
+      _otpErrorKey = null;
+    });
+    _startResendCountdown();
+    _showCodeSentSnackBar();
+  }
 
   Future<void> _verify() async {
     if (_otpLocked || _loading) return;
+    final identifier = _identifier;
+    if (identifier == null || identifier.isEmpty) return;
+
     setState(() {
       _loading = true;
-      _errorKey = null;
+      _otpErrorKey = null;
     });
 
     // Mock verification — no network involved.
@@ -145,7 +219,7 @@ class _LoginPageState extends State<LoginPage> {
 
     if (!mounted) return;
     if (_otpCode == AppConfig.mockOtp) {
-      await AuthController.instance.signIn(_emailController.text.trim());
+      await AuthController.instance.signIn(identifier);
       if (!mounted) return;
       final redirect = widget.redirect;
       if (redirect != null && redirect.isNotEmpty) {
@@ -159,11 +233,7 @@ class _LoginPageState extends State<LoginPage> {
     setState(() {
       _loading = false;
       _attemptsLeft--;
-      if (_otpLocked) {
-        _errorKey = 'auth.otp.locked';
-      } else {
-        _errorKey = 'auth.otp.mismatch';
-      }
+      _otpErrorKey = _otpLocked ? 'auth.otp.locked' : 'auth.otp.mismatch';
       for (final c in _otpControllers) {
         c.clear();
       }
@@ -185,15 +255,21 @@ class _LoginPageState extends State<LoginPage> {
 
   // --- Shared --------------------------------------------------------------
 
-  /// Steps back through the flow, or leaves the page from the first step.
+  /// Returns to the form from OTP, or leaves the page from the form.
   ///
   /// A deep link straight into `/auth` has nothing to pop, so fall back to the
   /// origin page the user asked for, or to the app entry point.
   void _goBack() {
-    if (_step > 0) {
+    if (_stage == _AuthStage.otp) {
+      _timer?.cancel();
       setState(() {
-        _step--;
-        _errorKey = null;
+        _stage = _AuthStage.identifier;
+        _resendSeconds = 0;
+        _loading = false;
+        _otpErrorKey = null;
+        for (final c in _otpControllers) {
+          c.clear();
+        }
       });
       return;
     }
@@ -216,6 +292,9 @@ class _LoginPageState extends State<LoginPage> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
+          // Dragging the form away also closes the keyboard, so the user can
+          // bring the Continue button and the legal notice into view.
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.only(
             left: _sidePadding,
             right: _sidePadding,
@@ -225,13 +304,10 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top-aligned on purpose. A vertically centred field is what the
-              // mobile keyboard covers once it opens, so the form stays in the
-              // upper part of the screen and the page scrolls only when the
-              // form genuinely outgrows the viewport.
-              if (_step == 0) _buildEmailStep(),
-              if (_step == 1) _buildPhoneStep(),
-              if (_step == 2) _buildOtpStep(),
+              if (_stage == _AuthStage.identifier)
+                _buildIdentifierStep()
+              else
+                _buildOtpStep(),
               const SizedBox(height: _noticeGap),
               const _LegalNotice(),
             ],
@@ -241,84 +317,100 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildEmailStep() {
+  Widget _buildIdentifierStep() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _StepHeading(
-          title: context.tr('auth.email.title'),
-          subtitle: context.tr('auth.email.subtitle'),
+        Text(
+          context.tr('auth.title'),
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            height: 1.2,
+          ),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 8),
+        Text(
+          context.tr('auth.subtitle'),
+          style: const TextStyle(
+            fontSize: 14,
+            height: 1.5,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: _headingToFieldGap),
         TextField(
+          key: const Key('auth_email_field'),
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
           autofillHints: const [AutofillHints.email],
+          autocorrect: false,
           decoration: InputDecoration(
             labelText: context.tr('auth.email.label'),
             hintText: context.tr('auth.email.hint'),
-            errorText: _errorKey == null ? null : context.tr(_errorKey!),
+            errorText: _emailErrorKey == null
+                ? null
+                : context.tr(_emailErrorKey!),
           ),
-          onSubmitted: (_) => _submitEmail(),
+          onChanged: _onEmailChanged,
+          // Leaves the choice open: the user can keep typing an email or move
+          // down to the phone field instead.
+          onSubmitted: (_) => FocusScope.of(context).nextFocus(),
         ),
-        const SizedBox(height: _fieldToButtonGap),
-        PrimaryButton(
-          label: context.tr('common.continue'),
-          loading: _loading,
-          onPressed: _submitEmail,
-          color: AppColors.ocean,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPhoneStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _StepHeading(
-          title: context.tr('auth.phone.title'),
-          subtitle: context.tr('auth.phone.subtitle'),
-        ),
-        const SizedBox(height: 32),
+        const SizedBox(height: _dividerGap),
+        const _OrDivider(),
+        const SizedBox(height: _dividerGap),
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimens.padding,
-                vertical: 14,
-              ),
+              // Matches the field's 14dp content padding, so the prefix box
+              // and the input line up while staying compact.
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(AppDimens.cardRadius),
                 border: Border.all(color: AppColors.border),
               ),
               child: const Text(
-                '+62',
-                style: TextStyle(fontWeight: FontWeight.w700),
+                _countryCode,
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: TextField(
+                key: const Key('auth_phone_field'),
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
+                textInputAction: TextInputAction.done,
+                autofillHints: const [AutofillHints.telephoneNumber],
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: InputDecoration(
                   labelText: context.tr('auth.phone.label'),
                   hintText: context.tr('auth.phone.hint'),
-                  errorText: _errorKey == null ? null : context.tr(_errorKey!),
+                  errorText: _phoneErrorKey == null
+                      ? null
+                      : context.tr(_phoneErrorKey!),
                 ),
-                onSubmitted: (_) => _sendCode(),
+                onChanged: _onPhoneChanged,
+                onSubmitted: (_) => _continue(),
               ),
             ),
           ],
         ),
+        if (_identifierErrorKey != null) ...[
+          const SizedBox(height: 10),
+          _InlineError(
+            key: const Key('auth_identifier_error'),
+            message: context.tr(_identifierErrorKey!),
+          ),
+        ],
         const SizedBox(height: _fieldToButtonGap),
         PrimaryButton(
-          label: context.tr('auth.sendCode'),
-          loading: _loading,
-          onPressed: _sendCode,
+          label: context.tr('common.continue'),
+          onPressed: _continue,
           color: AppColors.ocean,
         ),
       ],
@@ -331,52 +423,66 @@ class _LoginPageState extends State<LoginPage> {
       children: [
         _StepHeading(
           title: context.tr('auth.otp.title'),
-          subtitle: context.tr('auth.otp.subtitle', {'phone': _fullPhone}),
+          subtitle: context.tr('auth.otp.subtitle', {
+            'target': _identifier ?? '',
+          }),
         ),
-        const SizedBox(height: 32),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            for (var i = 0; i < 6; i++)
-              SizedBox(
-                width: 46,
-                child: TextField(
-                  controller: _otpControllers[i],
-                  focusNode: _otpFocusNodes[i],
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  maxLength: 1,
-                  enabled: !_otpLocked && !_loading,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  decoration: const InputDecoration(
-                    counterText: '',
-                    errorText: null,
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 14,
+        const SizedBox(height: _headingToFieldGap),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            // Six boxes shrink to 38dp on very narrow phones and stay 46dp
+            // everywhere else, so the row never overflows.
+            const gap = 8.0;
+            final width = ((constraints.maxWidth - gap * 5) / 6)
+                .clamp(38.0, 46.0)
+                .toDouble();
+
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                for (var i = 0; i < 6; i++)
+                  SizedBox(
+                    width: width,
+                    child: TextField(
+                      key: ValueKey('auth_otp_$i'),
+                      controller: _otpControllers[i],
+                      focusNode: _otpFocusNodes[i],
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      maxLength: 1,
+                      enabled: !_otpLocked && !_loading,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      decoration: const InputDecoration(
+                        counterText: '',
+                        errorText: null,
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 14,
+                        ),
+                      ),
+                      onChanged: (value) => _onOtpChanged(i, value),
                     ),
                   ),
-                  onChanged: (value) => _onOtpChanged(i, value),
-                ),
-              ),
-          ],
+              ],
+            );
+          },
         ),
-        if (_errorKey != null) ...[
+        if (_otpErrorKey != null) ...[
           const SizedBox(height: 12),
           Text(
-            context.tr(_errorKey!),
+            context.tr(_otpErrorKey!),
             style: const TextStyle(
               fontSize: 13,
               color: AppColors.danger,
               fontWeight: FontWeight.w600,
             ),
           ),
-          if (!_otpLocked && _errorKey == 'auth.otp.mismatch') ...[
+          if (!_otpLocked && _otpErrorKey == 'auth.otp.mismatch') ...[
             const SizedBox(height: 4),
             Text(
               context.tr('auth.otp.attemptsLeft', {'n': '$_attemptsLeft'}),
@@ -408,15 +514,7 @@ class _LoginPageState extends State<LoginPage> {
             : Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton(
-                  onPressed: () {
-                    if (_otpLocked) {
-                      setState(() {
-                        _attemptsLeft = AppConfig.otpMaxAttempts;
-                        _errorKey = null;
-                      });
-                    }
-                    _sendCode();
-                  },
+                  onPressed: _resendCode,
                   child: Text(context.tr('auth.otp.resend')),
                 ),
               ),
@@ -425,10 +523,38 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-/// Title and supporting line shared by all three steps.
-///
-/// Gives every step the same anchor, so moving through the flow swaps the
-/// words rather than swapping between a titled block and a bare field.
+/// Thin rule with the localized "OR" between the email and phone choices.
+class _OrDivider extends StatelessWidget {
+  const _OrDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Expanded(
+          child: Divider(height: 1, thickness: 1, color: AppColors.border),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text(
+            context.tr('auth.or'),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+        const Expanded(
+          child: Divider(height: 1, thickness: 1, color: AppColors.border),
+        ),
+      ],
+    );
+  }
+}
+
+/// Title and supporting line used by the OTP step.
 class _StepHeading extends StatelessWidget {
   const _StepHeading({required this.title, required this.subtitle});
 
@@ -458,6 +584,37 @@ class _StepHeading extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Small inline error used when neither identifier was filled.
+class _InlineError extends StatelessWidget {
+  const _InlineError({super.key, required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.error_outline, size: 16, color: AppColors.danger),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.danger,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

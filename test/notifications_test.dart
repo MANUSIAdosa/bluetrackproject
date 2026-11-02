@@ -504,11 +504,12 @@ void main() {
       final container = ProviderScope.containerOf(
         tester.element(find.byType(NotificationsPage)),
       );
-      await tester.tap(find.byType(ListTile).first);
+      await tester.tap(find.byKey(const ValueKey('p13-item-n101')));
       await tester.pumpAndSettle();
 
-      // n101 sits first in the list and points at the registered
-      // /my-reports route — the target page is on screen.
+      // n101 points at the registered /my-reports route — the target page is
+      // on screen. It is tapped by key because the newest-first sort can put
+      // n102 (seeded a few microseconds later) above it.
       expect(find.text('Laporanku'), findsOneWidget);
       final list = await container.read(notificationListProvider.future);
       expect(list.firstWhere((i) => i.id == 'n101').read, isTrue);
@@ -554,7 +555,11 @@ void main() {
       );
       expect(find.byType(Dismissible), findsNWidgets(5));
 
-      await tester.drag(find.byType(Dismissible).first, const Offset(-450, 0));
+      // Target n101 by key: the newest-first sort can put n102 above it.
+      await tester.drag(
+        find.byKey(const ValueKey('p13-dismiss-n101')),
+        const Offset(-450, 0),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(Dismissible), findsNWidgets(4));

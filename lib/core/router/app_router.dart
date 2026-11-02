@@ -20,7 +20,8 @@ import '../../features/onboarding/presentation/onboarding_page.dart';
 import '../../features/organization/presentation/org_profile_page.dart';
 import '../../features/profile/presentation/profile_page.dart';
 import '../../features/project/presentation/project_detail_page.dart';
-import '../../features/report/presentation/report_submit_page.dart';
+import '../../features/report_submit/presentation/pages/report_success_page.dart';
+import '../../features/report_submit/presentation/pages/report_wizard_page.dart';
 import '../../features/settings/presentation/settings_page.dart';
 import '../../features/shell/app_shell.dart';
 import '../../features/support/presentation/donation_trace_page.dart';
@@ -146,7 +147,16 @@ GoRouter createRouter({required bool onboardingDone}) {
       GoRoute(
         path: Routes.report,
         parentNavigatorKey: rootKey,
-        builder: (context, state) => const ReportSubmitPage(),
+        builder: (context, state) => ReportWizardPage(
+          // Set by the login round trip so the draft reopens on step 4.
+          autoResume: state.uri.queryParameters['resume'] == '1',
+        ),
+      ),
+      GoRoute(
+        path: Routes.reportSuccess,
+        parentNavigatorKey: rootKey,
+        builder: (context, state) =>
+            ReportSuccessPage(reportId: state.pathParameters['id'] ?? ''),
       ),
       GoRoute(
         path: Routes.myReports,

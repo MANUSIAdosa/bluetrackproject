@@ -159,15 +159,12 @@ class _ExploreFilterSheetState extends State<_ExploreFilterSheet> {
                       helper: context.tr('p03_filter_condition_helper'),
                       children: [
                         _FilterOption(
-                          key: const ValueKey(
-                            'explore.filter.condition.semua',
-                          ),
+                          key: const ValueKey('explore.filter.condition.semua'),
                           label: context.tr('p03_filter_all'),
                           selected: _draft.condition == null,
                           onTap: () => setState(
-                            () => _draft = _draft.copyWith(
-                              clearCondition: true,
-                            ),
+                            () =>
+                                _draft = _draft.copyWith(clearCondition: true),
                           ),
                         ),
                         for (final condition in ProjectCondition.values)
@@ -332,9 +329,7 @@ class _FilterOption extends StatelessWidget {
                 ),
               ),
               Icon(
-                selected
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_off,
+                selected ? Icons.radio_button_checked : Icons.radio_button_off,
                 size: 20,
                 color: selected ? AppColors.ocean : AppColors.inactiveTab,
               ),
@@ -346,9 +341,9 @@ class _FilterOption extends StatelessWidget {
   }
 }
 
-/// Debug-only offline toggle. Flips the app-wide [OfflineController] so the
-/// offline banner and the saved-only list can be demoed without a network
-/// package.
+/// Debug-only offline override. Flips the app-wide [OfflineController] so the
+/// offline banner and the saved-only list can be demoed without disconnecting
+/// the device; the next real connectivity change still updates the controller.
 class _OfflineDebugSwitch extends StatelessWidget {
   const _OfflineDebugSwitch();
 

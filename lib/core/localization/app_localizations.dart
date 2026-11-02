@@ -56,7 +56,7 @@ class AppLocalizations {
       'nav.profile': 'Profil',
       'nav.profile.description':
           'Kelola akun dan pengaturanmu, serta akses proposal, notifikasi, '
-              'dan materi belajar.',
+          'dan materi belajar.',
       'shell.offline': 'Mode offline - menampilkan data tersimpan',
       'shell.notifications': 'Notifikasi',
 
@@ -106,27 +106,24 @@ class AppLocalizations {
       'p01.interests.later': 'Minat bisa diubah kapan saja melalui Profil.',
       'p01.interests.save': 'Simpan minat',
       'p01.interests.saveError': 'Minat belum tersimpan. Coba lagi.',
-      'p01.interests.subtitle':
-          'Kami akan mengurutkan proyek sesuai minatmu.',
+      'p01.interests.subtitle': 'Kami akan mengurutkan proyek sesuai minatmu.',
       'p01.minOne': 'Pilih minimal satu',
 
       // --- Auth (P02) ---
-      // The title lives in the body heading, not the app bar, so there is one
-      // clear anchor per step instead of two competing ones.
-      'auth.email.title': 'Selamat datang kembali',
-      'auth.email.subtitle':
-          'Masuk untuk melihat proyek dan donasi yang Anda dukung.',
+      // The title lives in the body heading, not the app bar. Email and phone
+      // share one page, so the heading is not tied to either field.
+      'auth.title': 'Selamat datang kembali',
+      'auth.subtitle': 'Masuk dengan email atau nomor telepon Anda.',
       'auth.email.label': 'Email',
       'auth.email.hint': 'nama@email.com',
       'auth.email.invalid': 'Format email tidak valid',
-      'auth.phone.title': 'Nomor telepon Anda',
-      'auth.phone.subtitle': 'Kami akan mengirim kode verifikasi ke nomor ini.',
+      'auth.or': 'ATAU',
       'auth.phone.label': 'Nomor telepon',
       'auth.phone.hint': '8123456789',
       'auth.phone.invalid': 'Nomor telepon tidak valid',
-      'auth.sendCode': 'Kirim Kode',
+      'auth.identifier.missing': 'Masukkan email atau nomor telepon.',
       'auth.otp.title': 'Masukkan kode verifikasi',
-      'auth.otp.subtitle': 'Kode dikirim ke {phone}',
+      'auth.otp.subtitle': 'Kode dikirim ke {target}',
       'auth.otp.mismatch': 'Kode tidak cocok',
       'auth.otp.attemptsLeft': 'Sisa percobaan: {n}',
       'auth.otp.locked':
@@ -374,7 +371,9 @@ class AppLocalizations {
 
       // --- Donation (P06, confirmation & result) ---
       'p06_confirm_title': 'Konfirmasi Donasi',
-      'p06_confirm_big_text': '{amount} → 100% ke {project}',
+      'p06_confirm_donation_label': 'DONASI ANDA',
+      'p06_confirm_project_badge': '100% UNTUK PROYEK',
+      'p06_confirm_platform_badge': '100% UNTUK OPERASIONAL PLATFORM',
       'p06_confirm_min_hint': 'Minimal donasi {amount}',
       'p06_confirm_summary_title': 'Ringkasan donasi',
       'p06_confirm_amount': 'Nominal',
@@ -552,6 +551,152 @@ class AppLocalizations {
       // --- Placeholder tab pages ---
       'profile.title': 'Profil',
       'profile.signOut': 'Keluar',
+      'notifications.title': 'Notifikasi',
+      'notifications.donationNews':
+          'Kabar tentang donasimu akan muncul di sini.',
+
+      // --- Report wizard (Lapor Temuan) ---
+      'report_title': 'Lapor Temuan',
+      'report_step_photos': 'Foto',
+      'report_step_location': 'Lokasi',
+      'report_step_type': 'Jenis',
+      'report_step_review': 'Tinjau',
+      'report_photos_title': 'Foto temuan',
+      'report_photos_body': 'Tambahkan 1–3 foto temuanmu.',
+      'report_photo_counter': '{n}/{max} foto',
+      'report_add_photo': 'Tambah Foto',
+      'report_remove_photo': 'Hapus foto',
+      'report_photo_load_error': 'Foto tidak dapat dimuat.',
+      'report_source_title': 'Pilih sumber foto',
+      'report_source_camera': 'Kamera',
+      'report_source_gallery': 'Galeri',
+      'report_max_photos': 'Maksimal {max} foto.',
+      'report_photos_truncated':
+          'Hanya {n} foto ditambahkan karena batas maksimal {max}.',
+      'report_draft_banner': 'Draf tersimpan otomatis.',
+      'report_resume_title': 'Lanjutkan draf?',
+      'report_resume_body':
+          'Kami menemukan draf Lapor Temuan yang belum dikirim.',
+      'report_resume_continue': 'Lanjutkan draf',
+      'report_resume_new': 'Mulai baru',
+      'report_exit_title': 'Simpan draf dan keluar?',
+      'report_exit_body': 'Draf akan tersimpan dan bisa dilanjutkan nanti.',
+      'report_exit_confirm': 'Keluar',
+      'report_back': 'Kembali',
+      'report_coming_soon': 'Segera hadir.',
+      'report_permission_title': 'Izin diperlukan',
+      'report_permission_camera':
+          'Akses kamera ditolak. Izinkan akses kamera di Pengaturan perangkat, '
+          'lalu coba lagi.',
+      'report_permission_gallery':
+          'Akses galeri ditolak. Izinkan akses foto di Pengaturan perangkat, '
+          'lalu coba lagi.',
+      'report_permission_settings_hint':
+          'Buka Pengaturan > Aplikasi > BlueTrack > Izin.',
+      'report_photo_error_title': 'Gagal mengambil foto',
+      'report_photo_unavailable':
+          'Sumber foto tidak tersedia di perangkat ini.',
+      'report_photo_failed': 'Foto tidak dapat diambil. Coba lagi.',
+      'report_permission_dismiss': 'Mengerti',
+      'report_location_title': 'Tandai lokasi temuan',
+      'report_location_body':
+          'Gunakan lokasi saat ini atau ketuk peta untuk menempatkan pin di '
+          'titik temuan.',
+      'report_location_hint': 'Geser pin ke lokasi temuan',
+      'report_location_gps': 'Gunakan lokasi saya',
+      'report_location_gps_loading': 'Mengambil lokasi...',
+      'report_location_card_title': 'Koordinat temuan',
+      'report_location_latitude': 'Lintang',
+      'report_location_longitude': 'Bujur',
+      'report_location_empty_hint':
+          'Ketuk peta atau gunakan lokasi saya untuk mengisi koordinat.',
+      'report_location_error_title': 'Lokasi tidak tersedia',
+      'report_location_permission_denied':
+          'Izin lokasi ditolak. Kamu tetap bisa menandai lokasi manual dengan '
+          'mengetuk peta.',
+      'report_location_permission_denied_forever':
+          'Izin lokasi diblokir. Buka pengaturan untuk mengizinkannya, atau '
+          'tandai lokasi manual di peta.',
+      'report_location_service_disabled': 'Layanan lokasi mati. Aktifkan GPS, atau tandai lokasi manual di peta.',
+      'report_location_timeout':
+          'GPS tidak merespons. Geser pin secara manual di peta.',
+      'report_location_unavailable':
+          'Lokasi tidak dapat diambil. Tandai lokasi manual di peta.',
+      'report_location_manual': 'Tandai manual',
+      'report_location_open_settings': 'Buka pengaturan',
+      'report_location_open_location_settings': 'Buka pengaturan lokasi',
+      'report_location_settings_failed':
+          'Pengaturan tidak dapat dibuka. Tandai lokasi manual di peta.',
+      'report_type_title': 'Jenis temuan',
+      'report_type_category_marine_debris': 'Sampah',
+      'report_type_category_marine_debris_desc':
+          'Sampah plastik atau limbah di sekitar lokasi.',
+      'report_type_category_damaged_reef': 'Terumbu rusak',
+      'report_type_category_damaged_reef_desc':
+          'Karang patah, memutih, atau rusak.',
+      'report_type_category_deforested_mangrove': 'Mangrove',
+      'report_type_category_deforested_mangrove_desc':
+          'Mangrove gundul atau area yang dibuka.',
+      'report_type_category_destructive_fishing': 'Tangkapan merusak',
+      'report_type_category_destructive_fishing_desc':
+          'Alat atau cara tangkap yang merusak.',
+      'report_type_category_affected_wildlife': 'Satwa terdampak',
+      'report_type_category_affected_wildlife_desc':
+          'Satwa laut terluka atau terjerat.',
+      'report_type_severity_title': 'Tingkat',
+      'report_type_severity_low': 'Ringan',
+      'report_type_severity_low_desc':
+          'Kerusakan kecil dan masih bisa pulih sendiri.',
+      'report_type_severity_medium': 'Sedang',
+      'report_type_severity_medium_desc':
+          'Kerusakan cukup luas dan perlu tindakan.',
+      'report_type_severity_high': 'Berat',
+      'report_type_severity_high_desc':
+          'Kerusakan parah dan mendesak ditangani.',
+      'report_type_category_error': 'Pilih jenis temuan terlebih dahulu.',
+      'report_type_severity_error': 'Pilih tingkat temuan terlebih dahulu.',
+      'report_review_title': 'Tinjau laporan',
+      'report_review_subtitle': 'Periksa kembali isianmu sebelum mengirim.',
+      'report_review_photos': 'Foto',
+      'report_review_location': 'Lokasi',
+      'report_review_type': 'Jenis temuan',
+      'report_review_severity': 'Tingkat kerusakan',
+      'report_review_time': 'Waktu',
+      'report_review_edit': 'Ubah',
+      'report_review_empty_value': 'Belum diisi',
+      'report_review_photo_label': 'Perbesar foto {n}',
+      'report_review_verification_note':
+          'Laporan akan diverifikasi sebelum tayang ke publik.',
+      'report_review_login_title': 'Masuk untuk mengirim laporan',
+      'report_review_login_body':
+          'Laporanmu tetap tersimpan. Masuk dulu, lalu kembali ke langkah ini.',
+      'report_submit': 'Kirim Laporan',
+      'report_submit_retry': 'Coba lagi',
+      'report_submit_error_title': 'Gagal mengirim laporan',
+      'report_submit_error_body':
+          'Laporanmu masih tersimpan. Periksa koneksi lalu coba lagi.',
+      'report_submit_offline_title': 'Butuh koneksi internet',
+      'report_submit_offline_body':
+          'Sambungkan perangkat ke internet untuk mengirim laporan.',
+      'report_submit_missing_photos': 'Lengkapi foto temuan terlebih dahulu.',
+      'report_submit_missing_location': 'Tandai lokasi temuan terlebih dahulu.',
+      'report_submit_missing_type':
+          'Pilih jenis dan tingkat temuan terlebih dahulu.',
+      'report_success_title': 'Laporan terkirim',
+      'report_success_body':
+          'Terima kasih. Laporanmu akan diverifikasi sebelum tayang ke publik.',
+      'report_success_coordinates': 'Koordinat',
+      'report_success_number': 'Nomor laporan',
+      'report_success_status': 'Status',
+      'report_success_view_reports': 'Lihat Laporan Saya',
+      'report_success_new_report': 'Buat Laporan Lain',
+      'report_success_not_found': 'Laporan tidak ditemukan di sesi ini.',
+      'report_mine_title': 'Laporan Saya',
+      'report_mine_empty':
+          'Belum ada laporan. Laporan yang kamu kirim akan muncul di sini.',
+      'report_mine_new': 'Buat Laporan',
+      'report_photo_viewer_counter': '{current}/{total}',
+      'report_photo_viewer_close': 'Tutup',
 
       // --- Notifications (P13) ---
       // TODO(P13, minggu 12-13): the list, mark-read and delete flows are fed
@@ -569,11 +714,9 @@ class AppLocalizations {
       'p13.type.locationUpdate': 'Update lokasi',
       'p13.semanticUnread': 'Belum dibaca',
       'p13.delete': 'Hapus',
-      'p13.targetUnavailable':
-          'Halaman tujuan notifikasi ini belum tersedia.',
+      'p13.targetUnavailable': 'Halaman tujuan notifikasi ini belum tersedia.',
       'p13.loginPrompt.title': 'Lacak notifikasi personal',
-      'p13.loginPrompt.body':
-          'Masuk untuk melihat laporan dan aksi yang terkait akunmu. Notifikasi tetap tampil tanpa masuk.',
+      'p13.loginPrompt.body': 'Masuk untuk melihat laporan dan aksi yang terkait akunmu. Notifikasi tetap tampil tanpa masuk.',
     },
     'en': {
       // --- Common ---
@@ -601,7 +744,7 @@ class AppLocalizations {
       'nav.profile': 'Profile',
       'nav.profile.description':
           'Manage your account and settings, and access proposals, '
-              'notifications, and learning materials.',
+          'notifications, and learning materials.',
       'shell.offline': 'Offline mode - showing saved data',
       'shell.notifications': 'Notifications',
 
@@ -645,30 +788,28 @@ class AppLocalizations {
       'p01.start': 'Start',
       'p01.interests.title': 'Pick Your Interests',
       'p01.interests.manage': 'Interest Preferences',
-      'p01.interests.later': 'You can change your interests anytime from Profile.',
+      'p01.interests.later':
+          'You can change your interests anytime from Profile.',
       'p01.interests.save': 'Save interests',
       'p01.interests.saveError': 'Could not save your interests. Try again.',
-      'p01.interests.subtitle':
-          "We'll sort projects to match your interests.",
+      'p01.interests.subtitle': "We'll sort projects to match your interests.",
       'p01.minOne': 'Pick at least one',
 
       // --- Auth (P02) ---
-      // The title lives in the body heading, not the app bar, so there is one
-      // clear anchor per step instead of two competing ones.
-      'auth.email.title': 'Welcome back',
-      'auth.email.subtitle':
-          'Sign in to see the projects and donations you support.',
+      // The title lives in the body heading, not the app bar. Email and phone
+      // share one page, so the heading is not tied to either field.
+      'auth.title': 'Welcome back',
+      'auth.subtitle': 'Sign in with your email or phone number.',
       'auth.email.label': 'Email',
       'auth.email.hint': 'name@email.com',
       'auth.email.invalid': 'Invalid email format',
-      'auth.phone.title': 'Your phone number',
-      'auth.phone.subtitle': "We'll send a verification code to this number.",
+      'auth.or': 'OR',
       'auth.phone.label': 'Phone number',
       'auth.phone.hint': '8123456789',
       'auth.phone.invalid': 'Invalid phone number',
-      'auth.sendCode': 'Send Code',
+      'auth.identifier.missing': 'Enter your email or phone number.',
       'auth.otp.title': 'Enter verification code',
-      'auth.otp.subtitle': 'Code sent to {phone}',
+      'auth.otp.subtitle': 'Code sent to {target}',
       'auth.otp.mismatch': "Code doesn't match",
       'auth.otp.attemptsLeft': 'Attempts left: {n}',
       'auth.otp.locked': 'Too many attempts. Resend the code to continue.',
@@ -912,7 +1053,9 @@ class AppLocalizations {
 
       // --- Donation (P06, confirmation & result) ---
       'p06_confirm_title': 'Confirm Donation',
-      'p06_confirm_big_text': '{amount} → 100% to {project}',
+      'p06_confirm_donation_label': 'YOUR DONATION',
+      'p06_confirm_project_badge': '100% GOES TO THE PROJECT',
+      'p06_confirm_platform_badge': '100% GOES TO PLATFORM OPERATIONS',
       'p06_confirm_min_hint': 'Minimum donation {amount}',
       'p06_confirm_summary_title': 'Donation summary',
       'p06_confirm_amount': 'Amount',
@@ -1091,6 +1234,153 @@ class AppLocalizations {
       // --- Placeholder tab pages ---
       'profile.title': 'Profile',
       'profile.signOut': 'Sign out',
+      'notifications.title': 'Notifications',
+      'notifications.donationNews':
+          'News about your donations will appear here.',
+
+      // --- Report wizard (Lapor Temuan) ---
+      'report_title': 'Report a Finding',
+      'report_step_photos': 'Photo',
+      'report_step_location': 'Location',
+      'report_step_type': 'Type',
+      'report_step_review': 'Review',
+      'report_photos_title': 'Photos of the finding',
+      'report_photos_body': 'Add 1–3 photos of your finding.',
+      'report_photo_counter': '{n}/{max} photos',
+      'report_add_photo': 'Add Photo',
+      'report_remove_photo': 'Remove photo',
+      'report_photo_load_error': 'The photo could not be loaded.',
+      'report_source_title': 'Choose a photo source',
+      'report_source_camera': 'Camera',
+      'report_source_gallery': 'Gallery',
+      'report_max_photos': 'Maximum {max} photos.',
+      'report_photos_truncated':
+          'Only {n} photo(s) added because the limit is {max}.',
+      'report_draft_banner': 'Draft saved automatically.',
+      'report_resume_title': 'Resume draft?',
+      'report_resume_body':
+          'We found a Report a Finding draft you have not sent.',
+      'report_resume_continue': 'Resume draft',
+      'report_resume_new': 'Start new',
+      'report_exit_title': 'Save the draft and leave?',
+      'report_exit_body': 'The draft will be saved and you can continue later.',
+      'report_exit_confirm': 'Leave',
+      'report_back': 'Back',
+      'report_coming_soon': 'Coming soon.',
+      'report_permission_title': 'Permission required',
+      'report_permission_camera':
+          'Camera access was denied. Allow camera access in your device '
+          'Settings, then try again.',
+      'report_permission_gallery':
+          'Gallery access was denied. Allow photo access in your device '
+          'Settings, then try again.',
+      'report_permission_settings_hint':
+          'Open Settings > Apps > BlueTrack > Permissions.',
+      'report_photo_error_title': 'Could not take photo',
+      'report_photo_unavailable':
+          'The photo source is not available on this device.',
+      'report_photo_failed': 'The photo could not be taken. Try again.',
+      'report_permission_dismiss': 'Got it',
+      'report_location_title': 'Mark the finding location',
+      'report_location_body':
+          'Use your current location or tap the map to place a pin on the '
+          'finding.',
+      'report_location_hint': 'Drag the pin to the finding location',
+      'report_location_gps': 'Use my location',
+      'report_location_gps_loading': 'Getting location...',
+      'report_location_card_title': 'Finding coordinates',
+      'report_location_latitude': 'Latitude',
+      'report_location_longitude': 'Longitude',
+      'report_location_empty_hint':
+          'Tap the map or use my location to fill in the coordinates.',
+      'report_location_error_title': 'Location unavailable',
+      'report_location_permission_denied':
+          'Location permission was denied. You can still mark the location '
+          'manually by tapping the map.',
+      'report_location_permission_denied_forever':
+          'Location permission is blocked. Open settings to allow it, or mark '
+          'the location manually on the map.',
+      'report_location_service_disabled':
+          'Location services are off. Turn on GPS, or mark the location '
+          'manually on the map.',
+      'report_location_timeout':
+          'GPS is not responding. Drag the pin manually on the map.',
+      'report_location_unavailable':
+          'The location could not be retrieved. Mark it manually on the map.',
+      'report_location_manual': 'Mark manually',
+      'report_location_open_settings': 'Open settings',
+      'report_location_open_location_settings': 'Open location settings',
+      'report_location_settings_failed': 'Settings could not be opened. Mark the location manually on the map.',
+      'report_type_title': 'Finding type',
+      'report_type_category_marine_debris': 'Debris',
+      'report_type_category_marine_debris_desc':
+          'Plastic or other waste around the site.',
+      'report_type_category_damaged_reef': 'Damaged reef',
+      'report_type_category_damaged_reef_desc':
+          'Broken, bleached, or damaged coral.',
+      'report_type_category_deforested_mangrove': 'Mangrove',
+      'report_type_category_deforested_mangrove_desc':
+          'Cleared or bare mangrove area.',
+      'report_type_category_destructive_fishing': 'Destructive fishing',
+      'report_type_category_destructive_fishing_desc':
+          'Damaging gear or fishing method.',
+      'report_type_category_affected_wildlife': 'Affected wildlife',
+      'report_type_category_affected_wildlife_desc':
+          'Injured or entangled marine wildlife.',
+      'report_type_severity_title': 'Severity',
+      'report_type_severity_low': 'Minor',
+      'report_type_severity_low_desc':
+          'Small damage that can recover on its own.',
+      'report_type_severity_medium': 'Moderate',
+      'report_type_severity_medium_desc':
+          'Moderate damage that needs intervention.',
+      'report_type_severity_high': 'Severe',
+      'report_type_severity_high_desc':
+          'Severe damage that needs urgent action.',
+      'report_type_category_error': 'Choose a finding type first.',
+      'report_type_severity_error': 'Choose a severity level first.',
+      'report_review_title': 'Review report',
+      'report_review_subtitle': 'Check your answers before sending.',
+      'report_review_photos': 'Photos',
+      'report_review_location': 'Location',
+      'report_review_type': 'Finding type',
+      'report_review_severity': 'Damage severity',
+      'report_review_time': 'Time',
+      'report_review_edit': 'Edit',
+      'report_review_empty_value': 'Not set',
+      'report_review_photo_label': 'Enlarge photo {n}',
+      'report_review_verification_note':
+          'The report will be verified before it is published.',
+      'report_review_login_title': 'Sign in to send the report',
+      'report_review_login_body':
+          'Your report is kept. Sign in first, then come back to this step.',
+      'report_submit': 'Send Report',
+      'report_submit_retry': 'Try again',
+      'report_submit_error_title': 'Could not send the report',
+      'report_submit_error_body':
+          'Your report is still saved. Check your connection and try again.',
+      'report_submit_offline_title': 'Internet connection required',
+      'report_submit_offline_body':
+          'Connect the device to the internet to send the report.',
+      'report_submit_missing_photos': 'Add the finding photo first.',
+      'report_submit_missing_location': 'Mark the finding location first.',
+      'report_submit_missing_type':
+          'Choose the finding type and severity first.',
+      'report_success_title': 'Report sent',
+      'report_success_body':
+          'Thank you. Your report will be verified before it is published.',
+      'report_success_coordinates': 'Coordinates',
+      'report_success_number': 'Report number',
+      'report_success_status': 'Status',
+      'report_success_view_reports': 'View My Reports',
+      'report_success_new_report': 'Create Another Report',
+      'report_success_not_found':
+          'This report is no longer available in this session.',
+      'report_mine_title': 'My Reports',
+      'report_mine_empty': 'No reports yet. Reports you send will appear here.',
+      'report_mine_new': 'Create Report',
+      'report_photo_viewer_counter': '{current}/{total}',
+      'report_photo_viewer_close': 'Close',
 
       // --- Notifications (P13) ---
       // TODO(P13, minggu 12-13): the list, mark-read and delete flows are fed
@@ -1111,8 +1401,7 @@ class AppLocalizations {
       'p13.targetUnavailable':
           "This notification's target page is not available yet.",
       'p13.loginPrompt.title': 'Track personal notifications',
-      'p13.loginPrompt.body':
-          'Sign in to see reports and actions linked to your account. Notifications stay visible without signing in.',
+      'p13.loginPrompt.body': 'Sign in to see reports and actions linked to your account. Notifications stay visible without signing in.',
     },
   };
 }
