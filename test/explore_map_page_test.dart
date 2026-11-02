@@ -171,6 +171,36 @@ void main() {
     expect(find.byKey(const ValueKey('explore.marker.p01')), findsOneWidget);
   });
 
+  testWidgets('map mode offers one compact category control', (tester) async {
+    await pumpExplore(tester, projects: FakeProjectRepository(_twoProjects()));
+
+    // The chip is a map-mode replacement for the rail, never a second control
+    // beside it.
+    expect(find.byKey(const ValueKey('explore.mapCategoryChip')), findsNothing);
+
+    await tapKey(tester, 'explore.view.map');
+
+    expect(find.byType(CategorySelector), findsNothing);
+    expect(
+      find.byKey(const ValueKey('explore.mapCategoryChip')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('explore.mapCategoryChip')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('explore.categoryPicker')), findsOneWidget);
+
+    await tester.tap(
+      find.byKey(const ValueKey('explore.categoryPicker.karang')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('explore.marker.p02')), findsOneWidget);
+    expect(find.byKey(const ValueKey('explore.marker.p01')), findsNothing);
+    expect(find.text('Karang'), findsOneWidget);
+  });
+
   testWidgets('the condition filter narrows the map markers as well', (
     tester,
   ) async {

@@ -23,7 +23,6 @@ Future<void> openSheet(
             onResult(
               await showExploreFilterSheet(
                 context,
-                categoryIds: const ['semua', 'penyu', 'karang'],
                 selection: ExploreFilterSelection(
                   category: category,
                   distance: distance,
@@ -53,16 +52,22 @@ Future<void> tapOption(WidgetTester tester, String key) async {
 }
 
 void main() {
-  testWidgets('the sheet groups the filters into labelled dimensions', (
+  testWidgets('the sheet owns distance and condition, not the category rail', (
     tester,
   ) async {
     await openSheet(tester, onResult: (_) {});
 
     expect(find.byKey(const ValueKey('explore.filter.sheet')), findsOneWidget);
     expect(find.text('Filter'), findsOneWidget);
-    expect(find.text('Kategori'), findsOneWidget);
     expect(find.text('Jarak'), findsOneWidget);
     expect(find.text('Status kondisi'), findsOneWidget);
+    // Category has one control: the rail on the page. Repeating it here made
+    // two entry points for the same state.
+    expect(find.text('Kategori'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('explore.filter.category.penyu')),
+      findsNothing,
+    );
     expect(find.text('Atur ulang'), findsOneWidget);
     expect(find.byKey(const ValueKey('explore.filter.apply')), findsOneWidget);
     // A filter sheet uses radio options, not chips.
@@ -125,7 +130,7 @@ void main() {
     expect(find.text('Tampilkan 1 proyek'), findsOneWidget);
   });
 
-  testWidgets('reset clears every group without closing the sheet', (
+  testWidgets('reset clears the sheet filters but keeps the rail category', (
     tester,
   ) async {
     ExploreFilterSelection? result;
@@ -148,7 +153,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(result, isNotNull);
-    expect(result!.category, 'semua');
+    // Reset only touches what the sheet owns. Changing the category from here
+    // would make the rail jump without the user touching it.
+    expect(result!.category, 'penyu');
     expect(result!.distance, DistanceBand.semua);
     expect(result!.condition, isNull);
   });
@@ -163,12 +170,11 @@ void main() {
     expect(result, isNull);
   });
 
-  testWidgets('active filter count ignores the default "Semua" values', (
-    tester,
-  ) async {
+  testWidgets('the filter badge counts only the sheet filters', (tester) async {
+    // Category is chosen on the rail, so it never inflates the filter badge.
     expect(
       const ExploreFilterSelection(
-        category: 'semua',
+        category: 'penyu',
         distance: DistanceBand.semua,
       ).activeCount,
       0,
@@ -176,7 +182,7 @@ void main() {
     expect(
       const ExploreFilterSelection(
         category: 'penyu',
-        distance: DistanceBand.semua,
+        distance: DistanceBand.jauh,
       ).activeCount,
       1,
     );
@@ -186,7 +192,7 @@ void main() {
         distance: DistanceBand.jauh,
         condition: ProjectCondition.kritis,
       ).activeCount,
-      3,
+      2,
     );
   });
 

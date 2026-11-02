@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/state/app_state.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../shared/widgets/category_icon.dart';
 import '../../domain/explore_map_data.dart';
 import 'condition_label.dart';
 
@@ -25,12 +24,20 @@ class ExploreFilterSelection {
 
   static const ExploreFilterSelection none = ExploreFilterSelection();
 
-  /// Number of groups that are narrowing the results — badged on the filter
-  /// button so an active filter is visible without opening the sheet.
+  /// Number of sheet filters that are narrowing the results — badged on the
+  /// filter button. Category is not included: it lives on the rail, not in the
+  /// sheet, so counting it would light up a badge with nothing to clear there.
   int get activeCount =>
-      (category == 'semua' ? 0 : 1) +
-      (distance == DistanceBand.semua ? 0 : 1) +
-      (condition == null ? 0 : 1);
+      (distance == DistanceBand.semua ? 0 : 1) + (condition == null ? 0 : 1);
+
+  /// Whether any dimension narrows the list, including the rail category. The
+  /// active-filter tokens use this so a category-only selection still shows.
+  bool get hasAny => category != 'semua' || activeCount > 0;
+
+  /// The same selection with the sheet-owned filters cleared. Reset inside the
+  /// sheet must not change the category the user picked on the rail.
+  ExploreFilterSelection get withoutRefinements =>
+      ExploreFilterSelection(category: category);
 
   ExploreFilterSelection copyWith({
     String? category,
@@ -52,7 +59,6 @@ class ExploreFilterSelection {
 /// never duplicates the filtering rules.
 Future<ExploreFilterSelection?> showExploreFilterSheet(
   BuildContext context, {
-  required List<String> categoryIds,
   required ExploreFilterSelection selection,
   required String userLocationLabel,
   int Function(ExploreFilterSelection draft)? countFor,
@@ -62,7 +68,6 @@ Future<ExploreFilterSelection?> showExploreFilterSheet(
   showDragHandle: true,
   backgroundColor: AppColors.surface,
   builder: (_) => _ExploreFilterSheet(
-    categoryIds: categoryIds,
     selection: selection,
     userLocationLabel: userLocationLabel,
     countFor: countFor,
@@ -71,13 +76,11 @@ Future<ExploreFilterSelection?> showExploreFilterSheet(
 
 class _ExploreFilterSheet extends StatefulWidget {
   const _ExploreFilterSheet({
-    required this.categoryIds,
     required this.selection,
     required this.userLocationLabel,
     this.countFor,
   });
 
-  final List<String> categoryIds;
   final ExploreFilterSelection selection;
   final String userLocationLabel;
   final int Function(ExploreFilterSelection draft)? countFor;
@@ -132,28 +135,6 @@ class _ExploreFilterSheetState extends State<_ExploreFilterSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _FilterGroup(
-                      title: context.tr('p03_filter_category'),
-                      helper: context.tr('p03_filter_category_helper'),
-                      children: [
-                        for (final id in widget.categoryIds)
-                          _FilterOption(
-                            key: ValueKey('explore.filter.category.$id'),
-                            label: context.tr('cat.$id'),
-                            selected: _draft.category == id,
-                            leading: id == 'semua'
-                                ? const Icon(
-                                    Icons.grid_view_rounded,
-                                    size: 18,
-                                    color: AppColors.ocean,
-                                  )
-                                : CategoryIcon(category: id, size: 18),
-                            onTap: () => setState(
-                              () => _draft = _draft.copyWith(category: id),
-                            ),
-                          ),
-                      ],
-                    ),
                     _FilterGroup(
                       title: context.tr('p03_filter_distance'),
                       helper: context.tr('p03_distance_reference', {
@@ -223,8 +204,9 @@ class _ExploreFilterSheetState extends State<_ExploreFilterSheet> {
                     flex: 3,
                     child: OutlinedButton(
                       key: const ValueKey('explore.filter.reset'),
-                      onPressed: () =>
-                          setState(() => _draft = ExploreFilterSelection.none),
+                      onPressed: () => setState(
+                        () => _draft = _draft.withoutRefinements,
+                      ),
                       child: Text(context.tr('p03_filter_reset')),
                     ),
                   ),
@@ -318,13 +300,11 @@ class _FilterOption extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
-    this.leading,
   });
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  final Widget? leading;
 
   @override
   Widget build(BuildContext context) {
@@ -338,7 +318,6 @@ class _FilterOption extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
           child: Row(
             children: [
-              if (leading != null) ...[leading!, const SizedBox(width: 10)],
               Expanded(
                 child: Text(
                   label,

@@ -59,12 +59,15 @@ Routes: P00 ShellRoute; `/onboarding`, `/auth`, `/explore` (`?view=map`), `/proj
 - **Mock data only — no backend.** Data comes from repository interfaces with mock implementations (JSON under `assets/mock/`) so a real API can later replace mocks without UI rewrites. Never change framework or add a backend without permission.
 - Dependencies allowed where appropriate: `go_router`/`StatefulShellRoute`, `shared_preferences`, `flutter_secure_storage`, `flutter_form_builder`, `Hive` (saved projects). No unnecessary dependencies.
 
-## 6. Repository state (verified 2026-10-01)
+## 6. Repository state (verified 2026-11-02)
 
-- Bare Flutter starter: only `lib/main.dart` (Hello World `MaterialApp`). No `test/`, no `assets/`, no `lib/` structure yet, default README. Git remote: `MANUSIAdosa/bluetrackproject`.
+- Implemented Flutter app, not a starter: feature-oriented `lib/` tree, `assets/mock/` JSON plus report photos, 38 Dart test files, Android + web targets. Git remote: `MANUSIAdosa/bluetrackproject`.
 - Flutter 3.47.5 stable / Dart 3.13.4 (matches `pubspec.yaml` `sdk: ^3.13.4`); `flutter_lints ^6.0.0`; `analysis_options.yaml` excludes `build/`, `android/`, `web/`.
-- None of the spec'd packages are installed yet.
-- **Gotcha:** adding `assets/mock/` requires declaring it under `flutter: assets:` in `pubspec.yaml` + `flutter pub get`, or asset loads fail.
+- Installed: `go_router`, `flutter_riverpod`, `shared_preferences`, `flutter_secure_storage`, `hive`/`hive_flutter`, `flutter_map`, `latlong2`, `geolocator`, `fl_chart`, `lottie`, `video_player`, `cached_network_image`, `image_picker`, `flutter_form_builder`, `pdf`/`printing`, `intl`, `flutter_localizations`.
+- Assets: `assets/mock/`, `assets/images/interests/`, Plus Jakarta Sans under `assets/fonts/`; all declared in `pubspec.yaml`.
+- `flutter analyze` is clean. Full `flutter test` has 2 known failures in `test/notifications_test.dart` (mark-read-then-navigate and swipe-delete); treat them as pre-existing until fixed.
+- **Route/nav drift vs §§3–4 (needs product-owner confirmation):** the implemented bottom nav is Jelajahi (`/explore`), **Aksi** (`/actions`), Dampakku (`/impact`), Profil (`/profile`); Aksi replaced Transparansi. `transparency_page.dart` exists but `/transparency` is not registered. Release 2 `/grants` routes and the Hibah tab are not registered (`AppConfig.isRelease2 == false`). Router/shell mark these names provisional with `TODO(P00-part-2)`.
+- **Gotcha:** adding an asset directory (e.g. `assets/mock/`) requires declaring it under `flutter: assets:` in `pubspec.yaml` + `flutter pub get`, or asset loads fail.
 
 ## 7. Mandatory workflow per request
 

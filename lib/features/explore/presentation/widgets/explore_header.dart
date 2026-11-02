@@ -8,12 +8,12 @@ import '../../domain/explore_map_data.dart';
 import 'condition_label.dart';
 import 'filter_sheet.dart';
 
-/// Compact gradient header of Jelajahi: identity, search, filter and the
-/// list/map action.
+/// Compact gradient header of Jelajahi: identity, saved scope, search and
+/// filter.
 ///
-/// The header is intentionally short: search, filter and the view toggle are
-/// primary actions and stay reachable, while the category rail and active
-/// filter tokens live in the scrollable list so they never eat the viewport.
+/// The header is intentionally short: saved, search and filter are primary
+/// actions and stay reachable, while the view switch, category rail and active
+/// filter tokens live below it so they never eat the viewport.
 class ExploreHeader extends StatelessWidget {
   const ExploreHeader({
     super.key,
@@ -23,8 +23,9 @@ class ExploreHeader extends StatelessWidget {
     required this.onClearQuery,
     required this.filterActiveCount,
     required this.onFilterPressed,
-    required this.mapMode,
-    required this.onViewChanged,
+    required this.saved,
+    required this.savedCount,
+    required this.onSavedChanged,
   });
 
   final TextEditingController searchController;
@@ -33,8 +34,9 @@ class ExploreHeader extends StatelessWidget {
   final VoidCallback onClearQuery;
   final int filterActiveCount;
   final VoidCallback onFilterPressed;
-  final bool mapMode;
-  final ValueChanged<bool> onViewChanged;
+  final bool saved;
+  final int savedCount;
+  final ValueChanged<bool> onSavedChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -68,11 +70,12 @@ class ExploreHeader extends StatelessWidget {
                       ),
                     ),
                   ),
-                  _ViewModeButton(
-                    mapMode: mapMode,
-                    onChanged: onViewChanged,
+                  SavedScopeButton(
+                    saved: saved,
+                    savedCount: savedCount,
+                    onChanged: onSavedChanged,
                   ),
-                  const SizedBox(width: 2),
+                  const SizedBox(width: 8),
                   const NotificationBell(color: Colors.white),
                 ],
               ),
@@ -134,35 +137,93 @@ class ExploreHeader extends StatelessWidget {
   }
 }
 
-/// One action that switches to the other view. Showing the destination (map
-/// when in list mode, list when on the map) keeps the header to a single
-/// button instead of a second segmented control.
-class _ViewModeButton extends StatelessWidget {
-  const _ViewModeButton({required this.mapMode, required this.onChanged});
+/// Compact two-segment control that shows both views and which one is active.
+///
+/// The results line owns it: the switch sits next to the count it affects.
+/// Icons keep the bar slim; tooltips and semantics carry the labels.
+class ExploreViewSwitch extends StatelessWidget {
+  const ExploreViewSwitch({
+    super.key,
+    required this.mapMode,
+    required this.onChanged,
+  });
 
   final bool mapMode;
   final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final nextMap = !mapMode;
-
-    return IconButton(
-      key: ValueKey(nextMap ? 'explore.view.map' : 'explore.view.list'),
-      tooltip: context.tr(nextMap ? 'explore.viewMap' : 'explore.viewList'),
-      icon: Icon(
-        nextMap ? Icons.map_outlined : Icons.view_agenda_outlined,
-        color: Colors.white,
+    return Container(
+      height: 46,
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(14),
       ),
-      style: IconButton.styleFrom(
-        backgroundColor: Colors.white.withValues(alpha: 0.14),
-        minimumSize: const Size.square(44),
-        maximumSize: const Size.square(44),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _ViewSegment(
+            key: const ValueKey('explore.view.list'),
+            icon: Icons.view_agenda_outlined,
+            label: context.tr('explore.viewList'),
+            selected: !mapMode,
+            onTap: () => onChanged(false),
+          ),
+          _ViewSegment(
+            key: const ValueKey('explore.view.map'),
+            icon: Icons.map_outlined,
+            label: context.tr('explore.viewMap'),
+            selected: mapMode,
+            onTap: () => onChanged(true),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ViewSegment extends StatelessWidget {
+  const _ViewSegment({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = selected ? Colors.white : AppColors.textSecondary;
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: Material(
+          color: selected ? AppColors.ocean : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: onTap,
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: Center(
+                child: Icon(icon, size: 20, color: foreground),
+              ),
+            ),
+          ),
         ),
       ),
-      onPressed: () => onChanged(nextMap),
     );
   }
 }
@@ -212,12 +273,13 @@ class FilterButton extends StatelessWidget {
   }
 }
 
-/// Jelajahi / Tersimpan — two contexts, not two filters.
+/// Saved scope as a compact header action: bookmark + count.
 ///
-/// The saved collection is a personal scope, so it gets its own switch instead
-/// of sharing the category row or the filter sheet.
-class ExploreScopeSwitch extends StatelessWidget {
-  const ExploreScopeSwitch({
+/// At rest the button is transparent so it sits directly on the header
+/// gradient, exactly like the notification bell. Only the active state fills
+/// white: that fill is the toggle's state cue, not a second surface.
+class SavedScopeButton extends StatelessWidget {
+  const SavedScopeButton({
     super.key,
     required this.saved,
     required this.savedCount,
@@ -230,112 +292,45 @@ class ExploreScopeSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _ScopeTab(
-              key: const ValueKey('explore.scope.explore'),
-              icon: Icons.explore_outlined,
-              label: context.tr('p03_scope_explore'),
-              selected: !saved,
-              onTap: () => onChanged(false),
-            ),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: _ScopeTab(
-              key: const ValueKey('explore.scope.saved'),
-              icon: Icons.bookmark_outline,
-              label: context.tr('p03_scope_saved'),
-              count: savedCount,
-              selected: saved,
-              onTap: () => onChanged(true),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ScopeTab extends StatelessWidget {
-  const _ScopeTab({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    this.count,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  final int? count;
-
-  @override
-  Widget build(BuildContext context) {
-    final foreground = selected ? Colors.white : AppColors.textSecondary;
+    final foreground = saved ? AppColors.ocean : Colors.white;
+    final background = saved ? AppColors.surface : Colors.transparent;
 
     return Semantics(
       button: true,
-      selected: selected,
-      label: label,
-      child: Material(
-        color: selected ? AppColors.ocean : Colors.transparent,
-        borderRadius: BorderRadius.circular(13),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(13),
-          onTap: onTap,
-          child: SizedBox(
-            height: 46,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
+      toggled: saved,
+      label: context.tr('p03_scope_saved'),
+      child: Tooltip(
+        message: context.tr('p03_scope_saved'),
+        child: Material(
+          color: background,
+          borderRadius: BorderRadius.circular(14),
+          child: InkWell(
+            key: const ValueKey('explore.scope.saved'),
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => onChanged(!saved),
+            child: Container(
+              height: 48,
+              constraints: const BoxConstraints(minWidth: 48),
+              padding: EdgeInsets.symmetric(
+                horizontal: savedCount > 0 ? 10 : 0,
+              ),
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(icon, size: 18, color: foreground),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: foreground,
-                      ),
-                    ),
+                  Icon(
+                    saved ? Icons.bookmark : Icons.bookmark_outline,
+                    size: 20,
+                    color: foreground,
                   ),
-                  if (count != null && count! > 0) ...[
+                  if (savedCount > 0) ...[
                     const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? Colors.white.withValues(alpha: 0.22)
-                            : AppColors.ocean.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        '$count',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: selected ? Colors.white : AppColors.ocean,
-                        ),
+                    Text(
+                      '$savedCount',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: foreground,
                       ),
                     ),
                   ],
@@ -636,25 +631,117 @@ class _FilterToken extends StatelessWidget {
   }
 }
 
-/// Slim result count above the list. It stays fixed so the effect of a filter
-/// is visible while scrolling; the view toggle lives in the header.
+/// Slim result line above the list. It stays fixed so the effect of a filter is
+/// visible while scrolling.
+///
+/// The line owns the view switch: `Daftar | Peta` sits next to the count it
+/// controls, so the user never has to look back up at the header. In map mode
+/// the rail is hidden, so [categoryId] adds a compact chip that opens the
+/// category picker. List mode passes null: the rail is right there, and showing
+/// both would be the duplication this layout removed.
 class ExploreResultsBar extends StatelessWidget {
-  const ExploreResultsBar({super.key, required this.count});
+  const ExploreResultsBar({
+    super.key,
+    required this.count,
+    required this.mapMode,
+    required this.onViewChanged,
+    this.categoryId,
+    this.onCategoryPressed,
+  });
 
   final int count;
+  final bool mapMode;
+  final ValueChanged<bool> onViewChanged;
+  final String? categoryId;
+  final VoidCallback? onCategoryPressed;
 
   @override
   Widget build(BuildContext context) {
+    final showCategory =
+        mapMode && categoryId != null && onCategoryPressed != null;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
-      child: Text(
-        '${context.tr('explore.projects')} · $count',
-        key: const ValueKey('explore.resultsCount'),
-        style: const TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w800,
-          color: AppColors.textPrimary,
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  key: const ValueKey('explore.resultsCount'),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.ocean.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${context.tr('explore.projects')} · $count',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ocean,
+                    ),
+                  ),
+                ),
+                if (showCategory) ...[
+                  const SizedBox(width: 8),
+                  // The chip gets the whole leftover width instead of sharing
+                  // it with the spacer, so its label is not ellipsized on a
+                  // phone even when the view switch is beside it.
+                  Flexible(
+                    child: _MapCategoryChip(
+                      categoryId: categoryId!,
+                      onPressed: onCategoryPressed!,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          ExploreViewSwitch(mapMode: mapMode, onChanged: onViewChanged),
+        ],
+      ),
+    );
+  }
+}
+
+class _MapCategoryChip extends StatelessWidget {
+  const _MapCategoryChip({required this.categoryId, required this.onPressed});
+
+  final String categoryId;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final all = categoryId == 'semua';
+    final label = all
+        ? context.tr('p03_category_label')
+        : context.tr('cat.$categoryId');
+
+    return Tooltip(
+      message: context.tr('p03_category_label'),
+      child: ActionChip(
+        key: const ValueKey('explore.mapCategoryChip'),
+        avatar: Icon(
+          all ? Icons.grid_view_rounded : CategoryIcons.iconFor(categoryId),
+          size: 16,
+          color: AppColors.ocean,
         ),
+        label: Text(label),
+        labelStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: AppColors.ocean,
+        ),
+        visualDensity: VisualDensity.compact,
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        side: const BorderSide(color: AppColors.border),
+        backgroundColor: AppColors.surface,
+        onPressed: onPressed,
       ),
     );
   }

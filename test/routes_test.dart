@@ -93,7 +93,7 @@ void main() {
   );
 
   testWidgets(
-    'dynamic parameters reach the right placeholder, in order',
+    'detail routes open the right page, in order',
     (tester) async {
       await pumpApp(tester, onboardingDone: true);
 
@@ -108,7 +108,9 @@ void main() {
       await navigation(tester, routerContextOf(tester, ActionDetailPage),
           '/support/trace/don-77');
       expect(find.byType(DonationTracePage), findsOneWidget);
-      expect(find.text('donationId: don-77'), findsOneWidget);
+      // P08 is a real screen now, so it no longer echoes placeholder
+      // parameters; the previous page's parameter must still be gone.
+      expect(find.text('donationId: don-77'), findsNothing);
       expect(find.text('id: aksi-001'), findsNothing);
     },
   );
