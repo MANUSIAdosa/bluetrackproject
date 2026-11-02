@@ -87,6 +87,34 @@ class DonationTrace {
     return null;
   }
 
+  /// Bridges a donation created by the P06 flow into the public trace model.
+  ///
+  /// The P06 mock keeps its donation in memory, so its id never appears in
+  /// `donation_trace.json`. Only the `received` milestone is known for a
+  /// successful donation; the later milestones stay pending until the mock
+  /// provides evidence for them.
+  factory DonationTrace.fromDonation(Donation donation) {
+    return DonationTrace(
+      id: donation.id,
+      projectId: donation.projectId,
+      projectTitle: donation.projectName,
+      organization: donation.orgName,
+      amount: donation.amount,
+      donatedAt: donation.createdAt,
+      receiptNumber: donation.receiptNumber,
+      paymentMethod: donation.paymentMethod,
+      status: donation.status,
+      steps: donation.status == DonationStatus.success
+          ? [
+              DonationTraceStep(
+                type: DonationTraceStepType.received,
+                at: donation.createdAt,
+              ),
+            ]
+          : const [],
+    );
+  }
+
   factory DonationTrace.fromJson(Map<String, dynamic> json) {
     final steps = <DonationTraceStep>[];
     for (final raw in (json['steps'] as List<dynamic>? ?? const [])) {

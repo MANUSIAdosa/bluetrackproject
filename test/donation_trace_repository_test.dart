@@ -1,3 +1,4 @@
+import 'package:blue_track/features/donation/data/donation_repositories.dart';
 import 'package:blue_track/features/donation/domain/donation.dart';
 import 'package:blue_track/features/support/data/donation_trace_repository.dart';
 import 'package:blue_track/features/support/domain/donation_trace.dart';
@@ -63,5 +64,37 @@ void main() {
     final failed = await repository.getById('don-1005');
     expect(failed!.status, DonationStatus.failed);
     expect(failed.steps, isEmpty);
+  });
+
+  test('resolves a donation created by the P06 flow', () async {
+    addTearDown(DonationMemoryStore.reset);
+
+    final donation = DonationMemoryStore.create(
+      draft: const DonationDraft(
+        projectId: 'p01',
+        amount: 100000,
+        frequency: DonationFrequency.once,
+        projectName: 'Peneluruhan Penyu di Pantai Sukamade',
+        orgName: 'Yayasan Laut Biru',
+        paymentMethod: PaymentMethod.virtualAccount,
+      ),
+      projectName: 'Peneluruhan Penyu di Pantai Sukamade',
+      orgName: 'Yayasan Laut Biru',
+    );
+    DonationMemoryStore.updateStatus(donation.id, DonationStatus.success);
+
+    final trace = await MockDonationTraceRepository().getById(donation.id);
+
+    expect(trace, isNotNull);
+    expect(trace!.id, donation.id);
+    expect(trace.projectId, 'p01');
+    expect(trace.projectTitle, 'Peneluruhan Penyu di Pantai Sukamade');
+    expect(trace.organization, 'Yayasan Laut Biru');
+    expect(trace.amount, 100000);
+    expect(trace.receiptNumber, donation.receiptNumber);
+    expect(trace.paymentMethod, PaymentMethod.virtualAccount);
+    expect(trace.status, DonationStatus.success);
+    expect(trace.stepFor(DonationTraceStepType.received), isNotNull);
+    expect(trace.steps.length, 1);
   });
 }

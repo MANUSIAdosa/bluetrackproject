@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart' show rootBundle;
 
+import '../../donation/data/donation_repositories.dart';
 import '../domain/donation_trace.dart';
 
 /// Data source contract for P08 donation traces.
@@ -35,6 +36,14 @@ class MockDonationTraceRepository implements DonationTraceRepository {
     final donations = await _ensureLoaded();
     for (final donation in donations) {
       if (donation.id == donationId) return donation;
+    }
+
+    // P06 keeps its created donations in memory, not in the JSON asset. The
+    // result screen links here with that runtime id, so bridge it instead of
+    // showing "Donasi tidak ditemukan".
+    final runtimeDonation = DonationMemoryStore.get(donationId);
+    if (runtimeDonation != null) {
+      return DonationTrace.fromDonation(runtimeDonation);
     }
     return null;
   }
