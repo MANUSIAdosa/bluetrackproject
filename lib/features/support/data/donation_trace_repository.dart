@@ -12,7 +12,7 @@ abstract interface class DonationTraceRepository {
   Future<DonationTrace?> getById(String donationId);
 }
 
-/// Mock implementation reading `assets/mock/donations.json`.
+/// Mock implementation reading `assets/mock/donation_trace.json`.
 class MockDonationTraceRepository implements DonationTraceRepository {
   MockDonationTraceRepository();
 
@@ -20,7 +20,7 @@ class MockDonationTraceRepository implements DonationTraceRepository {
   MockDonationTraceRepository.withDonations(List<DonationTrace> donations)
     : _donations = List.of(donations);
 
-  static const _asset = 'assets/mock/donations.json';
+  static const _asset = 'assets/mock/donation_trace.json';
 
   List<DonationTrace>? _donations;
 

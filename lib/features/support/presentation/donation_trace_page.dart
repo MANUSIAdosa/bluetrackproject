@@ -11,12 +11,15 @@ import '../../../shared/widgets/error_state.dart';
 import '../../../shared/widgets/skeleton.dart';
 import '../data/donation_trace_repository.dart';
 import '../domain/donation_trace.dart';
+import 'widgets/e_receipt_card.dart';
+import 'widgets/proof_preview_sheet.dart';
 
 /// P08 — public donation trace.
 ///
 /// The page needs no login: anyone with the donation id can see the four
-/// milestones. Data comes from the mock repository behind
-/// [DonationTraceRepository], so an API can replace it later.
+/// milestones, the proof previews, and the E-Receipt summary. Data comes from
+/// the mock repository behind [DonationTraceRepository], so an API can replace
+/// it later.
 class DonationTracePage extends StatefulWidget {
   const DonationTracePage({
     super.key,
@@ -100,13 +103,15 @@ class _DonationTracePageState extends State<DonationTracePage> {
     if (_loading) {
       return Semantics(
         label: context.tr('p08_loading'),
-        child: const Padding(
+        child: const SingleChildScrollView(
           padding: EdgeInsets.all(16),
           child: Column(
             children: [
               Skeleton(height: 132, radius: 16),
               SizedBox(height: 16),
               Skeleton(height: 300, radius: 16),
+              SizedBox(height: 16),
+              Skeleton(height: 220, radius: 16),
             ],
           ),
         ),
@@ -139,18 +144,11 @@ class _TraceContent extends StatelessWidget {
     final lang = Localizations.localeOf(context).languageCode;
     final steps = [
       for (final type in DonationTraceStepType.values)
-        DonationTimelineStep(
-          label: _stepLabel(context, type),
-          isComplete: trace.stepFor(type) != null,
-          timeLabel: switch (trace.stepFor(type)) {
-            final step? => Formatters.date(step.at, lang),
-            null => null,
-          },
-        ),
+        _buildStep(context, type, lang),
     ];
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -174,8 +172,64 @@ class _TraceContent extends StatelessWidget {
             ),
             child: DonationTimeline(steps: steps),
           ),
+          const SizedBox(height: 16),
+          if (trace.projectId.isNotEmpty)
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                key: const ValueKey('p08-view-reports'),
+                onPressed: () => context.push(
+                  '${Routes.projectDetailUrl(trace.projectId)}?tab=reports',
+                ),
+                icon: const Icon(Icons.description_outlined, size: 18),
+                label: Text(context.tr('p08_view_reports')),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.ocean,
+                  side: const BorderSide(color: AppColors.border),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          const SizedBox(height: 20),
+          EReceiptSection(trace: trace),
         ],
       ),
+    );
+  }
+
+  DonationTimelineStep _buildStep(
+    BuildContext context,
+    DonationTraceStepType type,
+    String lang,
+  ) {
+    final step = trace.stepFor(type);
+    final label = _stepLabel(context, type);
+
+    VoidCallback? onTap;
+    final canPreviewProof =
+        step != null &&
+        step.hasPhoto &&
+        (type == DonationTraceStepType.proof ||
+            type == DonationTraceStepType.fieldUpdate);
+    if (canPreviewProof) {
+      final proofStep = step;
+      onTap = () => showProofPreviewSheet(
+        context,
+        stepLabel: label,
+        photoAsset: proofStep.photoAsset!,
+        description: proofStep.description,
+        date: proofStep.at,
+      );
+    }
+
+    return DonationTimelineStep(
+      label: label,
+      isComplete: step != null,
+      timeLabel: step == null ? null : Formatters.date(step.at, lang),
+      onTap: onTap,
     );
   }
 
@@ -198,6 +252,7 @@ class _TraceHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      key: const ValueKey('p08-trace-header'),
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

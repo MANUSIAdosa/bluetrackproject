@@ -9,6 +9,7 @@ class DonationTimelineStep {
     required this.label,
     required this.isComplete,
     this.timeLabel,
+    this.onTap,
   });
 
   /// Localized milestone name.
@@ -20,6 +21,10 @@ class DonationTimelineStep {
   /// Localized date/time for a completed milestone. Pending milestones pass
   /// null and render gray without a date.
   final String? timeLabel;
+
+  /// Optional action for milestones that carry details, such as a proof
+  /// photo. Null milestones stay non-interactive.
+  final VoidCallback? onTap;
 }
 
 /// Reusable vertical timeline for donation milestones.
@@ -74,85 +79,113 @@ class _TimelineRow extends StatelessWidget {
         ? AppColors.ocean
         : AppColors.border;
 
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            width: 28,
-            child: Column(
-              children: [
-                Container(
-                  key: ValueKey('donationTimeline.dot.$index'),
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: done ? AppColors.ocean : AppColors.surface,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: done ? AppColors.ocean : AppColors.inactiveTab,
-                      width: 2,
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: step.onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                width: 28,
+                child: Column(
+                  children: [
+                    Container(
+                      key: ValueKey('donationTimeline.dot.$index'),
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: done ? AppColors.ocean : AppColors.surface,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: done ? AppColors.ocean : AppColors.inactiveTab,
+                          width: 2,
+                        ),
+                      ),
+                      child: done
+                          ? const Icon(
+                              Icons.check,
+                              size: 16,
+                              color: Colors.white,
+                            )
+                          : Center(
+                              child: Container(
+                                width: 6,
+                                height: 6,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.inactiveTab,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
                     ),
-                  ),
-                  child: done
-                      ? const Icon(Icons.check, size: 16, color: Colors.white)
-                      : Center(
-                          child: Container(
-                            width: 6,
-                            height: 6,
-                            decoration: const BoxDecoration(
-                              color: AppColors.inactiveTab,
-                              shape: BoxShape.circle,
+                    if (!last)
+                      Expanded(
+                        child: Container(
+                          key: ValueKey('donationTimeline.connector.$index'),
+                          width: 2,
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          color: connectorColor,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: last ? 0 : 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              step.label,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: done
+                                    ? FontWeight.w700
+                                    : FontWeight.w600,
+                                height: 1.3,
+                                color: done
+                                    ? AppColors.textPrimary
+                                    : AppColors.textSecondary,
+                              ),
                             ),
                           ),
-                        ),
-                ),
-                if (!last)
-                  Expanded(
-                    child: Container(
-                      key: ValueKey('donationTimeline.connector.$index'),
-                      width: 2,
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      color: connectorColor,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: last ? 0 : 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    step.label,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: done ? FontWeight.w700 : FontWeight.w600,
-                      height: 1.3,
-                      color: done
-                          ? AppColors.textPrimary
-                          : AppColors.textSecondary,
-                    ),
-                  ),
-                  if (step.timeLabel != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      step.timeLabel!,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        height: 1.3,
-                        color: AppColors.textSecondary,
+                          if (step.onTap != null) ...[
+                            const SizedBox(width: 8),
+                            const Icon(
+                              Icons.chevron_right,
+                              size: 18,
+                              color: AppColors.ocean,
+                            ),
+                          ],
+                        ],
                       ),
-                    ),
-                  ],
-                ],
+                      if (step.timeLabel != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          step.timeLabel!,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            height: 1.3,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

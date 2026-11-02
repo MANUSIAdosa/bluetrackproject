@@ -9,7 +9,13 @@ DonationTimelineStep step(
   String label, {
   bool complete = false,
   String? time,
-}) => DonationTimelineStep(label: label, isComplete: complete, timeLabel: time);
+  VoidCallback? onTap,
+}) => DonationTimelineStep(
+  label: label,
+  isComplete: complete,
+  timeLabel: time,
+  onTap: onTap,
+);
 
 List<DonationTimelineStep> fourSteps({int complete = 0}) => [
   step(
@@ -117,5 +123,28 @@ void main() {
     expect(find.text('13 Okt'), findsOneWidget);
     expect(find.text('15 Okt'), findsOneWidget);
     expect(find.text('20 Okt'), findsOneWidget);
+  });
+
+  testWidgets('calls onTap only for milestones that carry details', (
+    tester,
+  ) async {
+    var taps = 0;
+    final steps = [
+      step('Diterima', complete: true, time: '12 Okt'),
+      step('Bukti', complete: true, time: '15 Okt', onTap: () => taps++),
+      step('Update lapangan'),
+    ];
+
+    await tester.pumpWidget(wrapPage(DonationTimeline(steps: steps)));
+    await tester.pump();
+
+    // Only the tappable milestone gets the affordance.
+    expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+
+    await tester.tap(find.text('Diterima'));
+    expect(taps, 0);
+
+    await tester.tap(find.text('Bukti'));
+    expect(taps, 1);
   });
 }
