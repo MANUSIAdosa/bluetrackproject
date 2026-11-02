@@ -24,6 +24,7 @@ class ExploreMap extends StatefulWidget {
     required this.mapData,
     required this.userLocationLabel,
     this.showConservationLayer = false,
+    this.onConservationLayerChanged,
     this.offline = false,
     this.tileProvider,
     this.initialZoom = 4,
@@ -37,6 +38,10 @@ class ExploreMap extends StatefulWidget {
   final String userLocationLabel;
 
   final bool showConservationLayer;
+
+  /// Page-owned layer state: the floating switch reports changes here so the
+  /// layer survives rebuilding the map (zoom, filter changes).
+  final ValueChanged<bool>? onConservationLayerChanged;
 
   /// Offline skips the OpenStreetMap tile layer entirely — no network call —
   /// while markers and polygons still draw over the background colour.
@@ -87,10 +92,8 @@ class _ExploreMapState extends State<ExploreMap> {
                   for (final area in widget.mapData.conservationAreas)
                     Polygon(
                       points: area.points,
-                      color: CategoryIcons.colorFor(
-                        area.status.id,
-                      ).withValues(alpha: 0.18),
-                      borderColor: CategoryIcons.colorFor(area.status.id),
+                      color: area.status.color.withValues(alpha: 0.18),
+                      borderColor: area.status.color,
                       borderStrokeWidth: 1.5,
                     ),
                 ],
@@ -118,6 +121,14 @@ class _ExploreMapState extends State<ExploreMap> {
           left: 16,
           bottom: 16,
           child: _MapCountBadge(count: widget.projects.length),
+        ),
+        Positioned(
+          left: 16,
+          top: 16,
+          child: _ConservationLayerCard(
+            enabled: widget.showConservationLayer,
+            onChanged: widget.onConservationLayerChanged,
+          ),
         ),
         Positioned(
           right: 16,
@@ -350,6 +361,103 @@ class _SheetFact extends StatelessWidget {
           style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
       ],
+    );
+  }
+}
+
+/// Floating card for the conservation-area layer.
+///
+/// A switch is the right control here: the layer is either drawn or not. The
+/// legend appears only while it is on, because that is when the polygon colours
+/// need explaining.
+class _ConservationLayerCard extends StatelessWidget {
+  const _ConservationLayerCard({required this.enabled, this.onChanged});
+
+  final bool enabled;
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.surface,
+      elevation: 3,
+      shadowColor: Colors.black26,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 220,
+        padding: const EdgeInsets.fromLTRB(12, 8, 8, 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.shield_outlined,
+                  size: 18,
+                  color: AppColors.teal,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    context.tr('p03_map_layer_conservation'),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                Transform.scale(
+                  scale: 0.8,
+                  child: Switch(
+                    key: const ValueKey('explore.conservationSwitch'),
+                    value: enabled,
+                    onChanged: onChanged,
+                  ),
+                ),
+              ],
+            ),
+            if (enabled) ...[
+              const Divider(height: 12, color: AppColors.border),
+              Text(
+                context.tr('p03_map_legend'),
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              for (final condition in ProjectCondition.values)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    children: [
+                      Container(
+                        key: ValueKey('explore.legend.${condition.id}'),
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: condition.color,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        condition.label(context),
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

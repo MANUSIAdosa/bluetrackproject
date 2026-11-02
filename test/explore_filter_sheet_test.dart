@@ -13,6 +13,7 @@ Future<void> openSheet(
   String category = 'semua',
   DistanceBand distance = DistanceBand.semua,
   ProjectCondition? condition,
+  int Function(ExploreFilterSelection)? countFor,
 }) async {
   await tester.pumpWidget(
     wrapPage(
@@ -22,13 +23,13 @@ Future<void> openSheet(
             onResult(
               await showExploreFilterSheet(
                 context,
-                categoryIds: const ['semua', 'penyu', 'karang'],
                 selection: ExploreFilterSelection(
                   category: category,
                   distance: distance,
                   condition: condition,
                 ),
                 userLocationLabel: 'Jakarta',
+                countFor: countFor,
               ),
             );
           },
@@ -42,15 +43,35 @@ Future<void> openSheet(
   await tester.pumpAndSettle();
 }
 
+Future<void> tapOption(WidgetTester tester, String key) async {
+  final finder = find.byKey(ValueKey(key));
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
+  await tester.pump();
+}
+
 void main() {
-  testWidgets('the sheet shows a section per filter group', (tester) async {
+  testWidgets('the sheet owns distance and condition, not the category rail', (
+    tester,
+  ) async {
     await openSheet(tester, onResult: (_) {});
 
-    expect(find.text('Kategori'), findsOneWidget);
+    expect(find.byKey(const ValueKey('explore.filter.sheet')), findsOneWidget);
+    expect(find.text('Filter'), findsOneWidget);
     expect(find.text('Jarak'), findsOneWidget);
     expect(find.text('Status kondisi'), findsOneWidget);
-    expect(find.text('Terapkan'), findsOneWidget);
+    // Category has one control: the rail on the page. Repeating it here made
+    // two entry points for the same state.
+    expect(find.text('Kategori'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('explore.filter.category.penyu')),
+      findsNothing,
+    );
     expect(find.text('Atur ulang'), findsOneWidget);
+    expect(find.byKey(const ValueKey('explore.filter.apply')), findsOneWidget);
+    // A filter sheet uses radio options, not chips.
+    expect(find.byType(ChoiceChip), findsNothing);
   });
 
   testWidgets('the distance section names the mock reference location', (
@@ -67,9 +88,8 @@ void main() {
     ExploreFilterSelection? result;
     await openSheet(tester, onResult: (value) => result = value);
 
-    await tester.tap(find.text('Kritis'));
-    await tester.pump();
-    await tester.tap(find.text('Terapkan'));
+    await tapOption(tester, 'explore.filter.condition.kritis');
+    await tester.tap(find.byKey(const ValueKey('explore.filter.apply')));
     await tester.pumpAndSettle();
 
     expect(result, isNotNull);
@@ -86,16 +106,33 @@ void main() {
       category: 'karang',
     );
 
-    await tester.tap(find.text('250–1000 km'));
-    await tester.pump();
-    await tester.tap(find.text('Terapkan'));
+    await tapOption(tester, 'explore.filter.distance.sedang');
+    await tester.tap(find.byKey(const ValueKey('explore.filter.apply')));
     await tester.pumpAndSettle();
 
     expect(result!.distance, DistanceBand.sedang);
     expect(result!.category, 'karang');
   });
 
-  testWidgets('reset clears every group', (tester) async {
+  testWidgets('the footer previews how many projects the draft keeps', (
+    tester,
+  ) async {
+    await openSheet(
+      tester,
+      onResult: (_) {},
+      countFor: (draft) => draft.condition == ProjectCondition.kritis ? 1 : 2,
+    );
+
+    expect(find.text('Tampilkan 2 proyek'), findsOneWidget);
+
+    await tapOption(tester, 'explore.filter.condition.kritis');
+
+    expect(find.text('Tampilkan 1 proyek'), findsOneWidget);
+  });
+
+  testWidgets('reset clears the sheet filters but keeps the rail category', (
+    tester,
+  ) async {
     ExploreFilterSelection? result;
     await openSheet(
       tester,
@@ -105,21 +142,39 @@ void main() {
       condition: ProjectCondition.kritis,
     );
 
-    await tester.tap(find.text('Atur ulang'));
+    await tester.tap(find.byKey(const ValueKey('explore.filter.reset')));
+    await tester.pumpAndSettle();
+
+    // The sheet stays open so the user can review the cleared draft.
+    expect(find.byKey(const ValueKey('explore.filter.sheet')), findsOneWidget);
+    expect(result, isNull);
+
+    await tester.tap(find.byKey(const ValueKey('explore.filter.apply')));
     await tester.pumpAndSettle();
 
     expect(result, isNotNull);
-    expect(result!.category, 'semua');
+    // Reset only touches what the sheet owns. Changing the category from here
+    // would make the rail jump without the user touching it.
+    expect(result!.category, 'penyu');
     expect(result!.distance, DistanceBand.semua);
     expect(result!.condition, isNull);
   });
 
-  testWidgets('active filter count ignores the default "Semua" values', (
-    tester,
-  ) async {
+  testWidgets('the close action dismisses without applying', (tester) async {
+    ExploreFilterSelection? result;
+    await openSheet(tester, onResult: (value) => result = value);
+
+    await tester.tap(find.byKey(const ValueKey('explore.filter.close')));
+    await tester.pumpAndSettle();
+
+    expect(result, isNull);
+  });
+
+  testWidgets('the filter badge counts only the sheet filters', (tester) async {
+    // Category is chosen on the rail, so it never inflates the filter badge.
     expect(
       const ExploreFilterSelection(
-        category: 'semua',
+        category: 'penyu',
         distance: DistanceBand.semua,
       ).activeCount,
       0,
@@ -127,7 +182,7 @@ void main() {
     expect(
       const ExploreFilterSelection(
         category: 'penyu',
-        distance: DistanceBand.semua,
+        distance: DistanceBand.jauh,
       ).activeCount,
       1,
     );
@@ -137,7 +192,7 @@ void main() {
         distance: DistanceBand.jauh,
         condition: ProjectCondition.kritis,
       ).activeCount,
-      3,
+      2,
     );
   });
 
@@ -148,7 +203,10 @@ void main() {
     await openSheet(tester, onResult: (_) {});
     expect(OfflineController.instance.offline, isFalse);
 
-    await tester.tap(find.text('Simulasikan offline'));
+    final switchFinder = find.text('Simulasikan offline');
+    await tester.ensureVisible(switchFinder);
+    await tester.pumpAndSettle();
+    await tester.tap(switchFinder);
     await tester.pump();
 
     expect(OfflineController.instance.offline, isTrue);

@@ -7,14 +7,15 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../features/explore/data/saved_project_store.dart';
 import '../../features/explore/domain/project.dart';
+import 'category_icon.dart';
 import 'progress_bar.dart';
 import 'verified_badge.dart';
 
-/// Project card used by Explore (list + "for you" rail).
+/// Project card used by Explore (list + "for you" rail) and Org Profile.
 ///
 /// The card sizes itself from its content; hosts that need a fixed height
 /// (the horizontal rail) must measure it instead of guessing — see
-/// `ExplorePage`.
+/// `ForYouRail`.
 class ProjectCard extends StatelessWidget {
   const ProjectCard({
     super.key,
@@ -34,9 +35,14 @@ class ProjectCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final lang = Localizations.localeOf(context).languageCode;
     final saved = SavedProjectsController.instance.isSaved(project.id);
+    final percent = (project.progress * 100).round();
 
     return Card(
       clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDimens.cardRadius),
+        side: const BorderSide(color: AppColors.border),
+      ),
       child: InkWell(
         onTap: () => context.push('/project/${project.id}'),
         child: Column(
@@ -46,29 +52,44 @@ class ProjectCard extends StatelessWidget {
             // Gallery placeholder (mock data has colors, not images).
             AspectRatio(
               aspectRatio: 16 / 9,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: _galleryGradient(project.galleryColors),
-                ),
-                child: Align(
-                  alignment: Alignment.topRight,
-                  child: IconButton(
-                    icon: Icon(
-                      saved ? Icons.bookmark : Icons.bookmark_outline,
-                      color: Colors.white,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: _galleryGradient(project.galleryColors),
                     ),
-                    onPressed: () async {
-                      // One entry point: flips the saved id *and* writes the
-                      // offline snapshot the saved collection reads offline.
-                      await toggleSavedProject(project);
-                      onSavedChanged?.call();
-                    },
                   ),
-                ),
+                  // Scrim keeps the white category badge readable on any
+                  // gallery colour.
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Color(0x33000000), Colors.transparent],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 12,
+                    top: 12,
+                    child: _CategoryBadge(category: project.category),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: _SaveButton(
+                      project: project,
+                      saved: saved,
+                      onSavedChanged: onSavedChanged,
+                    ),
+                  ),
+                ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,7 +100,8 @@ class ProjectCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
-                      fontSize: 15,
+                      fontSize: 16,
+                      height: 1.3,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -123,8 +145,17 @@ class ProjectCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
+                  Text(
+                    context.tr('p03_percent_funded', {'n': '$percent'}),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ocean,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
                   ProgressBar(value: project.progress),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   Row(
                     children: [
                       Expanded(
@@ -135,8 +166,8 @@ class ProjectCard extends StatelessWidget {
                             Text(
                               Formatters.currency(project.raisedAmount, lang),
                               style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
                                 color: AppColors.ocean,
                               ),
                             ),
@@ -144,7 +175,7 @@ class ProjectCard extends StatelessWidget {
                               '${context.tr('project.target')}: '
                               '${Formatters.currency(project.targetAmount, lang)}',
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: 11,
                                 color: AppColors.textSecondary,
                               ),
                             ),
@@ -162,6 +193,83 @@ class ProjectCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Category badge over the gallery: the same glyph and colour the map markers
+/// and the category selector use.
+class _CategoryBadge extends StatelessWidget {
+  const _CategoryBadge({required this.category});
+
+  final String category;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x22000000),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CategoryIcon(category: category, size: 14),
+          const SizedBox(width: 6),
+          Text(
+            context.tr('cat.$category'),
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Frosted bookmark over the gallery. One tap flips the saved id *and* writes
+/// the offline snapshot the saved collection reads offline.
+class _SaveButton extends StatelessWidget {
+  const _SaveButton({
+    required this.project,
+    required this.saved,
+    this.onSavedChanged,
+  });
+
+  final Project project;
+  final bool saved;
+  final VoidCallback? onSavedChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.24),
+      shape: CircleBorder(
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.35)),
+      ),
+      child: IconButton(
+        key: ValueKey('projectCard.save.${project.id}'),
+        tooltip: context.tr(saved ? 'p03_saved' : 'p03_save'),
+        icon: Icon(
+          saved ? Icons.bookmark : Icons.bookmark_outline,
+          color: Colors.white,
+        ),
+        onPressed: () async {
+          await toggleSavedProject(project);
+          onSavedChanged?.call();
+        },
       ),
     );
   }

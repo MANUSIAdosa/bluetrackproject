@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/app_config.dart';
+import 'connectivity_service.dart';
 
 /// Application-wide controllers (no external state management package).
 
@@ -68,6 +71,15 @@ class AuthController extends ChangeNotifier {
     _signedIn = false;
     notifyListeners();
   }
+
+  /// Sets the session flag without touching secure storage. Only for tests:
+  /// widget tests cannot reach the platform channel behind the token store.
+  @visibleForTesting
+  void setSignedIn(bool value) {
+    if (_signedIn == value) return;
+    _signedIn = value;
+    notifyListeners();
+  }
 }
 
 /// Saved projects backed by the Hive box `saved_projects`.
@@ -104,14 +116,21 @@ class SavedProjectsController extends ChangeNotifier {
 
 /// Offline banner state.
 ///
-/// TODO(connectivity): plug a real connectivity source here once approved;
-/// no connectivity package is currently allowed in pubspec.
+/// [start] is called once from `main`. The app starts offline only when no
+/// network interface exists; a connected interface is treated as online
+/// because BlueTrack's data is mocked locally. Tests pass a fake
+/// [ConnectivityService] and call [stop] afterwards.
 class OfflineController extends ChangeNotifier {
   OfflineController._();
 
   static final OfflineController instance = OfflineController._();
 
   bool _offline = false;
+  ConnectivityService? _connectivity;
+  StreamSubscription<bool>? _subscription;
+
+  /// Startup must never block the first frame on a slow platform channel.
+  static const Duration _startupTimeout = Duration(seconds: 2);
 
   bool get offline => _offline;
 
@@ -119,6 +138,39 @@ class OfflineController extends ChangeNotifier {
     if (_offline == value) return;
     _offline = value;
     notifyListeners();
+  }
+
+  /// Reads the current link state and subscribes to changes.
+  ///
+  /// Idempotent: a second call is ignored, so callers never create duplicate
+  /// subscriptions. Platform failures leave the last known state untouched and
+  /// still allow the app to work with mock data.
+  Future<void> start({ConnectivityService? service}) async {
+    if (_connectivity != null) return;
+    final connectivity = service ?? PlatformConnectivityService();
+    _connectivity = connectivity;
+
+    try {
+      setOffline(!await connectivity.isOnline().timeout(_startupTimeout));
+    } catch (_) {
+      // Keep the current state; the banner is best-effort.
+    }
+
+    try {
+      _subscription = connectivity.onOnlineChanged.listen(
+        (online) => setOffline(!online),
+        onError: (Object _) {},
+      );
+    } catch (_) {
+      // No connectivity stream on this platform; stay with the last state.
+    }
+  }
+
+  /// Stops observing connectivity. Used by tests to avoid cross-test leaks.
+  Future<void> stop() async {
+    await _subscription?.cancel();
+    _subscription = null;
+    _connectivity = null;
   }
 }
 

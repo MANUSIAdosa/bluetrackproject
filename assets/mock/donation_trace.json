@@ -1,0 +1,90 @@
+{
+  "donations": [
+    {
+      "id": "don-1001",
+      "projectId": "p01",
+      "projectTitle": "Peneluruhan Penyu di Pantai Sukamade",
+      "organization": "Yayasan Laut Biru",
+      "amount": 250000,
+      "donatedAt": "2026-10-12",
+      "receiptNumber": "BLU-20261012-0001",
+      "paymentMethod": "virtual_account",
+      "status": "success",
+      "steps": [
+        {"type": "received", "at": "2026-10-12"},
+        {"type": "forwarded", "at": "2026-10-13"},
+        {
+          "type": "proof",
+          "at": "2026-10-15",
+          "photo": "assets/images/interests/marine_wildlife.jpg",
+          "description": "Tim lapangan mendokumentasikan patroli pesisir dan pencatatan sarang penyu di Pantai Sukamade."
+        },
+        {
+          "type": "field_update",
+          "at": "2026-10-20",
+          "photo": "assets/images/interests/sustainable_fishery.jpg",
+          "description": "Pertemuan dengan nelayan setempat untuk menyepakati area pesisir yang dilindungi selama musim peneluruhan."
+        }
+      ]
+    },
+    {
+      "id": "don-1002",
+      "projectId": "p02",
+      "projectTitle": "Pemulihan Terumbu Karang Pulau Pramuka",
+      "organization": "Yayasan Laut Biru",
+      "amount": 100000,
+      "donatedAt": "2026-10-28",
+      "receiptNumber": "BLU-20261028-0002",
+      "paymentMethod": "e_wallet",
+      "status": "success",
+      "steps": [
+        {"type": "received", "at": "2026-10-28"}
+      ]
+    },
+    {
+      "id": "don-1003",
+      "projectId": "p03",
+      "projectTitle": "Konservasi Mangrove Muara Angke",
+      "organization": "Konsorsium Pesisir Hijau",
+      "amount": 500000,
+      "donatedAt": "2026-10-05",
+      "receiptNumber": "BLU-20261005-0003",
+      "paymentMethod": "card",
+      "status": "success",
+      "steps": [
+        {"type": "received", "at": "2026-10-05"},
+        {"type": "forwarded", "at": "2026-10-06"},
+        {
+          "type": "proof",
+          "at": "2026-10-09",
+          "photo": "assets/images/interests/mangrove.jpg",
+          "description": "Dokumentasi penanaman bibit mangrove dan pembersihan jalur air di Muara Angke."
+        }
+      ]
+    },
+    {
+      "id": "don-1004",
+      "projectId": "p01",
+      "projectTitle": "Peneluruhan Penyu di Pantai Sukamade",
+      "organization": "Yayasan Laut Biru",
+      "amount": 75000,
+      "donatedAt": "2026-10-30",
+      "receiptNumber": "BLU-20261030-0004",
+      "paymentMethod": "virtual_account",
+      "status": "pending",
+      "steps": []
+    },
+    {
+      "id": "don-1005",
+      "projectId": "p02",
+      "projectTitle": "Pemulihan Terumbu Karang Pulau Pramuka",
+      "organization": "Yayasan Laut Biru",
+      "amount": 125000,
+      "donatedAt": "2026-10-31",
+      "receiptNumber": "BLU-20261031-0005",
+      "paymentMethod": "card",
+      "status": "failed",
+      "steps": []
+    }
+  ]
+}

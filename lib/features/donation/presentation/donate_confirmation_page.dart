@@ -324,10 +324,9 @@ class _DonateConfirmationPageState extends State<DonateConfirmationPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _BigConfirmationCard(
-            text: context.tr('p06_confirm_big_text', {
-              'amount': amount,
-              'project': target,
-            }),
+            amount: amount,
+            name: target,
+            isProject: draft.purpose == DonationPurpose.project,
           ),
           const SizedBox(height: 8),
           Padding(
@@ -417,44 +416,132 @@ class _DonateConfirmationPageState extends State<DonateConfirmationPage> {
   }
 }
 
+/// Donation identity card at the top of the confirmation step.
+///
+/// Shows one thing per line — heart, "your donation", amount, the 100% badge
+/// and the project name — instead of the old single sentence with an arrow.
+/// Keeping the amount and the name on separate lines makes the card readable
+/// at a glance and leaves room for long project titles.
 class _BigConfirmationCard extends StatelessWidget {
-  const _BigConfirmationCard({required this.text});
+  const _BigConfirmationCard({
+    required this.amount,
+    required this.name,
+    required this.isProject,
+  });
 
-  final String text;
+  /// Already formatted with the active locale.
+  final String amount;
+
+  /// Project title, or organization name for an organization-purpose draft.
+  final String name;
+
+  /// Whether this donation supports a project. Organization-purpose drafts are
+  /// not created by the current flow, but their badge must not claim "100% to
+  /// the project" if Fund B is ever exposed.
+  final bool isProject;
 
   @override
   Widget build(BuildContext context) {
+    final badgeKey = isProject
+        ? 'p06_confirm_project_badge'
+        : 'p06_confirm_platform_badge';
+
     return Container(
+      key: const Key('p06_confirmation_card'),
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       decoration: BoxDecoration(
-        color: AppColors.coral.withValues(alpha: 0.08),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppDimens.cardRadius),
-        border: Border.all(color: AppColors.coral.withValues(alpha: 0.25)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 56,
+            height: 56,
             decoration: BoxDecoration(
-              color: AppColors.coral.withValues(alpha: 0.15),
+              color: AppColors.coral.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.favorite_rounded,
               color: AppColors.coral,
-              size: 24,
+              size: 28,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            context.tr('p06_confirm_donation_label'),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 11,
+              height: 1.2,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.2,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              amount,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 30,
+                height: 1.15,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.4,
+                color: AppColors.oceanDeep,
+              ),
             ),
           ),
           const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.teal.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.check_circle_rounded,
+                  size: 14,
+                  color: AppColors.teal,
+                ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    context.tr(badgeKey),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      height: 1.2,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
+                      color: AppColors.oceanDeep,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
           Text(
-            text,
+            name,
             textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontSize: 22,
-              height: 1.3,
-              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
             ),
           ),
         ],

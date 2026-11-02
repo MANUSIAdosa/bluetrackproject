@@ -28,6 +28,7 @@ abstract final class Routes {
   static const actionAgenda = '/actions';
   static const actionDetail = '/actions/:id';
   static const report = '/report';
+  static const reportSuccess = '/report/success/:id';
   static const myReports = '/my-reports';
   static const myActions = '/my-actions';
   static const communityActionApply = '/community-action/apply';
@@ -52,6 +53,9 @@ abstract final class Routes {
       '/support/trace/$donationId';
 
   static String actionDetailUrl(String actionId) => '/actions/$actionId';
+
+  static String reportSuccessUrl(String reportId) =>
+      '/report/success/$reportId';
 
   /// Whether [location] would resolve to a registered route. Segments match
   /// either literally or when the template segment is a `:param` slot. P13
@@ -91,6 +95,7 @@ abstract final class Routes {
     actionAgenda,
     actionDetail,
     report,
+    reportSuccess,
     myReports,
     myActions,
     communityActionApply,
