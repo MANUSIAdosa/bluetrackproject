@@ -43,6 +43,36 @@ class AuthRepository {
   }
 
   Future<void> deleteToken() => SecureStorageService.instance.delete(_tokenKey);
+
+  /// Best-effort display name for greetings (P09).
+  ///
+  /// The mock session stores the sign-in identifier inside the token, not a
+  /// profile. An email identifier is turned into a readable name
+  /// (`ayu.lestari@contoh.id` -> `Ayu Lestari`); phone sign-ins return null so
+  /// the page can show its localized fallback.
+  ///
+  /// TODO(auth): replace with the profile name once the API session exposes
+  /// one.
+  Future<String?> readDisplayName() async {
+    final token = await readToken();
+    if (token == null || !token.startsWith('mock-token-')) return null;
+
+    final encoded = token.substring('mock-token-'.length);
+    final separator = encoded.lastIndexOf('-');
+    if (separator <= 0) return null;
+
+    final subject = encoded.substring(0, separator);
+    final at = subject.indexOf('@');
+    if (at <= 0) return null;
+
+    final words = subject
+        .substring(0, at)
+        .split(RegExp(r'[._-]+'))
+        .where((word) => word.isNotEmpty)
+        .map((word) => word[0].toUpperCase() + word.substring(1).toLowerCase());
+    final name = words.join(' ').trim();
+    return name.isEmpty ? null : name;
+  }
 }
 
 class AuthController extends ChangeNotifier {
