@@ -1,0 +1,18 @@
+{
+  "_todo": "P09 mock data only. Twelve months of contributions for the signed-in mock user, plus the personal monthly contribution goal. The repository sums every row for the four summary cards, uses the latest row (not the device date) as the goal reference month, and builds both the 6-month and 12-month chart windows. Widgets never hardcode these numbers. TODO(P09): replace with the authenticated user's contribution API.",
+  "monthlyGoal": 15,
+  "months": [
+    { "month": "2025-11-01", "reports": 1, "actions": 0, "wasteKg": 0, "supportAmount": 0 },
+    { "month": "2025-12-01", "reports": 2, "actions": 1, "wasteKg": 3.5, "supportAmount": 100000 },
+    { "month": "2026-01-01", "reports": 1, "actions": 2, "wasteKg": 6.0, "supportAmount": 250000 },
+    { "month": "2026-02-01", "reports": 3, "actions": 0, "wasteKg": 8.2, "supportAmount": 0 },
+    { "month": "2026-03-01", "reports": 2, "actions": 2, "wasteKg": 12.5, "supportAmount": 50000 },
+    { "month": "2026-04-01", "reports": 4, "actions": 1, "wasteKg": 18.0, "supportAmount": 150000 },
+    { "month": "2026-05-01", "reports": 2, "actions": 3, "wasteKg": 9.5, "supportAmount": 250000 },
+    { "month": "2026-06-01", "reports": 5, "actions": 2, "wasteKg": 24.0, "supportAmount": 100000 },
+    { "month": "2026-07-01", "reports": 3, "actions": 4, "wasteKg": 15.5, "supportAmount": 50000 },
+    { "month": "2026-08-01", "reports": 4, "actions": 2, "wasteKg": 20.0, "supportAmount": 200000 },
+    { "month": "2026-09-01", "reports": 6, "actions": 3, "wasteKg": 31.0, "supportAmount": 300000 },
+    { "month": "2026-10-01", "reports": 7, "actions": 5, "wasteKg": 42.8, "supportAmount": 400000 }
+  ]
+}

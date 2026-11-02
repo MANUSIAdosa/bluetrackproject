@@ -79,6 +79,26 @@ class AppLocalizations {
           'Masuk untuk melanjutkan. Anda akan kembali ke halaman ini.',
       'login.prompt.button': 'Masuk',
 
+      // --- My Impact (P09) ---
+      'impact.greeting': 'Hai, {name}',
+      'impact.greetingFallback': 'Sahabat Laut',
+      'impact.subtitle': 'Terima kasih sudah ikut menjaga laut bersama kami.',
+      'impact.stat.reports': 'Laporan Dikirim',
+      'impact.stat.actions': 'Aksi Diikuti',
+      'impact.stat.waste': 'Sampah Terkumpul',
+      'impact.stat.support': 'Total Dukungan',
+      'impact.unit.kg': 'kg',
+      'impact.goal.title': 'Target Bulan Ini',
+      'impact.goal.progress': '{current} dari {target} kontribusi',
+      'impact.range.sixMonths': '6 bulan',
+      'impact.range.oneYear': '1 tahun',
+      'impact.chart.title': 'Kontribusi per Bulan',
+      'impact.chart.subtitle': 'Jumlah laporan dan aksi yang kamu ikuti dalam {months} bulan terakhir.',
+      'impact.chart.tooltip': '{month}: {n} kontribusi',
+      'impact.empty.message': 'Kamu belum punya kontribusi. Mulai dengan melaporkan temuan di sekitarmu.',
+      'impact.loadError':
+          'Gagal memuat kontribusi. Periksa koneksi lalu coba lagi.',
+
       // --- Categories / interests ---
       'cat.semua': 'Semua',
       'cat.penyu': 'Penyu',
@@ -763,6 +783,26 @@ class AppLocalizations {
       'login.prompt.title': 'Sign in required',
       'login.prompt.body': 'Sign in to continue. You will return to this page.',
       'login.prompt.button': 'Sign in',
+
+      // --- My Impact (P09) ---
+      'impact.greeting': 'Hi, {name}',
+      'impact.greetingFallback': 'Ocean Friend',
+      'impact.subtitle': 'Thank you for helping protect the ocean with us.',
+      'impact.stat.reports': 'Reports Submitted',
+      'impact.stat.actions': 'Actions Joined',
+      'impact.stat.waste': 'Waste Collected',
+      'impact.stat.support': 'Total Support',
+      'impact.unit.kg': 'kg',
+      'impact.goal.title': 'Target This Month',
+      'impact.goal.progress': '{current} of {target} contributions',
+      'impact.range.sixMonths': '6 months',
+      'impact.range.oneYear': '1 year',
+      'impact.chart.title': 'Monthly Contribution',
+      'impact.chart.subtitle':
+          'Reports and actions you joined over the last {months} months.',
+      'impact.chart.tooltip': '{month}: {n} contributions',
+      'impact.empty.message': 'You have no contributions yet. Start by reporting what you find around you.',
+      'impact.loadError': 'Could not load your contributions. Check your connection and try again.',
 
       // --- Categories / interests ---
       'cat.semua': 'All',
