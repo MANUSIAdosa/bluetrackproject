@@ -73,6 +73,43 @@ class AppLocalizations {
       'detail.donationTrace': 'Jejak Dukungan',
       'placeholder.paramValue': '{name}: {value}',
 
+      // --- Learn (P16) ---
+      // Article titles, summaries and content live in
+      // `assets/mock/education.json` (bilingual). Only the page chrome and
+      // category names are localized here.
+      'learn.title': 'Belajar',
+      'learn.tab.articles': 'Artikel',
+      'learn.tab.infographics': 'Infografis',
+      'learn.tab.quiz': 'Kuis',
+      'learn.readingTime': '{n} menit baca',
+      'learn.category.all': 'Semua',
+      'learn.category.polusi': 'Polusi',
+      'learn.category.ekosistem': 'Ekosistem',
+      'learn.category.perikanan_berkelanjutan': 'Perikanan Berkelanjutan',
+      'learn.category.kawasan_konservasi': 'Kawasan Konservasi',
+      'learn.infographics.body': 'Infografis visual sedang disiapkan. Sementara itu, kamu bisa membaca artikel di tab Artikel.',
+      'learn.quiz.body':
+          'Kuis interaktif akan tersedia setelah materi artikel lengkap.',
+      'p16_detail_title': 'Detail Artikel',
+      'p16_share': 'Bagikan',
+      'p16_share_copied': 'Tautan disalin',
+      'p16_published': 'Diterbitkan {date}',
+      'p16_reading_time': '{n} menit baca',
+      'p16_category.polusi': 'Polusi',
+      'p16_category.ekosistem': 'Ekosistem',
+      'p16_category.perikanan_berkelanjutan': 'Perikanan Berkelanjutan',
+      'p16_category.kawasan_konservasi': 'Kawasan Konservasi',
+      'p16_save': 'Simpan artikel',
+      'p16_remove_saved': 'Hapus dari tersimpan',
+      'p16_saved': 'Tersimpan',
+      'p16_empty_saved': 'Belum ada artikel tersimpan.',
+      'p16_save_failed': 'Artikel gagal disimpan.',
+      'p16_remove_saved_failed': 'Artikel gagal dihapus dari tersimpan.',
+      'p16_saved_load_failed': 'Artikel tersimpan gagal dibaca.',
+      'p16_article_not_found': 'Artikel tidak ditemukan.',
+      'p16_image_unavailable': 'Gambar tidak tersedia',
+      'learn.emptyCategory': 'Belum ada artikel dalam kategori ini.',
+
       // --- Login prompt ---
       'login.prompt.title': 'Fitur ini butuh masuk',
       'login.prompt.body':
@@ -296,8 +333,7 @@ class AppLocalizations {
       'my_reports.loading': 'Memuat laporan...',
       'my_reports.load_error':
           'Gagal memuat laporan. Periksa koneksi lalu coba lagi.',
-      'my_reports.empty':
-          'Kamu belum punya laporan. Laporkan temuan di sekitarmu untuk membantu menjaga laut tetap lestari.',
+      'my_reports.empty': 'Kamu belum punya laporan. Laporkan temuan di sekitarmu untuk membantu menjaga laut tetap lestari.',
       'my_reports.create': 'Buat laporan',
       'my_reports.empty_filter': 'Tidak ada laporan berstatus {status}.',
       'my_reports.tracker': 'Pelacak status',
@@ -779,6 +815,42 @@ class AppLocalizations {
       'detail.donationTrace': 'Donation Trace',
       'placeholder.paramValue': '{name}: {value}',
 
+      // --- Learn (P16) ---
+      // Article titles, summaries and content live in
+      // `assets/mock/education.json` (bilingual). Only the page chrome and
+      // category names are localized here.
+      'learn.title': 'Learn',
+      'learn.tab.articles': 'Articles',
+      'learn.tab.infographics': 'Infographics',
+      'learn.tab.quiz': 'Quiz',
+      'learn.readingTime': '{n} min read',
+      'learn.category.all': 'All',
+      'learn.category.polusi': 'Pollution',
+      'learn.category.ekosistem': 'Ecosystem',
+      'learn.category.perikanan_berkelanjutan': 'Sustainable Fisheries',
+      'learn.category.kawasan_konservasi': 'Conservation Areas',
+      'learn.infographics.body': 'Visual infographics are being prepared. In the meantime, read the articles in the Articles tab.',
+      'learn.quiz.body': 'Interactive quizzes will be available once the article material is complete.',
+      'p16_detail_title': 'Article Detail',
+      'p16_share': 'Share',
+      'p16_share_copied': 'Link copied',
+      'p16_published': 'Published {date}',
+      'p16_reading_time': '{n} min read',
+      'p16_category.polusi': 'Pollution',
+      'p16_category.ekosistem': 'Ecosystem',
+      'p16_category.perikanan_berkelanjutan': 'Sustainable Fisheries',
+      'p16_category.kawasan_konservasi': 'Conservation Areas',
+      'p16_save': 'Save article',
+      'p16_remove_saved': 'Remove from saved',
+      'p16_saved': 'Saved',
+      'p16_empty_saved': 'No saved articles yet.',
+      'p16_save_failed': 'Article could not be saved.',
+      'p16_remove_saved_failed': 'Article could not be removed from saved.',
+      'p16_saved_load_failed': 'Saved articles could not be loaded.',
+      'p16_article_not_found': 'Article not found.',
+      'p16_image_unavailable': 'Image unavailable',
+      'learn.emptyCategory': 'No articles in this category yet.',
+
       // --- Login prompt ---
       'login.prompt.title': 'Sign in required',
       'login.prompt.body': 'Sign in to continue. You will return to this page.',
@@ -998,8 +1070,7 @@ class AppLocalizations {
       'my_reports.loading': 'Loading reports...',
       'my_reports.load_error':
           'Could not load reports. Check your connection and try again.',
-      'my_reports.empty':
-          'You have no reports yet. Report what you find around you to help keep the sea healthy.',
+      'my_reports.empty': 'You have no reports yet. Report what you find around you to help keep the sea healthy.',
       'my_reports.create': 'Create report',
       'my_reports.empty_filter': 'No reports with status {status}.',
       'my_reports.tracker': 'Status tracker',
@@ -1007,8 +1078,7 @@ class AppLocalizations {
       'my_reports.waiting_verification': 'Waiting for verification',
       'my_reports.severity_chip': 'Severity: {level}',
       'my_reports.open_actions': 'View related actions',
-      'my_reports.open_actions_hint':
-          'Find activities linked to this report.',
+      'my_reports.open_actions_hint': 'Find activities linked to this report.',
       'my_reports.count': '{n} reports',
       'my_reports.filtered_count': '{status} · {n} reports',
       'my_reports.filter_title': 'Filter status',
