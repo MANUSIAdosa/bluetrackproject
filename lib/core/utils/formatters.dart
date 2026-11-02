@@ -27,6 +27,13 @@ abstract final class Formatters {
     return DateFormat.yMMMMd(locale).format(date);
   }
 
+  /// Short calendar date for tight card metadata (e.g. "24 Okt 2026").
+  static String shortDate(DateTime date, String localeLanguageCode) {
+    _ensureDateSymbols();
+    final locale = _locale(localeLanguageCode);
+    return DateFormat.yMMMd(locale).format(date);
+  }
+
   /// Short timestamp for one notification row. [now] is passed in so the
   /// grouping is testable; the page passes `DateTime.now()`.
   ///
@@ -93,6 +100,13 @@ abstract final class Formatters {
     _ensureDateSymbols();
     final locale = _locale(localeLanguageCode);
     return NumberFormat.decimalPattern(locale).format(value);
+  }
+
+  /// Clock time, for example `07.00` in Indonesian or `7:00 AM` in English.
+  static String time(DateTime date, String localeLanguageCode) {
+    _ensureDateSymbols();
+    final locale = _locale(localeLanguageCode);
+    return DateFormat.jm(locale).format(date.toLocal());
   }
 
   /// Date and time, for example `31 Okt 2026 14.05` in Indonesian.

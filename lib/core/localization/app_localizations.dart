@@ -698,6 +698,47 @@ class AppLocalizations {
       'report_photo_viewer_counter': '{current}/{total}',
       'report_photo_viewer_close': 'Tutup',
 
+      // --- Action Agenda (Aksi) ---
+      'action.type.beach_cleanup': 'Bersih Pantai',
+      'action.type.coral_restoration': 'Restorasi Karang',
+      'action.type.mangrove_planting': 'Tanam Mangrove',
+      'action.type.wildlife_monitoring': 'Pemantauan Satwa',
+      'action.type.education': 'Edukasi Bahari',
+      'action.quota': '{joined}/{total} peserta',
+      'action.quota.full': '{joined}/{total} peserta · Kuota penuh',
+      'action.status.open': 'Terbuka',
+      'action.status.full': 'Penuh',
+      'action.status.ended': 'Selesai',
+      'action.empty': 'Belum ada aksi yang tersedia saat ini.',
+      'action.unavailable': 'Aksi tidak dapat dimuat.',
+      'action.detail.register': 'Daftar',
+      'action.detail.registered': 'Terdaftar',
+      'action.detail.registrationClosed': 'Pendaftaran ditutup',
+      'action.detail.description': 'Deskripsi',
+      'action.detail.date': 'Tanggal',
+      'action.detail.time': 'Waktu',
+      'action.detail.location': 'Lokasi',
+      'action.detail.meetingPoint': 'Titik kumpul',
+      'action.detail.map': 'Peta Lokasi',
+      'action.detail.equipment': 'Perlengkapan',
+      'action.detail.organizer': 'Penyelenggara',
+      'action.detail.viewOrganizer': 'Lihat profil penyelenggara',
+      'action.detail.reminder': 'Pengingat',
+      'action.detail.reminderBody':
+          'Ingatkan saya sebelum kegiatan dimulai (simulasi).',
+      'action.detail.reminderEnabled': 'Pengingat diaktifkan (simulasi).',
+      'action.detail.reminderDisabled': 'Pengingat dimatikan.',
+      'action.detail.confirmTitle': 'Konfirmasi Pendaftaran',
+      'action.detail.confirmBody':
+          'Pastikan data kegiatan sudah sesuai sebelum mendaftar.',
+      'action.detail.confirm': 'Konfirmasi',
+      'action.detail.registerSuccess':
+          'Pendaftaran berhasil. Sampai jumpa di lokasi!',
+      'action.detail.registerFailed':
+          'Pendaftaran gagal. Silakan coba lagi.',
+      'action.detail.loadFailed': 'Detail aksi gagal dimuat.',
+      'action.detail.notFound': 'Aksi tidak ditemukan.',
+
       // --- Notifications (P13) ---
       // TODO(P13, minggu 12-13): the list, mark-read and delete flows are fed
       // by mock data only; copy may change once real triggers exist.
@@ -1381,6 +1422,46 @@ class AppLocalizations {
       'report_mine_new': 'Create Report',
       'report_photo_viewer_counter': '{current}/{total}',
       'report_photo_viewer_close': 'Close',
+
+      // --- Action Agenda (Aksi) ---
+      'action.type.beach_cleanup': 'Beach Cleanup',
+      'action.type.coral_restoration': 'Coral Restoration',
+      'action.type.mangrove_planting': 'Mangrove Planting',
+      'action.type.wildlife_monitoring': 'Wildlife Monitoring',
+      'action.type.education': 'Marine Education',
+      'action.quota': '{joined}/{total} participants',
+      'action.quota.full': '{joined}/{total} participants · Fully booked',
+      'action.status.open': 'Open',
+      'action.status.full': 'Full',
+      'action.status.ended': 'Ended',
+      'action.empty': 'No actions available right now.',
+      'action.unavailable': 'Actions could not be loaded.',
+      'action.detail.register': 'Register',
+      'action.detail.registered': 'Registered',
+      'action.detail.registrationClosed': 'Registration closed',
+      'action.detail.description': 'Description',
+      'action.detail.date': 'Date',
+      'action.detail.time': 'Time',
+      'action.detail.location': 'Location',
+      'action.detail.meetingPoint': 'Meeting point',
+      'action.detail.map': 'Location Map',
+      'action.detail.equipment': 'Equipment',
+      'action.detail.organizer': 'Organizer',
+      'action.detail.viewOrganizer': 'View organizer profile',
+      'action.detail.reminder': 'Reminder',
+      'action.detail.reminderBody':
+          'Remind me before the activity starts (simulation).',
+      'action.detail.reminderEnabled': 'Reminder enabled (simulation).',
+      'action.detail.reminderDisabled': 'Reminder disabled.',
+      'action.detail.confirmTitle': 'Confirm Registration',
+      'action.detail.confirmBody':
+          'Please review the activity details before registering.',
+      'action.detail.confirm': 'Confirm',
+      'action.detail.registerSuccess':
+          'Registration successful. See you at the location!',
+      'action.detail.registerFailed': 'Registration failed. Please try again.',
+      'action.detail.loadFailed': 'Action detail failed to load.',
+      'action.detail.notFound': 'Action not found.',
 
       // --- Notifications (P13) ---
       // TODO(P13, minggu 12-13): the list, mark-read and delete flows are fed
