@@ -430,6 +430,19 @@ class AppLocalizations {
       'p06_failure_mock_generic_solution':
           'Periksa metode pembayaran, lalu coba lagi.',
 
+      // --- Donation trace (P08) ---
+      'p08_title': 'Jejak Dukungan',
+      'p08_journey': 'Perjalanan donasi',
+      'p08_donation_id': 'Nomor donasi',
+      'p08_step_received': 'Diterima',
+      'p08_step_forwarded': 'Diteruskan ke penyelenggara',
+      'p08_step_proof': 'Bukti',
+      'p08_step_field_update': 'Update lapangan',
+      'p08_not_found': 'Donasi tidak ditemukan. Periksa tautan atau coba lagi.',
+      'p08_load_error':
+          'Gagal memuat jejak donasi. Periksa koneksi lalu coba lagi.',
+      'p08_loading': 'Memuat jejak donasi...',
+
       // --- Legal (Privacy Policy / Terms) ---
       'legal.privacy.title': 'Kebijakan Privasi',
       'legal.privacy.intro':
@@ -913,6 +926,20 @@ class AppLocalizations {
           'The payment could not be processed. The app still uses mock data.',
       'p06_failure_mock_generic_solution':
           'Check the payment method, then try again.',
+
+      // --- Donation trace (P08) ---
+      'p08_title': 'Donation Trace',
+      'p08_journey': 'Donation journey',
+      'p08_donation_id': 'Donation number',
+      'p08_step_received': 'Received',
+      'p08_step_forwarded': 'Forwarded to the organizer',
+      'p08_step_proof': 'Proof',
+      'p08_step_field_update': 'Field update',
+      'p08_not_found': 'Donation not found. Check the link or try again.',
+      'p08_load_error':
+          'Could not load the donation trace. Check your connection and try '
+          'again.',
+      'p08_loading': 'Loading donation trace...',
 
       // --- Legal (Privacy Policy / Terms) ---
       'legal.privacy.title': 'Privacy Policy',

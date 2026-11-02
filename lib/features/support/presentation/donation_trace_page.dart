@@ -1,23 +1,267 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../shell/detail_placeholder.dart';
+import '../../../core/localization/app_localizations.dart';
+import '../../../core/router/routes.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/formatters.dart';
+import '../../../shared/widgets/donation_timeline.dart';
+import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/error_state.dart';
+import '../../../shared/widgets/skeleton.dart';
+import '../data/donation_trace_repository.dart';
+import '../domain/donation_trace.dart';
 
-/// P08 — Jejak Dukungan & E-Receipt placeholder (owner G3).
+/// P08 — public donation trace.
 ///
-/// Route under proposal: `/support/trace/:donationId` replaces the old,
-/// never-routed `/transparency/trace/:donationId` push. Public trace data
-/// needs no login; the real screen replaces this placeholder.
-class DonationTracePage extends StatelessWidget {
-  const DonationTracePage({super.key, required this.donationId});
+/// The page needs no login: anyone with the donation id can see the four
+/// milestones. Data comes from the mock repository behind
+/// [DonationTraceRepository], so an API can replace it later.
+class DonationTracePage extends StatefulWidget {
+  const DonationTracePage({
+    super.key,
+    required this.donationId,
+    this.repository,
+  });
 
   final String donationId;
 
+  /// Test/demo override for the trace data source.
+  final DonationTraceRepository? repository;
+
+  @override
+  State<DonationTracePage> createState() => _DonationTracePageState();
+}
+
+class _DonationTracePageState extends State<DonationTracePage> {
+  late final DonationTraceRepository _repository =
+      widget.repository ?? MockDonationTraceRepository();
+
+  DonationTrace? _trace;
+  bool _loading = true;
+  bool _error = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final trace = await _repository.getById(widget.donationId);
+      if (!mounted) return;
+      setState(() {
+        _trace = trace;
+        _loading = false;
+        _error = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = true;
+      });
+    }
+  }
+
+  void _retry() {
+    setState(() {
+      _loading = true;
+      _error = false;
+    });
+    _load();
+  }
+
+  void _back(BuildContext context) {
+    if (context.canPop()) {
+      Navigator.of(context).maybePop();
+      return;
+    }
+    context.go(Routes.explore);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return DetailPlaceholder(
-      titleKey: 'detail.donationTrace',
-      pageCode: 'P08',
-      parameters: [('donationId', donationId)],
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => _back(context),
+        ),
+        title: Text(context.tr('p08_title')),
+      ),
+      body: _buildBody(context),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    if (_loading) {
+      return Semantics(
+        label: context.tr('p08_loading'),
+        child: const Padding(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Skeleton(height: 132, radius: 16),
+              SizedBox(height: 16),
+              Skeleton(height: 300, radius: 16),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_error) {
+      return ErrorState(message: context.tr('p08_load_error'), onRetry: _retry);
+    }
+
+    final trace = _trace;
+    if (trace == null) {
+      return EmptyState(
+        icon: Icons.search_off,
+        message: context.tr('p08_not_found'),
+      );
+    }
+
+    return _TraceContent(trace: trace);
+  }
+}
+
+class _TraceContent extends StatelessWidget {
+  const _TraceContent({required this.trace});
+
+  final DonationTrace trace;
+
+  @override
+  Widget build(BuildContext context) {
+    final lang = Localizations.localeOf(context).languageCode;
+    final steps = [
+      for (final type in DonationTraceStepType.values)
+        DonationTimelineStep(
+          label: _stepLabel(context, type),
+          isComplete: trace.stepFor(type) != null,
+          timeLabel: switch (trace.stepFor(type)) {
+            final step? => Formatters.date(step.at, lang),
+            null => null,
+          },
+        ),
+    ];
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _TraceHeader(trace: trace, lang: lang),
+          const SizedBox(height: 20),
+          Text(
+            context.tr('p08_journey'),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: DonationTimeline(steps: steps),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _stepLabel(BuildContext context, DonationTraceStepType type) {
+    return switch (type) {
+      DonationTraceStepType.received => context.tr('p08_step_received'),
+      DonationTraceStepType.forwarded => context.tr('p08_step_forwarded'),
+      DonationTraceStepType.proof => context.tr('p08_step_proof'),
+      DonationTraceStepType.fieldUpdate => context.tr('p08_step_field_update'),
+    };
+  }
+}
+
+class _TraceHeader extends StatelessWidget {
+  const _TraceHeader({required this.trace, required this.lang});
+
+  final DonationTrace trace;
+  final String lang;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            trace.projectTitle,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              height: 1.3,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            trace.organization,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Text(
+                  Formatters.currency(trace.amount, lang),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.ocean,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  Formatters.date(trace.donatedAt, lang),
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '${context.tr('p08_donation_id')}: ${trace.id}',
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
