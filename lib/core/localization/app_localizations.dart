@@ -767,6 +767,12 @@ class AppLocalizations {
       'action.status.ended': 'Selesai',
       'action.empty': 'Belum ada aksi yang tersedia saat ini.',
       'action.unavailable': 'Aksi tidak dapat dimuat.',
+      'action.tab.agenda': 'Agenda',
+      'action.tab.joined': 'Aksi yang Diikuti',
+      'action.joined.empty':
+          'Belum ada aksi yang kamu ikuti. Aksi dari tab Agenda akan muncul '
+          'di sini.',
+      'action.joined.viewAgenda': 'Lihat Agenda',
       'action.detail.register': 'Daftar',
       'action.detail.registered': 'Terdaftar',
       'action.detail.registrationClosed': 'Pendaftaran ditutup',
@@ -1546,6 +1552,12 @@ class AppLocalizations {
       'action.status.ended': 'Ended',
       'action.empty': 'No actions available right now.',
       'action.unavailable': 'Actions could not be loaded.',
+      'action.tab.agenda': 'Agenda',
+      'action.tab.joined': 'Participate Action',
+      'action.joined.empty':
+          'You have not joined any actions yet. Actions from the Agenda tab '
+          'will appear here.',
+      'action.joined.viewAgenda': 'View Agenda',
       'action.detail.register': 'Register',
       'action.detail.registered': 'Registered',
       'action.detail.registrationClosed': 'Registration closed',

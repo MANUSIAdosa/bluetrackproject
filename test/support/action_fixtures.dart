@@ -149,6 +149,15 @@ class InMemoryActionParticipationStore implements ActionParticipationStore {
   }
 
   @override
+  Future<Set<String>> registeredIds() async {
+    if (failLoads) throw StateError('simulated store load failure');
+    return _states.entries
+        .where((entry) => entry.value.registered)
+        .map((entry) => entry.key)
+        .toSet();
+  }
+
+  @override
   Future<void> setRegistered(String actionId, bool registered) async {
     if (failWrites) throw StateError('simulated store write failure');
     final current = _states[actionId] ?? const ActionParticipation();

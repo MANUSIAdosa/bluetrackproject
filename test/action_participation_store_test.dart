@@ -43,4 +43,34 @@ void main() {
     expect(state.registered, isTrue);
     expect(state.reminder, isFalse);
   });
+
+  test('demo joined actions are registered by default', () async {
+    const store = PrefsActionParticipationStore();
+
+    expect((await store.load('a03')).registered, isTrue);
+    expect((await store.load('a05')).registered, isTrue);
+    expect((await store.load('a01')).registered, isFalse);
+  });
+
+  test('registeredIds merges demo actions and stored registrations', () async {
+    const store = PrefsActionParticipationStore();
+    await store.setRegistered('a01', true);
+    await store.setRegistered('a02', false);
+
+    final ids = await store.registeredIds();
+
+    expect(ids, containsAll(['a01', 'a03', 'a05']));
+    expect(ids, hasLength(3));
+  });
+
+  test('a stored false opt-out removes a demo joined action', () async {
+    const store = PrefsActionParticipationStore();
+    await store.setRegistered('a03', false);
+
+    final ids = await store.registeredIds();
+
+    expect(ids, isNot(contains('a03')));
+    expect((await store.load('a03')).registered, isFalse);
+    expect(ids, contains('a05'));
+  });
 }
