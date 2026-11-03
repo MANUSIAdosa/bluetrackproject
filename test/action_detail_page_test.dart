@@ -373,6 +373,21 @@ void main() {
     expect(tester.widget<Switch>(find.byKey(_reminderSwitchKey)).value, isTrue);
   });
 
+  testWidgets('offers a back button that falls back to the agenda on a deep '
+      'link', (tester) async {
+    final item = buildAction();
+    await _pumpRouted(
+      tester,
+      item: item,
+      repository: FakeActionRepository([item]),
+    );
+
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+
+    expect(find.text('AGENDA'), findsOneWidget);
+  });
+
   testWidgets('opens the organization profile from the organizer section', (
     tester,
   ) async {
@@ -549,6 +564,13 @@ Future<void> _pumpRouted(
         builder: (context, state) => Scaffold(
           appBar: AppBar(),
           body: Text('ORG:${state.pathParameters['id'] ?? ''}'),
+        ),
+      ),
+      GoRoute(
+        path: Routes.actionAgenda,
+        builder: (context, state) => Scaffold(
+          appBar: AppBar(),
+          body: const Text('AGENDA'),
         ),
       ),
     ],

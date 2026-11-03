@@ -124,7 +124,21 @@ class _ActionDetailPageState extends State<ActionDetailPage> {
   Widget build(BuildContext context) {
     final item = _item;
     return Scaffold(
-      appBar: AppBar(title: Text(context.tr('detail.action'))),
+      appBar: AppBar(
+        title: Text(context.tr('detail.action')),
+        // The page is normally pushed from the agenda, but it is also a
+        // deep-link target. Fall back to the agenda when there is no stack.
+        leading: BackButton(
+          onPressed: () {
+            final navigator = Navigator.of(context);
+            if (navigator.canPop()) {
+              navigator.pop();
+            } else {
+              context.go(Routes.actionAgenda);
+            }
+          },
+        ),
+      ),
       body: _buildBody(context),
       bottomNavigationBar: item == null
           ? null
