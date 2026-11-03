@@ -1,0 +1,109 @@
+{
+  "_note": "P16 Learn — mock article data. Titles, summaries and content are stored in Indonesian and English; the repository resolves the active language. Images reuse assets/images/interests so no new binary assets are needed.",
+  "articles": [
+    {
+      "id": "a01",
+      "category": "polusi",
+      "image": "assets/images/interests/marine_waste.jpg",
+      "readingMinutes": 5,
+      "publishedAt": "2026-10-20",
+      "titleId": "Dari Darat ke Laut: Perjalanan Sampah Plastik",
+      "titleEn": "From Land to Sea: The Journey of Plastic Waste",
+      "summaryId": "Plastik yang dibuang di darat sering berakhir di laut dan mengancam satwa serta terumbu karang.",
+      "summaryEn": "Plastic discarded on land often ends up in the sea, threatening wildlife and coral reefs.",
+      "contentId": "Sebagian besar sampah laut berasal dari aktivitas di darat. Hujan dan angin membawa plastik dari jalan dan permukiman ke sungai, lalu ke pesisir. Memilah sampah dan mengurangi plastik sekali pakai adalah langkah awal yang bisa dilakukan siapa saja.",
+      "contentEn": "Most marine debris starts on land. Rain and wind carry plastic from streets and neighbourhoods into rivers and on to the coast. Sorting waste and cutting single-use plastic are first steps anyone can take."
+    },
+    {
+      "id": "a02",
+      "category": "polusi",
+      "image": "assets/images/interests/coral_reef.jpg",
+      "readingMinutes": 6,
+      "publishedAt": "2026-10-15",
+      "titleId": "Memahami Polusi Nutrisi di Perairan Pesisir",
+      "titleEn": "Understanding Nutrient Pollution in Coastal Waters",
+      "summaryId": "Pupuk dan limbah organik berlebih memicu alga tumbuh cepat dan menutupi terumbu.",
+      "summaryEn": "Excess fertiliser and organic waste make algae grow quickly and smother reefs.",
+      "contentId": "Saat nutrisi dari pupuk dan limbah rumah tangga masuk ke laut, alga dapat tumbuh lebih cepat daripada karang. Lapisan alga menghalangi cahaya dan membuat karang sulit bertahan. Mengurangi limbah organik dan menjaga vegetasi tepi sungai membantu menekan aliran nutrisi ke laut.",
+      "contentEn": "When nutrients from fertiliser and household waste reach the sea, algae can grow faster than coral. The algal layer blocks light and makes it hard for coral to survive. Reducing organic waste and keeping riverbank vegetation intact helps limit the flow of nutrients into the sea."
+    },
+    {
+      "id": "a03",
+      "category": "ekosistem",
+      "image": "assets/images/interests/coral_reef.jpg",
+      "readingMinutes": 4,
+      "publishedAt": "2026-10-10",
+      "titleId": "Terumbu Karang: Kota Bawah Laut yang Rentan",
+      "titleEn": "Coral Reefs: A Fragile City Under the Sea",
+      "summaryId": "Terumbu karang menopang ribuan spesies, tetapi sangat peka terhadap perubahan suhu.",
+      "summaryEn": "Coral reefs support thousands of species but are highly sensitive to temperature change.",
+      "contentId": "Terumbu karang menyediakan tempat tinggal, makanan, dan perlindungan bagi banyak makhluk laut. Ketika suhu air naik terlalu lama, karang mengalami pemutihan dan dapat mati. Menjaga jarak saat menyelam dan tidak menyentuh karang membantu mengurangi tekanan pada ekosistem ini.",
+      "contentEn": "Coral reefs provide shelter, food, and protection for many marine creatures. When water temperatures stay too high for too long, coral bleaches and may die. Keeping a safe distance while diving and never touching coral helps reduce pressure on this ecosystem."
+    },
+    {
+      "id": "a04",
+      "category": "ekosistem",
+      "image": "assets/images/interests/mangrove.jpg",
+      "readingMinutes": 5,
+      "publishedAt": "2026-10-05",
+      "titleId": "Mangrove, Pelindung Alami Garis Pantai",
+      "titleEn": "Mangroves: Nature's Coastal Shield",
+      "summaryId": "Akar mangrove meredam gelombang dan menjadi tempat asuhan bagi banyak ikan.",
+      "summaryEn": "Mangrove roots absorb wave energy and serve as a nursery for many fish.",
+      "contentId": "Hutan mangrove tumbuh di antara darat dan laut, tempat akarnya menahan sedimen dan meredam gelombang. Banyak ikan dan udang menghabiskan masa kecilnya di celah akar sebelum bergerak ke laut terbuka. Menjaga mangrove berarti melindungi pesisir sekaligus mendukung perikanan setempat.",
+      "contentEn": "Mangrove forests grow between land and sea, where their roots trap sediment and absorb wave energy. Many fish and prawns spend their early lives among the roots before moving to the open sea. Protecting mangroves safeguards the coast and supports local fisheries at the same time."
+    },
+    {
+      "id": "a05",
+      "category": "perikanan_berkelanjutan",
+      "image": "assets/images/interests/sustainable_fishery.jpg",
+      "readingMinutes": 7,
+      "publishedAt": "2026-09-28",
+      "titleId": "Mengapa Ukuran Tangkapan Itu Penting",
+      "titleEn": "Why Catch Size Matters",
+      "summaryId": "Menangkap ikan sebelum cukup umur membuat populasi sulit pulih.",
+      "summaryEn": "Catching fish before they mature makes it hard for populations to recover.",
+      "contentId": "Ikan yang masih kecil belum sempat berkembang biak. Jika terus ditangkap, jumlah ikan dewasa menurun dan populasi butuh waktu lama untuk pulih. Nelayan, pembeli, dan konsumen dapat mendukung perikanan berkelanjutan dengan memilih ukuran tangkapan yang tepat dan menghormati musim pemijahan.",
+      "contentEn": "Young fish have not yet had a chance to reproduce. If they keep being caught, the number of mature fish falls and the population takes a long time to recover. Fishers, buyers, and consumers can support sustainable fisheries by choosing the right catch size and respecting spawning seasons."
+    },
+    {
+      "id": "a06",
+      "category": "perikanan_berkelanjutan",
+      "image": "assets/images/interests/marine_wildlife.jpg",
+      "readingMinutes": 6,
+      "publishedAt": "2026-09-22",
+      "titleId": "Tangkapan Sampingan dan Nasib Satwa Laut",
+      "titleEn": "Bycatch and the Fate of Marine Wildlife",
+      "summaryId": "Alat tangkap yang tidak selektif ikut menangkap penyu, lumba-lumba, dan burung laut.",
+      "summaryEn": "Non-selective fishing gear also catches turtles, dolphins, and seabirds.",
+      "contentId": "Tangkapan sampingan adalah hewan yang tidak menjadi target tetapi ikut terjerat alat tangkap. Penyu, lumba-lumba, dan burung laut sering menjadi korban dan banyak di antaranya terancam punah. Alat tangkap yang lebih selektif serta pelepasan hewan dengan hati-hati dapat mengurangi dampak ini.",
+      "contentEn": "Bycatch is the wildlife caught unintentionally by fishing gear. Turtles, dolphins, and seabirds are frequent victims, and many of them are endangered. More selective gear and careful release of accidental catches can reduce this impact."
+    },
+    {
+      "id": "a07",
+      "category": "kawasan_konservasi",
+      "image": "assets/images/interests/marine_wildlife.jpg",
+      "readingMinutes": 5,
+      "publishedAt": "2026-09-15",
+      "titleId": "Apa Itu Kawasan Konservasi Perairan?",
+      "titleEn": "What Is a Marine Protected Area?",
+      "summaryId": "Kawasan konservasi memberi ruang bagi ekosistem laut untuk pulih tanpa tekanan penangkapan.",
+      "summaryEn": "Marine protected areas give ocean ecosystems room to recover from fishing pressure.",
+      "contentId": "Kawasan konservasi perairan adalah wilayah laut yang dikelola untuk melindungi ekosistem dan keanekaragaman hayati. Di dalamnya, aktivitas seperti penangkapan ikan dan wisata diatur agar tidak merusak habitat. Ketika dikelola dengan baik, kawasan ini dapat memulihkan populasi ikan dan mendukung komunitas pesisir.",
+      "contentEn": "A marine protected area is a stretch of sea managed to protect ecosystems and biodiversity. Activities such as fishing and tourism are regulated so they do not damage habitats. When managed well, these areas can restore fish populations and support coastal communities."
+    },
+    {
+      "id": "a08",
+      "category": "kawasan_konservasi",
+      "image": "assets/images/interests/mangrove.jpg",
+      "readingMinutes": 4,
+      "publishedAt": "2026-09-08",
+      "titleId": "Peran Masyarakat dalam Menjaga Kawasan Konservasi",
+      "titleEn": "The Community's Role in Protecting Conservation Areas",
+      "summaryId": "Aturan kawasan berhasil ketika warga lokal ikut terlibat dalam perencanaan dan pengawasan.",
+      "summaryEn": "Conservation rules work best when local residents help plan and monitor them.",
+      "contentId": "Masyarakat yang tinggal di sekitar kawasan konservasi memiliki pengetahuan dan kepentingan langsung terhadap laut. Melibatkan mereka dalam perencanaan, patroli, dan kegiatan usaha yang ramah lingkungan membuat aturan lebih mudah diterima. Dukungan ini membantu kawasan tetap terjaga dalam jangka panjang.",
+      "contentEn": "Communities living near conservation areas have direct knowledge of and a stake in the sea. Involving them in planning, patrols, and sustainable livelihoods makes rules easier to accept. That support helps keep conservation areas protected over the long term."
+    }
+  ]
+}
