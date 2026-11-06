@@ -109,6 +109,8 @@ class AppLocalizations {
       'p16_article_not_found': 'Artikel tidak ditemukan.',
       'p16_image_unavailable': 'Gambar tidak tersedia',
       'learn.emptyCategory': 'Belum ada artikel dalam kategori ini.',
+      'learn.readMore': 'Baca selengkapnya',
+      'learn.byAuthor': 'Oleh {author}',
 
       // --- Login prompt ---
       'login.prompt.title': 'Fitur ini butuh masuk',
@@ -850,6 +852,8 @@ class AppLocalizations {
       'p16_article_not_found': 'Article not found.',
       'p16_image_unavailable': 'Image unavailable',
       'learn.emptyCategory': 'No articles in this category yet.',
+      'learn.readMore': 'Read more',
+      'learn.byAuthor': 'By {author}',
 
       // --- Login prompt ---
       'login.prompt.title': 'Sign in required',
