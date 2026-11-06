@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/state/app_state.dart';
+import '../../../shared/widgets/category_icon.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_state.dart';
 import '../../../shared/widgets/filter_chip_row.dart';
@@ -202,7 +203,7 @@ class _ExplorePageState extends State<ExplorePage> {
   /// delay, so the placeholder below the list behaves like a real request.
   Future<void> _loadNextPage() async {
     if (_loading || _loadingMore) return;
-    final total = _visible.length;
+    final total = _mainProjects.length;
     if (_visibleCount >= total) return;
     setState(() => _loadingMore = true);
     await Future<void>.delayed(_pageLatency);
@@ -389,6 +390,31 @@ class _ExplorePageState extends State<ExplorePage> {
     return list;
   }
 
+  /// The rail only exists in the plain Explore list: the saved collection is
+  /// already personal, and a search, a category or a missing interest leaves
+  /// nothing to personalise.
+  bool get _railVisible =>
+      !_savedScope &&
+      _interests.isNotEmpty &&
+      _category == 'semua' &&
+      _query.isEmpty;
+
+  List<Project> get _forYouProjects => _railVisible
+      ? _visible
+            .where((project) => _interests.contains(project.category))
+            .take(5)
+            .toList()
+      : const [];
+
+  /// Projects shown in the main list. Cards already in the rail are removed so
+  /// the same project never appears twice; paging counts this list.
+  List<Project> get _mainProjects {
+    final rail = _forYouProjects;
+    if (rail.isEmpty) return _visible;
+    final railIds = rail.map((project) => project.id).toSet();
+    return _visible.where((project) => !railIds.contains(project.id)).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final visible = _visible;
@@ -503,15 +529,20 @@ class _ExplorePageState extends State<ExplorePage> {
       );
     }
 
-    // The saved collection is already a personal selection, so the interest
-    // rail stays out of the way while that scope is active.
-    final forYou = (_savedScope || _interests.isEmpty)
-        ? const <Project>[]
-        : visible
-              .where((p) => _interests.contains(p.category))
-              .take(5)
-              .toList();
-    final page = visible.take(_visibleCount).toList();
+    final forYou = _forYouProjects;
+    final others = _mainProjects;
+    final page = others.take(_visibleCount).toList();
+    final sectionTitle = _savedScope
+        ? context.tr('explore.savedProjects')
+        : forYou.isNotEmpty
+        ? context.tr('explore.moreProjects')
+        : context.tr('explore.allProjects');
+    final twoColumns = MediaQuery.sizeOf(context).width >= 600;
+
+    Widget card(Project project) => ProjectCard(
+      project: project,
+      onSavedChanged: () => setState(() {}),
+    );
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -532,7 +563,11 @@ class _ExplorePageState extends State<ExplorePage> {
           FilterChipRow(
             options: [
               for (final id in _categoryIds)
-                ChipOption(id: id, label: context.tr('cat.$id')),
+                ChipOption(
+                  id: id,
+                  label: context.tr('cat.$id'),
+                  color: id == 'semua' ? null : CategoryIcons.colorFor(id),
+                ),
             ],
             selectedId: _category,
             onSelected: (id) {
@@ -541,26 +576,30 @@ class _ExplorePageState extends State<ExplorePage> {
             },
             padding: const EdgeInsets.only(left: ExploreSpacing.x16),
           ),
-          if (_selection.hasAny)
+          // The category is already visible as the selected chip, so the token
+          // bar only summarises the distance/condition filters from the sheet.
+          if (_selection.activeCount > 0)
             ActiveFilterBar(
               selection: _selection,
               onChanged: (value) {
                 _resetPaging();
                 setState(() {
-                  _category = value.category;
                   _distance = value.distance;
                   _condition = value.condition;
                 });
               },
               horizontalPadding: ExploreSpacing.x16,
             ),
-          if (forYou.isNotEmpty && _category == 'semua' && _query.isEmpty) ...[
+          if (forYou.isNotEmpty) ...[
             const SizedBox(height: ExploreSpacing.x24),
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: ExploreSpacing.x16,
               ),
-              child: exploreSectionHeader(context.tr('explore.forYou')),
+              child: exploreSectionHeader(
+                context,
+                context.tr('explore.forYou'),
+              ),
             ),
             const SizedBox(height: ExploreSpacing.x12),
             ForYouRail(
@@ -569,29 +608,46 @@ class _ExplorePageState extends State<ExplorePage> {
               onSavedChanged: () => setState(() {}),
             ),
           ],
-          const SizedBox(height: ExploreSpacing.x24),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: ExploreSpacing.x16,
-            ),
-            child: exploreSectionHeader(
-              context.tr('explore.allProjectsWithCount', {
-                'n': '${visible.length}',
-              }),
-            ),
-          ),
-          const SizedBox(height: ExploreSpacing.x12),
-          for (var i = 0; i < page.length; i++) ...[
-            if (i > 0) const SizedBox(height: ExploreSpacing.x12),
+          if (others.isNotEmpty) ...[
+            const SizedBox(height: ExploreSpacing.x24),
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: ExploreSpacing.x16,
               ),
-              child: ProjectCard(
-                project: page[i],
-                onSavedChanged: () => setState(() {}),
-              ),
+              child: exploreSectionHeader(context, sectionTitle),
             ),
+            const SizedBox(height: ExploreSpacing.x12),
+            if (twoColumns)
+              for (var i = 0; i < page.length; i += 2) ...[
+                if (i > 0) const SizedBox(height: ExploreSpacing.x12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: ExploreSpacing.x16,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: card(page[i])),
+                      const SizedBox(width: ExploreSpacing.x16),
+                      Expanded(
+                        child: i + 1 < page.length
+                            ? card(page[i + 1])
+                            : const SizedBox.shrink(),
+                      ),
+                    ],
+                  ),
+                ),
+              ]
+            else
+              for (var i = 0; i < page.length; i++) ...[
+                if (i > 0) const SizedBox(height: ExploreSpacing.x12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: ExploreSpacing.x16,
+                  ),
+                  child: card(page[i]),
+                ),
+              ],
           ],
           // Small placeholder while the next page is appended.
           if (_loadingMore)

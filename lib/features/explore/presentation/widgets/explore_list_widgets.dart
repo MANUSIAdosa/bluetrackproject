@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../../shared/widgets/project_card.dart';
@@ -15,17 +17,20 @@ abstract final class ExploreSpacing {
 
 /// Section heading used by the Jelajahi list. Horizontal page padding is the
 /// caller's job, so both headings share the inset of the content below them.
-Widget exploreSectionHeader(String text) => Text(
+Widget exploreSectionHeader(BuildContext context, String text) => Text(
   text,
-  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+    fontSize: 18,
+    fontWeight: FontWeight.w800,
+  ),
 );
 
 /// Horizontal "Untuk minatmu" rail.
 ///
-/// It bleeds to the screen edges: the last card is cut by the viewport as a
-/// scroll hint, and the next card peeks 16dp past the first one. Every card has
-/// the same height, so the rail takes the card's own height instead of
-/// stretching children.
+/// It bleeds to the screen edges and snaps one card at a time: after a swipe
+/// the active card's left edge rests on the page's 16dp margin, while the next
+/// card peeks 16dp. Every card has the same height, so the rail takes the
+/// card's own height instead of stretching children.
 class ForYouRail extends StatelessWidget {
   const ForYouRail({
     super.key,
@@ -40,17 +45,28 @@ class ForYouRail extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final cardWidth =
-            constraints.maxWidth -
-            ExploreSpacing.x16 -
-            ExploreSpacing.x12 -
-            ExploreSpacing.x16;
+        // 16dp margin + 12dp gap + 16dp peek leaves the visible card width.
+        // Tablets cap it so the rail never shows a full-width 16:9 card.
+        final cardWidth = math.min(
+          constraints.maxWidth -
+              ExploreSpacing.x16 -
+              ExploreSpacing.x12 -
+              ExploreSpacing.x16,
+          340.0,
+        );
+        final itemExtent = cardWidth + ExploreSpacing.x12;
 
         return SizedBox(
           height: ProjectCard.heightFor(context, cardWidth),
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: ExploreSpacing.x16),
+            physics: _SnapToItemPhysics(itemExtent: itemExtent),
+            // The extra 12dp on the right lets the last card reach the 16dp
+            // margin when it snaps, instead of stopping short.
+            padding: const EdgeInsets.only(
+              left: ExploreSpacing.x16,
+              right: ExploreSpacing.x16 + ExploreSpacing.x12,
+            ),
             itemCount: projects.length,
             separatorBuilder: (_, _) =>
                 const SizedBox(width: ExploreSpacing.x12),
@@ -58,12 +74,59 @@ class ForYouRail extends StatelessWidget {
               width: cardWidth,
               child: ProjectCard(
                 project: projects[index],
+                rail: true,
                 onSavedChanged: onSavedChanged,
               ),
             ),
           ),
         );
       },
+    );
+  }
+}
+
+/// Snaps a horizontal rail to whole item extents: `pixels` multiples of
+/// [itemExtent] put the next card on the page margin after each swipe.
+class _SnapToItemPhysics extends ScrollPhysics {
+  const _SnapToItemPhysics({required this.itemExtent, super.parent});
+
+  final double itemExtent;
+
+  static final SpringDescription _spring =
+      SpringDescription.withDampingRatio(
+        mass: 0.5,
+        stiffness: 100.0,
+        ratio: 1.1,
+      );
+
+  @override
+  _SnapToItemPhysics applyTo(ScrollPhysics? ancestor) =>
+      _SnapToItemPhysics(itemExtent: itemExtent, parent: buildParent(ancestor));
+
+  @override
+  Simulation? createBallisticSimulation(
+    ScrollMetrics position,
+    double velocity,
+  ) {
+    if (position.outOfRange) {
+      return super.createBallisticSimulation(position, velocity);
+    }
+    final tolerance = toleranceFor(position);
+    final snap =
+        (position.pixels / itemExtent).roundToDouble() * itemExtent;
+    final target = snap
+        .clamp(position.minScrollExtent, position.maxScrollExtent)
+        .toDouble();
+    if ((position.pixels - target).abs() < 0.5 &&
+        velocity.abs() < tolerance.velocity) {
+      return super.createBallisticSimulation(position, velocity);
+    }
+    return ScrollSpringSimulation(
+      _spring,
+      position.pixels,
+      target,
+      velocity,
+      tolerance: tolerance,
     );
   }
 }

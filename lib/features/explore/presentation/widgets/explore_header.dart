@@ -186,7 +186,7 @@ class ExploreViewSwitch extends StatelessWidget {
       style: SegmentedButton.styleFrom(
         minimumSize: const Size(0, 48),
         padding: const EdgeInsets.symmetric(horizontal: ExploreSpacing.x4),
-        textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
         tapTargetSize: MaterialTapTargetSize.padded,
         side: const BorderSide(color: AppColors.border),
         backgroundColor: AppColors.surface,
@@ -338,15 +338,6 @@ class ActiveFilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = <Widget>[
-      if (selection.category != 'semua')
-        _FilterToken(
-          key: const ValueKey('explore.activeFilter.category'),
-          icon: CategoryIcons.iconFor(selection.category),
-          label:
-              '${context.tr('p03_filter_category')}: '
-              '${context.tr('cat.${selection.category}')}',
-          onRemove: () => onChanged(selection.copyWith(category: 'semua')),
-        ),
       if (selection.distance != DistanceBand.semua)
         _FilterToken(
           key: const ValueKey('explore.activeFilter.distance'),
@@ -397,7 +388,9 @@ class ActiveFilterBar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: ExploreSpacing.x8),
               minimumSize: const Size(0, 48),
             ),
-            onPressed: () => onChanged(ExploreFilterSelection.none),
+            // Clearing the sheet filters must not undo the category the user
+            // picked on the rail.
+            onPressed: () => onChanged(selection.withoutRefinements),
             child: Text(
               context.tr('p03_clear_all'),
               style: const TextStyle(
@@ -529,7 +522,9 @@ class ExploreResultsBar extends StatelessWidget {
                             radius: 4,
                           )
                         : Text(
-                            '${context.tr('explore.projects')} · $count',
+                            context.tr('explore.projectCount', {
+                              'n': '$count',
+                            }),
                             key: const ValueKey('explore.resultsCount'),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -580,11 +575,16 @@ class _MapCategoryChip extends StatelessWidget {
       message: context.tr('p03_category_label'),
       child: ActionChip(
         key: const ValueKey('explore.mapCategoryChip'),
-        avatar: Icon(
-          all ? Icons.grid_view_rounded : CategoryIcons.iconFor(categoryId),
-          size: 16,
-          color: AppColors.ocean,
-        ),
+        avatar: all
+            ? null
+            : Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: CategoryIcons.colorFor(categoryId),
+                  shape: BoxShape.circle,
+                ),
+              ),
         label: Text(label),
         labelStyle: const TextStyle(
           fontSize: 12,

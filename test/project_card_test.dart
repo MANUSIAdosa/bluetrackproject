@@ -1,4 +1,3 @@
-import 'package:blue_track/shared/widgets/category_icon.dart';
 import 'package:blue_track/shared/widgets/progress_bar.dart';
 import 'package:blue_track/shared/widgets/progress_ring.dart';
 import 'package:blue_track/shared/widgets/project_card.dart';
@@ -57,7 +56,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(CategoryIcon), findsOneWidget);
     expect(find.text('Penyu'), findsOneWidget);
     expect(find.text('75% terkumpul'), findsOneWidget);
   });

@@ -341,13 +341,20 @@ void main() {
       await tester.pump();
 
       expect(find.byKey(const ValueKey('explore.activeFilters')), findsOneWidget);
-      expect(find.text('Kategori: Penyu'), findsOneWidget);
+      // The category is visible as the selected rail chip, so the bar never
+      // repeats it as a token.
+      expect(
+        find.byKey(const ValueKey('explore.activeFilter.category')),
+        findsNothing,
+      );
       expect(find.text('Jarak: <250 km'), findsOneWidget);
       expect(find.text('Kondisi: Kritis'), findsOneWidget);
       expect(find.text('Hapus semua'), findsOneWidget);
     });
 
-    testWidgets('removing one token keeps the other dimensions', (tester) async {
+    testWidgets('removing one token keeps the category and the other filter', (
+      tester,
+    ) async {
       ExploreFilterSelection? changed;
 
       await tester.pumpWidget(
@@ -365,16 +372,17 @@ void main() {
       await tester.pump();
 
       await tester.tap(
-        find.byKey(const ValueKey('explore.activeFilter.category')),
+        find.byKey(const ValueKey('explore.activeFilter.distance')),
       );
 
       expect(changed, isNotNull);
-      expect(changed!.category, 'semua');
-      expect(changed!.distance, DistanceBand.dekat);
+      expect(changed!.category, 'penyu');
+      expect(changed!.distance, DistanceBand.semua);
       expect(changed!.condition, ProjectCondition.kritis);
     });
 
-    testWidgets('"Hapus semua" clears every dimension', (tester) async {
+    testWidgets('"Hapus semua" clears the sheet filters but keeps the rail '
+        'category', (tester) async {
       ExploreFilterSelection? changed;
 
       await tester.pumpWidget(
@@ -393,7 +401,9 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('explore.clearFilters')));
 
-      expect(changed, ExploreFilterSelection.none);
+      expect(changed!.category, 'penyu');
+      expect(changed!.distance, DistanceBand.semua);
+      expect(changed!.condition, isNull);
     });
   });
 
@@ -412,7 +422,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Proyek · 4'), findsOneWidget);
+      expect(find.text('4 proyek'), findsOneWidget);
       expect(find.byKey(const ValueKey('explore.view.list')), findsOneWidget);
       expect(find.byKey(const ValueKey('explore.view.map')), findsOneWidget);
 

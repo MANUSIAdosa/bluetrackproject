@@ -305,7 +305,7 @@ void main() {
       'switch', (tester) async {
     await pumpExplore(tester, projects: FakeProjectRepository(twoCategories()));
 
-    expect(find.text('Proyek · 2'), findsOneWidget);
+    expect(find.text('2 proyek'), findsOneWidget);
     // Both views are visible as a segmented switch, next to the results they
     // control.
     expect(
@@ -389,24 +389,17 @@ void main() {
     );
   });
 
-  testWidgets('selecting a category shows a labelled filter token that can be '
-      'removed', (tester) async {
+  testWidgets('selecting a category updates the results without adding a '
+      'filter token', (tester) async {
     await pumpExplore(tester, projects: FakeProjectRepository(twoCategories()));
 
     await tapCategory(tester, 'karang');
 
-    expect(find.byKey(const ValueKey('explore.activeFilters')), findsOneWidget);
-    expect(find.text('Kategori: Karang'), findsOneWidget);
-    expect(find.text('Proyek · 1'), findsOneWidget);
-
-    await tester.tap(
-      find.byKey(const ValueKey('explore.activeFilter.category')),
-    );
-    await pumpFrames(tester);
-
+    // The filled chip already shows the category; the token bar is reserved
+    // for the distance/condition filters owned by the sheet.
     expect(find.byKey(const ValueKey('explore.activeFilters')), findsNothing);
-    expect(categorySelector(tester).selectedId, 'semua');
-    expect(find.text('Proyek · 2'), findsOneWidget);
+    expect(categorySelector(tester).selectedId, 'karang');
+    expect(find.text('1 proyek'), findsOneWidget);
   });
 
   testWidgets('the filter badge ignores the category chosen on the rail', (
