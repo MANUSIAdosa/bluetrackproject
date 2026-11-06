@@ -339,25 +339,15 @@ class _FundingCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  Formatters.percent(project.progress, lang),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.ocean,
-                  ),
-                ),
-                Text(
-                  context.tr('project.target'),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
+            Text(
+              context.tr('project.percent_reached', {
+                'n': Formatters.percent(project.progress, lang),
+              }),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: AppColors.ocean,
+              ),
             ),
             const SizedBox(height: 6),
             ProgressBar(value: project.progress),
