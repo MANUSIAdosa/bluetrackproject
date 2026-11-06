@@ -74,11 +74,13 @@ final _mapData = ExploreMapData(
 
 List<Project> _twoProjects() => [
   _project(id: 'p01', title: 'Peneluruhan Penyu', category: 'penyu'),
+  // Far from p01 on any zoom so the two pins stay separately tappable.
   _project(
     id: 'p02',
     title: 'Pemulihan Karang',
     category: 'karang',
-    latitude: -6.22,
+    latitude: 3.2,
+    longitude: 105.9,
   ),
 ];
 
@@ -255,9 +257,9 @@ void main() {
     expect(active, isNot(inactive));
   });
 
-  testWidgets('stacked markers keep separate tap targets', (tester) async {
-    // Same coordinates: without spreading, the second pin would cover the
-    // first and only one of them could be tapped.
+  testWidgets('coincident markers merge into one cluster on the page map', (
+    tester,
+  ) async {
     final stacked = FakeProjectRepository([
       _project(id: 'p01', title: 'Marker Satu', category: 'penyu'),
       _project(id: 'p02', title: 'Marker Dua', category: 'karang'),
@@ -265,17 +267,9 @@ void main() {
     await pumpExplore(tester, projects: stacked);
     await tapKey(tester, 'explore.view.map');
 
-    final first = tester.getRect(
-      find.byKey(const ValueKey('explore.marker.p01')),
-    );
-    final second = tester.getRect(
-      find.byKey(const ValueKey('explore.marker.p02')),
-    );
-    expect(first.overlaps(second), isFalse);
-
-    await tester.tap(find.byKey(const ValueKey('explore.marker.p01')));
-    await tester.pumpAndSettle();
-    expect(find.text('Marker Satu'), findsWidgets);
+    expect(find.byKey(const ValueKey('explore.cluster')), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
+    expect(find.byKey(const ValueKey('explore.marker.p01')), findsNothing);
   });
 
   testWidgets('filter button badges how many groups are active', (

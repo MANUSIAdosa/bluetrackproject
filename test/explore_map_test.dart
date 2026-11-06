@@ -13,12 +13,73 @@ import 'support/test_harness.dart';
 
 /// One pixel of transparent PNG — keeps the tile layer off the network.
 final _transparentPng = Uint8List.fromList(const [
-  0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
-  0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-  0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00,
-  0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
-  0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49,
-  0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+  0x89,
+  0x50,
+  0x4E,
+  0x47,
+  0x0D,
+  0x0A,
+  0x1A,
+  0x0A,
+  0x00,
+  0x00,
+  0x00,
+  0x0D,
+  0x49,
+  0x48,
+  0x44,
+  0x52,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x08,
+  0x06,
+  0x00,
+  0x00,
+  0x00,
+  0x1F,
+  0x15,
+  0xC4,
+  0x89,
+  0x00,
+  0x00,
+  0x00,
+  0x0A,
+  0x49,
+  0x44,
+  0x41,
+  0x54,
+  0x78,
+  0x9C,
+  0x63,
+  0x00,
+  0x01,
+  0x00,
+  0x00,
+  0x05,
+  0x00,
+  0x01,
+  0x0D,
+  0x0A,
+  0x2D,
+  0xB4,
+  0x00,
+  0x00,
+  0x00,
+  0x00,
+  0x49,
+  0x45,
+  0x4E,
+  0x44,
+  0xAE,
+  0x42,
+  0x60,
+  0x82,
 ]);
 
 class _FakeTileProvider extends TileProvider {
@@ -53,11 +114,12 @@ Project _project({
 
 final _projects = [
   _project(id: 'p01', title: 'Peneluruhan Penyu', latitude: -6.18),
+  // Far enough from p01 that the two pins do not cluster at the test zoom.
   _project(
     id: 'p02',
     title: 'Pemulihan Karang',
     category: 'karang',
-    latitude: -6.22,
+    latitude: -6.6,
     longitude: 106.82,
   ),
 ];
@@ -70,11 +132,7 @@ const _mapData = ExploreMapData(
       id: 'a01',
       name: 'Kawasan Konservasi Uji',
       status: ProjectCondition.pemantauan,
-      points: [
-        LatLng(-6.3, 106.7),
-        LatLng(-6.3, 106.9),
-        LatLng(-6.1, 106.9),
-      ],
+      points: [LatLng(-6.3, 106.7), LatLng(-6.3, 106.9), LatLng(-6.1, 106.9)],
     ),
   ],
 );
@@ -112,11 +170,62 @@ void main() {
     expect(find.byKey(const ValueKey('explore.marker.p02')), findsOneWidget);
   });
 
+  testWidgets('a marker keeps a 48dp target and names the project', (
+    tester,
+  ) async {
+    await pumpMap(tester);
+
+    final marker = find.byKey(const ValueKey('explore.marker.p01'));
+    expect(tester.getSize(marker), const Size(48, 48));
+    expect(find.bySemanticsLabel('Peneluruhan Penyu'), findsOneWidget);
+  });
+
+  testWidgets('nearby markers merge into a cluster and split when zoomed', (
+    tester,
+  ) async {
+    // ~2.2 km apart: a few pixels at the test zoom, ~58 px at the cluster's
+    // max zoom, so the fit really separates them.
+    await tester.pumpWidget(
+      wrapPage(
+        ExploreMap(
+          projects: [
+            _project(id: 'p01', title: 'Peneluruhan Penyu', latitude: -6.18),
+            _project(
+              id: 'p02',
+              title: 'Pemulihan Karang',
+              category: 'karang',
+              latitude: -6.20,
+            ),
+          ],
+          mapData: _mapData,
+          userLocationLabel: 'Jakarta',
+          tileProvider: _FakeTileProvider(),
+          initialZoom: 8,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('explore.cluster')), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
+    expect(find.byKey(const ValueKey('explore.marker.p01')), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('explore.cluster')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('explore.marker.p01')), findsOneWidget);
+    expect(find.byKey(const ValueKey('explore.marker.p02')), findsOneWidget);
+    expect(find.byKey(const ValueKey('explore.cluster')), findsNothing);
+  });
+
   testWidgets('the conservation layer only draws when it is switched on', (
     tester,
   ) async {
     await pumpMap(tester);
-    expect(find.byKey(const ValueKey('explore.conservationLayer')), findsNothing);
+    expect(
+      find.byKey(const ValueKey('explore.conservationLayer')),
+      findsNothing,
+    );
 
     await pumpMap(tester, showConservationLayer: true);
     expect(

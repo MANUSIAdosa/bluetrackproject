@@ -62,8 +62,20 @@ class _ExploreMapState extends State<ExploreMap> {
   static const double _minZoom = 3;
   static const double _maxZoom = 12;
 
+  /// Markers closer than this on screen are merged into one cluster. 44px is
+  /// the smallest gap at which two 40dp pins stay separately tappable.
+  static const double _clusterRadius = 44;
+
+  /// Tap target of a pin or cluster; the visual circle stays 40dp.
+  static const double _tapSize = 48;
+
   final _controller = MapController();
   late double _zoom = widget.initialZoom;
+
+  /// Camera of the last zoom level, used to measure marker distances in
+  /// screen pixels. Panning does not change relative distances, so only a zoom
+  /// change rebuilds the clusters.
+  MapCamera? _camera;
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +89,12 @@ class _ExploreMapState extends State<ExploreMap> {
             minZoom: _minZoom,
             maxZoom: _maxZoom,
             backgroundColor: AppColors.ocean.withValues(alpha: 0.08),
+            onMapReady: () => setState(() => _camera = _controller.camera),
+            onPositionChanged: (camera, _) {
+              if (_camera?.zoom != camera.zoom) {
+                setState(() => _camera = camera);
+              }
+            },
           ),
           children: [
             if (!widget.offline)
@@ -139,58 +157,84 @@ class _ExploreMapState extends State<ExploreMap> {
     );
   }
 
-  /// Same-coordinate projects would draw on top of each other, leaving only
-  /// the top one tappable. Each group is spread over the marker's quadrants by
-  /// moving the pin, not the coordinate, so every marker keeps its own target.
+  /// Projects whose pins land closer than [_clusterRadius] on screen become
+  /// one numbered marker. Pin positions stay on their real coordinates.
   List<Marker> _markers() {
-    // ~1 km buckets: only markers that visually collide share a bucket.
-    final groups = <String, List<int>>{};
-    for (var i = 0; i < widget.projects.length; i++) {
-      final project = widget.projects[i];
-      final bucket =
-          '${project.latitude.toStringAsFixed(2)},'
-          '${project.longitude.toStringAsFixed(2)}';
-      groups.putIfAbsent(bucket, () => []).add(i);
-    }
-
-    final alignments = <int, Alignment>{};
-    for (final group in groups.values) {
-      if (group.length < 2) continue;
-      for (var slot = 0; slot < group.length; slot++) {
-        alignments[group[slot]] = _spread[slot % _spread.length];
-      }
-    }
-
+    final groups = _clusterGroups();
     return [
-      for (var i = 0; i < widget.projects.length; i++)
-        Marker(
-          point: LatLng(
-            widget.projects[i].latitude,
-            widget.projects[i].longitude,
+      for (final group in groups)
+        if (group.length > 1)
+          Marker(
+            point: LatLngBounds.fromPoints([
+              for (final project in group)
+                LatLng(project.latitude, project.longitude),
+            ]).center,
+            width: _tapSize,
+            height: _tapSize,
+            child: _ClusterMarker(
+              key: const ValueKey('explore.cluster'),
+              count: group.length,
+              onTap: () => _openCluster(group),
+            ),
+          )
+        else
+          Marker(
+            point: LatLng(group.single.latitude, group.single.longitude),
+            width: _tapSize,
+            height: _tapSize,
+            child: _ProjectMarker(
+              key: ValueKey('explore.marker.${group.single.id}'),
+              project: group.single,
+              onTap: () => _openProjectSheet(group.single),
+            ),
           ),
-          width: 40,
-          height: 40,
-          alignment: alignments[i],
-          child: _ProjectMarker(
-            key: ValueKey('explore.marker.${widget.projects[i].id}'),
-            project: widget.projects[i],
-            onTap: () => _openProjectSheet(widget.projects[i]),
-          ),
-        ),
     ];
   }
 
-  /// Quadrant order for overlapping pins: corners first, then edges.
-  static const List<Alignment> _spread = [
-    Alignment.topLeft,
-    Alignment.bottomRight,
-    Alignment.topRight,
-    Alignment.bottomLeft,
-    Alignment.topCenter,
-    Alignment.bottomCenter,
-    Alignment.centerLeft,
-    Alignment.centerRight,
-  ];
+  /// Greedy grouping in screen space: a project joins the first group whose
+  /// first member is within [_clusterRadius] pixels of it.
+  List<List<Project>> _clusterGroups() {
+    final camera = _camera;
+    if (camera == null) {
+      return [
+        for (final project in widget.projects) [project],
+      ];
+    }
+
+    final groups = <List<Project>>[];
+    final anchors = <Offset>[];
+    for (final project in widget.projects) {
+      final offset = camera.latLngToScreenOffset(
+        LatLng(project.latitude, project.longitude),
+      );
+      final index = anchors.indexWhere(
+        (anchor) => (anchor - offset).distance < _clusterRadius,
+      );
+      if (index == -1) {
+        anchors.add(offset);
+        groups.add([project]);
+      } else {
+        groups[index].add(project);
+      }
+    }
+    return groups;
+  }
+
+  /// Zoom into the cluster's members' bounds. The higher max zoom is what
+  /// actually separates the pins; a fit that stays at the current zoom would
+  /// keep them clustered.
+  void _openCluster(List<Project> projects) {
+    _controller.fitCamera(
+      CameraFit.bounds(
+        bounds: LatLngBounds.fromPoints([
+          for (final project in projects)
+            LatLng(project.latitude, project.longitude),
+        ]),
+        padding: const EdgeInsets.all(48),
+        maxZoom: _maxZoom,
+      ),
+    );
+  }
 
   /// Midpoint of the filtered projects, so filtering cannot strand the user on
   /// the other side of the country.
@@ -240,28 +284,100 @@ class _ProjectMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = CategoryIcons.colorFor(project.category);
-    return Tooltip(
-      message: project.title,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x33000000),
-                blurRadius: 4,
-                offset: Offset(0, 2),
+    return Semantics(
+      button: true,
+      label: project.title,
+      child: Tooltip(
+        message: project.title,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: SizedBox(
+            width: _ExploreMapState._tapSize,
+            height: _ExploreMapState._tapSize,
+            child: Center(
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x33000000),
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: ExcludeSemantics(
+                    child: CategoryIcon(
+                      category: project.category,
+                      size: 20,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               ),
-            ],
+            ),
           ),
-          child: Center(
-            child: CategoryIcon(
-              category: project.category,
-              size: 20,
-              color: Colors.white,
+        ),
+      ),
+    );
+  }
+}
+
+/// Numbered pin for projects that would overlap at the current zoom. Tapping
+/// it zooms into the group's bounds until the pins separate.
+class _ClusterMarker extends StatelessWidget {
+  const _ClusterMarker({super.key, required this.count, required this.onTap});
+
+  final int count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = context.tr('p03_map_cluster', {'n': '$count'});
+    return Semantics(
+      button: true,
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: SizedBox(
+            width: _ExploreMapState._tapSize,
+            height: _ExploreMapState._tapSize,
+            child: Center(
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.oceanDeep,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x33000000),
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    '$count',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ),
