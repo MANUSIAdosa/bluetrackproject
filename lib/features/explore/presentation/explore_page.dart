@@ -470,7 +470,9 @@ class _ExplorePageState extends State<ExplorePage> {
           ),
           // In list mode the results line scrolls with the content (see
           // [_buildList]); only the map, which does not scroll, keeps it fixed.
-          if (_mapMode && !_loading && !_error)
+          // The active filter tokens stay fixed with it, above the map (not
+          // floating over its zoom and layer controls).
+          if (_mapMode && !_loading && !_error) ...[
             ExploreResultsBar(
               count: visible.length,
               mapMode: true,
@@ -478,6 +480,19 @@ class _ExplorePageState extends State<ExplorePage> {
               categoryId: _category,
               onCategoryPressed: _pickCategory,
             ),
+            if (_selection.activeCount > 0)
+              ActiveFilterBar(
+                selection: _selection,
+                onChanged: (value) {
+                  _resetPaging();
+                  setState(() {
+                    _distance = value.distance;
+                    _condition = value.condition;
+                  });
+                },
+                horizontalPadding: ExploreSpacing.x16,
+              ),
+          ],
           Expanded(child: _buildBody(visible)),
         ],
       ),

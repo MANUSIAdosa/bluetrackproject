@@ -223,6 +223,38 @@ void main() {
     expect(find.byKey(const ValueKey('explore.marker.p01')), findsNothing);
   });
 
+  testWidgets('map mode keeps the active filter tokens above the map', (
+    tester,
+  ) async {
+    await pumpExplore(tester, projects: FakeProjectRepository(_twoProjects()));
+    await tapKey(tester, 'explore.view.map');
+    expect(find.byKey(const ValueKey('explore.activeFilters')), findsNothing);
+
+    await openFilterSheet(tester);
+    await tapSheetOption(tester, 'explore.filter.condition.kritis');
+    await tester.tap(find.byKey(const ValueKey('explore.filter.apply')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('explore.activeFilters')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('explore.activeFilter.condition')),
+      findsOneWidget,
+    );
+
+    // Removing a token widens the markers without leaving the map.
+    await tester.tap(
+      find.byKey(const ValueKey('explore.activeFilter.condition')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('explore.activeFilter.condition')),
+      findsNothing,
+    );
+    expect(find.byKey(const ValueKey('explore.marker.p01')), findsOneWidget);
+    expect(find.byKey(const ValueKey('explore.marker.p02')), findsOneWidget);
+  });
+
   testWidgets('the conservation layer is a toggle on the map', (tester) async {
     await pumpExplore(tester, projects: FakeProjectRepository(_twoProjects()));
     await tapKey(tester, 'explore.view.map');
