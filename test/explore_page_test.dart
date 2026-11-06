@@ -32,12 +32,13 @@ Future<void> pumpExplore(
   FakeFilterRepository? filters,
   double textScale = 1,
   Locale locale = const Locale('id'),
+  Size size = const Size(390, 844),
 }) async {
   // Phone-sized surface: the fixed header + controls leave the body a
   // realistic amount of height, and card layout only reproduces real overflow
   // at phone width.
   tester.view.devicePixelRatio = 3;
-  tester.view.physicalSize = const Size(1170, 2532);
+  tester.view.physicalSize = size * 3;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
     wrapPage(
@@ -816,14 +817,98 @@ void main() {
       of: find.byKey(const ValueKey('explore.forYouRail')),
       matching: find.byType(ProjectCard),
     );
-    // The first card keeps its original 340dp width at the 16dp page margin...
+    // The first card spans the page margins, matching the list cards below.
     final first = tester.getRect(cards.at(0));
     expect(first.left, 16);
-    expect(first.right, 16 + 340);
+    expect(first.right, 390 - 16);
     // ...and any card laid out after it starts past the screen edge, so
     // nothing peeks in as a strip that could be mistaken for a scrollbar.
     for (var i = 1; i < cards.evaluate().length; i++) {
       expect(tester.getRect(cards.at(i)).left, greaterThanOrEqualTo(390));
     }
+  });
+
+  for (final width in const [360.0, 393.0, 412.0, 700.0]) {
+    for (final scale in const [1.0, 1.3, 2.0]) {
+      testWidgets(
+        'the For You rail shares the list grid at ${width}dp, text scale '
+        '$scale',
+        (tester) async {
+          SharedPreferences.setMockInitialValues({
+            AppConfig.interestsKey: ['penyu'],
+          });
+          await pumpExplore(
+            tester,
+            size: Size(width, 1600),
+            textScale: scale,
+            projects: FakeProjectRepository([
+              for (var i = 1; i <= 3; i++)
+                buildProject(
+                  id: 'p0$i',
+                  title: 'Pemulihan Populasi Penyu Hijau Nomor $i',
+                ),
+              // Not an interest match, so the list below the rail still has a
+              // card to compare the grid against.
+              buildProject(
+                id: 'p04',
+                title: 'Pemulihan Terumbu Karang',
+                category: 'karang',
+              ),
+            ]),
+          );
+          expect(tester.takeException(), isNull);
+
+          final railCard = find
+              .descendant(
+                of: find.byKey(const ValueKey('explore.forYouRail')),
+                matching: find.byType(ProjectCard),
+              )
+              .first;
+          final listCard = find
+              .byWidgetPredicate((w) => w is ProjectCard && !w.rail)
+              .first;
+
+          final railRect = tester.getRect(railCard);
+          final listRect = tester.getRect(listCard);
+          expect(railRect.left, listRect.left);
+          expect(railRect.right, listRect.right);
+          expect(railRect.right, lessThanOrEqualTo(width));
+
+          // The primary action stays fully inside the card.
+          final donate = tester.getRect(
+            find.descendant(of: railCard, matching: find.text('Donasi')),
+          );
+          expect(donate.left, greaterThanOrEqualTo(railRect.left));
+          expect(donate.right, lessThanOrEqualTo(railRect.right));
+        },
+      );
+    }
+  }
+
+  testWidgets('the For You page indicator follows the snap', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      AppConfig.interestsKey: ['penyu'],
+    });
+    await pumpExplore(
+      tester,
+      projects: FakeProjectRepository([
+        buildProject(id: 'p01', title: 'Penyu Hijau'),
+        buildProject(id: 'p02', title: 'Penyu Belimbing'),
+        buildProject(id: 'p03', title: 'Penyu Sisik'),
+      ]),
+    );
+
+    expect(find.text('1 / 3'), findsOneWidget);
+
+    await tester.fling(
+      find.byKey(const ValueKey('explore.forYouList')),
+      const Offset(-300, 0),
+      1000,
+    );
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    expect(find.text('2 / 3'), findsOneWidget);
   });
 }

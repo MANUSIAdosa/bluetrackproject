@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/project_card.dart';
 import '../../domain/project.dart';
 
@@ -25,13 +26,11 @@ Widget exploreSectionHeader(BuildContext context, String text) => Text(
 
 /// Horizontal "Untuk minatmu" rail.
 ///
-/// Snaps one card at a time: after a swipe the active card rests on the page's
-/// 16dp left margin, keeping the original 340dp card width. The rail is sized
-/// so the next card starts just past its right edge: no sliver of the next
-/// card stays on screen, where it would read as a scrollbar. Every card has
-/// the same height, so the rail takes the card's own height instead of
-/// stretching children.
-class ForYouRail extends StatelessWidget {
+/// The card shares the list's grid: on phones it spans the page margins, on
+/// wide screens it is one column of the two-column list. It snaps one card at
+/// a time and reports the visible card below the rail, so the swipe is
+/// discoverable without a peeking card at the edge.
+class ForYouRail extends StatefulWidget {
   const ForYouRail({
     super.key,
     required this.projects,
@@ -42,43 +41,100 @@ class ForYouRail extends StatelessWidget {
   final VoidCallback onSavedChanged;
 
   @override
+  State<ForYouRail> createState() => _ForYouRailState();
+}
+
+class _ForYouRailState extends State<ForYouRail> {
+  final _controller = ScrollController();
+
+  /// Extent of one card + gap, written by [build] so [_onScroll] can turn the
+  /// offset back into a card index.
+  double _itemExtent = 0;
+  int _page = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_onScroll);
+  }
+
+  @override
+  void didUpdateWidget(ForYouRail oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _page = _page.clamp(0, math.max(0, widget.projects.length - 1));
+  }
+
+  @override
+  void dispose() {
+    _controller
+      ..removeListener(_onScroll)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_itemExtent <= 0 || !_controller.hasClients) return;
+    final page = (_controller.position.pixels / _itemExtent).round().clamp(
+      0,
+      widget.projects.length - 1,
+    );
+    if (page != _page) setState(() => _page = page);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Original 340dp card; narrow screens shrink it to fit the margins.
-        final cardWidth = math.min(
-          constraints.maxWidth - ExploreSpacing.x16 * 2,
-          340.0,
-        );
-        // Rail = margin + card + margin. The next card starts exactly at the
-        // rail's right edge, outside the viewport, so it never peeks.
-        final viewport = cardWidth + ExploreSpacing.x16 * 2;
+        final wide = constraints.maxWidth >= 600;
+        // Same grid as the list below: two equal columns and a 16dp gap from
+        // 600dp, one full-width card under it.
+        final cardWidth = wide
+            ? (constraints.maxWidth - ExploreSpacing.x16 * 3) / 2
+            : constraints.maxWidth - ExploreSpacing.x16 * 2;
         final itemExtent = cardWidth + ExploreSpacing.x16;
+        _itemExtent = itemExtent;
 
-        return Align(
-          alignment: Alignment.centerLeft,
-          child: SizedBox(
-            width: viewport,
-            height: ProjectCard.heightFor(context, cardWidth),
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              physics: _SnapToItemPhysics(itemExtent: itemExtent),
-              padding: const EdgeInsets.symmetric(
-                horizontal: ExploreSpacing.x16,
-              ),
-              itemCount: projects.length,
-              separatorBuilder: (_, _) =>
-                  const SizedBox(width: ExploreSpacing.x16),
-              itemBuilder: (context, index) => SizedBox(
-                width: cardWidth,
-                child: ProjectCard(
-                  project: projects[index],
-                  rail: true,
-                  onSavedChanged: onSavedChanged,
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: ProjectCard.heightFor(context, cardWidth),
+              child: ListView.separated(
+                key: const ValueKey('explore.forYouList'),
+                controller: _controller,
+                scrollDirection: Axis.horizontal,
+                physics: _SnapToItemPhysics(itemExtent: itemExtent),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: ExploreSpacing.x16,
+                ),
+                itemCount: widget.projects.length,
+                separatorBuilder: (_, _) =>
+                    const SizedBox(width: ExploreSpacing.x16),
+                itemBuilder: (context, index) => SizedBox(
+                  width: cardWidth,
+                  child: ProjectCard(
+                    project: widget.projects[index],
+                    rail: true,
+                    onSavedChanged: widget.onSavedChanged,
+                  ),
                 ),
               ),
             ),
-          ),
+            if (widget.projects.length > 1) ...[
+              const SizedBox(height: ExploreSpacing.x8),
+              // "1 / 3" rather than dots: the number stays readable at large
+              // text scales and says how many cards are left.
+              Text(
+                '${_page + 1} / ${widget.projects.length}',
+                key: const ValueKey('explore.forYouPageIndicator'),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ],
         );
       },
     );
