@@ -10,12 +10,19 @@ class EmptyState extends StatelessWidget {
     required this.message,
     this.actionLabel,
     this.onAction,
+    this.secondaryLabel,
+    this.onSecondary,
   });
 
   final IconData icon;
   final String message;
   final String? actionLabel;
   final VoidCallback? onAction;
+
+  /// Second, lower-emphasis action. Only screens that offer a recovery choice
+  /// fill it in; without it the state looks exactly as before.
+  final String? secondaryLabel;
+  final VoidCallback? onSecondary;
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +56,17 @@ class EmptyState extends StatelessWidget {
               ),
               if (actionLabel != null && onAction != null) ...[
                 const SizedBox(height: 16),
-                TextButton(onPressed: onAction, child: Text(actionLabel!)),
+                // With a second choice the first one carries the emphasis;
+                // alone it stays a text button so other pages keep their look.
+                if (secondaryLabel != null && onSecondary != null)
+                  FilledButton(onPressed: onAction, child: Text(actionLabel!))
+                else
+                  TextButton(onPressed: onAction, child: Text(actionLabel!)),
+                if (secondaryLabel != null && onSecondary != null)
+                  TextButton(
+                    onPressed: onSecondary,
+                    child: Text(secondaryLabel!),
+                  ),
               ],
             ],
           ),

@@ -204,6 +204,7 @@ class AppLocalizations {
       'explore.savedProjects': 'Proyek tersimpan',
       'explore.moreProjects': 'Proyek lainnya',
       'explore.projectCount': '{n} proyek',
+      'explore.projectCountOne': '1 proyek',
       'explore.viewList': 'Daftar',
       'explore.viewMap': 'Peta',
       'explore.empty.title': 'Tidak ada proyek',
@@ -215,10 +216,15 @@ class AppLocalizations {
           'Simpan proyek agar bisa diakses saat offline.',
       'explore.emptySavedFiltered.title':
           'Tidak ada proyek tersimpan yang cocok',
+      'explore.emptySavedFiltered.category':
+          'Tidak ada proyek tersimpan di kategori {category}',
+      'explore.emptySavedFiltered.search':
+          'Tidak ada proyek tersimpan yang cocok dengan pencarian',
       'explore.savedFilter.on': 'Tampilkan proyek tersimpan',
       'explore.savedFilter.off': 'Tampilkan semua proyek',
       'explore.resetFilter': 'Atur ulang filter',
       'explore.viewAll': 'Lihat semua proyek',
+      'explore.viewAllCategories': 'Lihat semua kategori',
       'explore.mapUnavailable': 'Mode peta belum tersedia pada subproyek ini.',
 
       // P03 map, filters and offline collection. New keys use the `p03_`
@@ -947,6 +953,7 @@ class AppLocalizations {
       'explore.savedProjects': 'Saved projects',
       'explore.moreProjects': 'More projects',
       'explore.projectCount': '{n} projects',
+      'explore.projectCountOne': '1 project',
       'explore.viewList': 'List',
       'explore.viewMap': 'Map',
       'explore.empty.title': 'No projects',
@@ -956,10 +963,14 @@ class AppLocalizations {
           'Project Detail.',
       'explore.emptySaved.body': 'Save projects to access them while offline.',
       'explore.emptySavedFiltered.title': 'No saved projects match',
+      'explore.emptySavedFiltered.category': 'No saved projects in {category}',
+      'explore.emptySavedFiltered.search':
+          'No saved projects match your search',
       'explore.savedFilter.on': 'Show saved projects',
       'explore.savedFilter.off': 'Show all projects',
       'explore.resetFilter': 'Reset filters',
       'explore.viewAll': 'View all projects',
+      'explore.viewAllCategories': 'See all categories',
       'explore.mapUnavailable': 'Map mode is not available in this subproject.',
 
       // --- Explore map (P03) ---

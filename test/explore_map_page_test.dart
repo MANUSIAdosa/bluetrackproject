@@ -8,8 +8,8 @@ import 'package:blue_track/features/explore/data/saved_project_store.dart';
 import 'package:blue_track/features/explore/domain/explore_map_data.dart';
 import 'package:blue_track/features/explore/domain/project.dart';
 import 'package:blue_track/features/explore/presentation/explore_page.dart';
+import 'package:blue_track/features/explore/presentation/widgets/explore_header.dart';
 import 'package:blue_track/shared/widgets/empty_state.dart';
-import 'package:blue_track/shared/widgets/filter_chip_row.dart';
 import 'package:blue_track/shared/widgets/project_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -56,7 +56,10 @@ class FakeExploreMapRepository implements ExploreMapRepository {
 final _mapData = ExploreMapData(
   userLocation: const LatLng(-6.2, 106.816666),
   userLocationLabel: 'Jakarta',
-  conditions: const {'p01': ProjectCondition.baik, 'p02': ProjectCondition.kritis},
+  conditions: const {
+    'p01': ProjectCondition.baik,
+    'p02': ProjectCondition.kritis,
+  },
   conservationAreas: const [
     ConservationArea(
       id: 'a01',
@@ -87,11 +90,7 @@ Future<void> pumpExplore(
     wrapPage(
       ExplorePage(
         projectRepository: projects,
-        filterRepository: FakeFilterRepository([
-          'semua',
-          'penyu',
-          'karang',
-        ]),
+        filterRepository: FakeFilterRepository(['semua', 'penyu', 'karang']),
         mapRepository: FakeExploreMapRepository(_mapData),
       ),
     ),
@@ -163,11 +162,11 @@ void main() {
     tester,
   ) async {
     await pumpExplore(tester, projects: FakeProjectRepository(_twoProjects()));
-    expect(find.byType(FilterChipRow), findsOneWidget);
+    expect(find.byType(CategorySelector), findsOneWidget);
 
     await tapKey(tester, 'explore.view.map');
 
-    expect(find.byType(FilterChipRow), findsNothing);
+    expect(find.byType(CategorySelector), findsNothing);
     expect(find.byKey(const ValueKey('explore.marker.p01')), findsOneWidget);
   });
 
@@ -180,7 +179,7 @@ void main() {
 
     await tapKey(tester, 'explore.view.map');
 
-    expect(find.byType(FilterChipRow), findsNothing);
+    expect(find.byType(CategorySelector), findsNothing);
     expect(
       find.byKey(const ValueKey('explore.mapCategoryChip')),
       findsOneWidget,
@@ -189,7 +188,10 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('explore.mapCategoryChip')));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('explore.categoryPicker')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('explore.categoryPicker')),
+      findsOneWidget,
+    );
 
     await tester.tap(
       find.byKey(const ValueKey('explore.categoryPicker.karang')),
@@ -221,11 +223,12 @@ void main() {
     await pumpExplore(tester, projects: FakeProjectRepository(_twoProjects()));
     await tapKey(tester, 'explore.view.map');
 
-    expect(find.byKey(const ValueKey('explore.conservationLayer')), findsNothing);
-
-    await tester.tap(
-      find.byKey(const ValueKey('explore.conservationSwitch')),
+    expect(
+      find.byKey(const ValueKey('explore.conservationLayer')),
+      findsNothing,
     );
+
+    await tester.tap(find.byKey(const ValueKey('explore.conservationSwitch')));
     await tester.pumpAndSettle();
 
     expect(
@@ -234,7 +237,9 @@ void main() {
     );
   });
 
-  testWidgets('filter button badges how many groups are active', (tester) async {
+  testWidgets('filter button badges how many groups are active', (
+    tester,
+  ) async {
     await pumpExplore(tester, projects: FakeProjectRepository(_twoProjects()));
     expect(find.byKey(const ValueKey('explore.filterCount')), findsNothing);
 

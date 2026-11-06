@@ -90,12 +90,8 @@ class _CategoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final all = categoryId == 'semua';
     final label = context.tr('cat.$categoryId');
-    final color = all ? AppColors.ocean : CategoryIcons.colorFor(categoryId);
-    final icon = all
-        ? Icons.grid_view_rounded
-        : CategoryIcons.iconFor(categoryId);
+    final color = CategoryIcons.colorFor(categoryId);
 
     return Semantics(
       button: true,
@@ -127,7 +123,13 @@ class _CategoryTile extends StatelessWidget {
                     color: color.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(icon, size: 20, color: color),
+                  child: ExcludeSemantics(
+                    child: CategoryIcon(
+                      category: categoryId,
+                      size: 32,
+                      color: color,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

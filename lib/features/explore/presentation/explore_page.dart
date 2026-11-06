@@ -7,10 +7,8 @@ import 'package:latlong2/latlong.dart';
 
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/state/app_state.dart';
-import '../../../shared/widgets/category_icon.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_state.dart';
-import '../../../shared/widgets/filter_chip_row.dart';
 import '../../../shared/widgets/project_card.dart';
 import '../../../shared/widgets/skeleton.dart';
 import '../../repositories.dart';
@@ -245,6 +243,17 @@ class _ExplorePageState extends State<ExplorePage> {
     setState(() => _savedScope = false);
   }
 
+  /// Saved-scope recovery that keeps the collection: drop the category and the
+  /// search so every saved project is reachable again.
+  void _showAllSavedCategories() {
+    _searchController.clear();
+    _resetPaging();
+    setState(() {
+      _query = '';
+      _category = 'semua';
+    });
+  }
+
   /// Map data is loaded on demand: the list never pays for an asset only the
   /// map and the filter sheet need.
   ///
@@ -358,10 +367,7 @@ class _ExplorePageState extends State<ExplorePage> {
           selection.distance == DistanceBand.semua ||
           mapData == null ||
           selection.distance.matches(
-            distanceKm(
-              mapData.userLocation,
-              LatLng(p.latitude, p.longitude),
-            ),
+            distanceKm(mapData.userLocation, LatLng(p.latitude, p.longitude)),
           );
       return matchesSaved &&
           matchesCategory &&
@@ -460,6 +466,76 @@ class _ExplorePageState extends State<ExplorePage> {
     );
   }
 
+  /// Results line + category chips + active filter tokens. Shared by the
+  /// filled and the empty list so the controls never disappear.
+  List<Widget> _listControls(BuildContext context, int count) => [
+    // The results line scrolls with the content, so the fixed header stays
+    // under a sixth of the screen.
+    ExploreResultsBar(count: count, mapMode: false, onViewChanged: _setMapMode),
+    // The icon rail sits at the page margin, aligned with the cards.
+    CategorySelector(
+      categoryIds: _categoryIds,
+      selectedId: _category,
+      onSelected: (id) {
+        _resetPaging();
+        setState(() => _category = id);
+      },
+      horizontalPadding: ExploreSpacing.x16,
+    ),
+    // The category is already visible as the selected chip, so the token bar
+    // only summarises the distance/condition filters from the sheet.
+    if (_selection.activeCount > 0)
+      ActiveFilterBar(
+        selection: _selection,
+        onChanged: (value) {
+          _resetPaging();
+          setState(() {
+            _distance = value.distance;
+            _condition = value.condition;
+          });
+        },
+        horizontalPadding: ExploreSpacing.x16,
+      ),
+  ];
+
+  /// The recovery choices depend on why the list is empty. The saved scope
+  /// keeps its collection unless the user explicitly leaves it.
+  Widget _emptyState(BuildContext context) {
+    if (!_savedScope) {
+      return EmptyState(
+        icon: Icons.search_off,
+        message: context.tr('explore.empty.title'),
+        actionLabel: context.tr('explore.resetFilter'),
+        onAction: _resetFilters,
+      );
+    }
+    // Nothing saved yet: the invitation to save stays a single action.
+    if (SavedProjectsController.instance.ids.isEmpty) {
+      return EmptyState(
+        icon: Icons.bookmark_outline,
+        message: context.tr('explore.emptySaved.title'),
+        actionLabel: context.tr('explore.viewAll'),
+        onAction: _showAllProjects,
+      );
+    }
+    // Saved projects exist but the other filters hide them.
+    final message = _query.isNotEmpty
+        ? context.tr('explore.emptySavedFiltered.search')
+        : _category != 'semua'
+        ? context.tr('explore.emptySavedFiltered.category', {
+            'category': context.tr('cat.$_category'),
+          })
+        : context.tr('explore.emptySavedFiltered.title');
+    return EmptyState(
+      icon: Icons.search_off,
+      message: message,
+      actionLabel: context.tr('explore.viewAllCategories'),
+      onAction: _showAllSavedCategories,
+      secondaryLabel: context.tr('explore.viewAll'),
+      onSecondary: _showAllProjects,
+    );
+  }
+
   Widget _buildBody(List<Project> visible) {
     if (_loading) {
       // The results line keeps its exact position from the loaded list, so the
@@ -495,7 +571,8 @@ class _ExplorePageState extends State<ExplorePage> {
     }
     if (visible.isEmpty) {
       // The offline list can be empty for its own reason: nothing was saved
-      // before losing the connection.
+      // before losing the connection. Controls would not recover that, so it
+      // keeps its own full-page state.
       if (_offline) {
         return EmptyState(
           icon: Icons.cloud_off,
@@ -504,28 +581,32 @@ class _ExplorePageState extends State<ExplorePage> {
           onAction: _load,
         );
       }
-      // Two different failures behind the same saved scope: nothing has been
-      // saved yet, or the saved projects do not match the other filters.
-      if (_savedScope) {
-        final nothingSaved = SavedProjectsController.instance.ids.isEmpty;
-        return EmptyState(
-          icon: nothingSaved ? Icons.bookmark_outline : Icons.search_off,
-          message: context.tr(
-            nothingSaved
-                ? 'explore.emptySaved.title'
-                : 'explore.emptySavedFiltered.title',
-          ),
-          actionLabel: context.tr(
-            nothingSaved ? 'explore.viewAll' : 'explore.resetFilter',
-          ),
-          onAction: nothingSaved ? _showAllProjects : _resetFilters,
-        );
-      }
-      return EmptyState(
-        icon: Icons.search_off,
-        message: context.tr('explore.empty.title'),
-        actionLabel: context.tr('explore.resetFilter'),
-        onAction: _resetFilters,
+      // Zero results must not dead-end: the results line, chips and filter
+      // tokens stay in the same scroll view, and only the area below them
+      // becomes the empty state.
+      return RefreshIndicator(
+        onRefresh: _load,
+        child: CustomScrollView(
+          key: const ValueKey('explore.projectList'),
+          // The filled state fits one screen; without this the pull gesture
+          // would have nothing to drag.
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: _listControls(context, visible.length),
+              ),
+            ),
+            // SliverFillRemaining is the sliver form of "minHeight = the rest
+            // of the viewport": it centres the state in the leftover space
+            // and grows with the scroll view when the controls need it.
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: _emptyState(context),
+            ),
+          ],
+        ),
       );
     }
 
@@ -539,10 +620,8 @@ class _ExplorePageState extends State<ExplorePage> {
         : context.tr('explore.allProjects');
     final twoColumns = MediaQuery.sizeOf(context).width >= 600;
 
-    Widget card(Project project) => ProjectCard(
-      project: project,
-      onSavedChanged: () => setState(() {}),
-    );
+    Widget card(Project project) =>
+        ProjectCard(project: project, onSavedChanged: () => setState(() {}));
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -551,45 +630,10 @@ class _ExplorePageState extends State<ExplorePage> {
         controller: _scrollController,
         padding: EdgeInsets.zero,
         children: [
-          // The results line scrolls with the content, so the fixed header
-          // stays under a sixth of the screen.
-          ExploreResultsBar(
-            count: visible.length,
-            mapMode: false,
-            onViewChanged: _setMapMode,
-          ),
-          // The chip row bleeds to the right edge: a cut chip hints that the
-          // row scrolls.
-          FilterChipRow(
-            options: [
-              for (final id in _categoryIds)
-                ChipOption(
-                  id: id,
-                  label: context.tr('cat.$id'),
-                  color: id == 'semua' ? null : CategoryIcons.colorFor(id),
-                ),
-            ],
-            selectedId: _category,
-            onSelected: (id) {
-              _resetPaging();
-              setState(() => _category = id);
-            },
-            padding: const EdgeInsets.only(left: ExploreSpacing.x16),
-          ),
-          // The category is already visible as the selected chip, so the token
-          // bar only summarises the distance/condition filters from the sheet.
-          if (_selection.activeCount > 0)
-            ActiveFilterBar(
-              selection: _selection,
-              onChanged: (value) {
-                _resetPaging();
-                setState(() {
-                  _distance = value.distance;
-                  _condition = value.condition;
-                });
-              },
-              horizontalPadding: ExploreSpacing.x16,
-            ),
+          // The controls scroll with the content in list mode: the results
+          // line, the category chips and any active sheet filters stay
+          // visible in every state, including zero results.
+          ..._listControls(context, visible.length),
           if (forYou.isNotEmpty) ...[
             const SizedBox(height: ExploreSpacing.x24),
             Padding(

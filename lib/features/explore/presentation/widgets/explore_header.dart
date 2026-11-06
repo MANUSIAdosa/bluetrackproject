@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../../core/localization/app_localizations.dart';
@@ -109,7 +111,9 @@ class ExploreHeader extends StatelessWidget {
                         filled: true,
                         fillColor: AppColors.surface,
                         isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide.none,
@@ -144,10 +148,10 @@ class ExploreHeader extends StatelessWidget {
   }
 }
 
-/// `Daftar | Peta` as a Material 3 [SegmentedButton].
+/// Compact two-segment control that shows both views and which one is active.
 ///
-/// It lives in the results line that scrolls with the list, so the fixed header
-/// stays short. Icons keep it recognisable; labels carry the meaning.
+/// The results line owns it: the switch sits next to the count it affects.
+/// Icons keep the bar slim; tooltips and semantics carry the labels.
 class ExploreViewSwitch extends StatelessWidget {
   const ExploreViewSwitch({
     super.key,
@@ -160,41 +164,229 @@ class ExploreViewSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SegmentedButton<bool>(
-      key: const ValueKey('explore.viewSwitch'),
-      segments: [
-        ButtonSegment<bool>(
-          value: false,
-          icon: const Icon(Icons.view_agenda_outlined, size: 14),
-          label: Text(
-            context.tr('explore.viewList'),
+    return Container(
+      height: 54,
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _ViewSegment(
             key: const ValueKey('explore.view.list'),
+            icon: Icons.view_agenda_outlined,
+            label: context.tr('explore.viewList'),
+            selected: !mapMode,
+            onTap: () => onChanged(false),
+          ),
+          _ViewSegment(
+            key: const ValueKey('explore.view.map'),
+            icon: Icons.map_outlined,
+            label: context.tr('explore.viewMap'),
+            selected: mapMode,
+            onTap: () => onChanged(true),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ViewSegment extends StatelessWidget {
+  const _ViewSegment({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = selected ? Colors.white : AppColors.textSecondary;
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: Material(
+          color: selected ? AppColors.ocean : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: onTap,
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: Center(child: Icon(icon, size: 20, color: foreground)),
+            ),
           ),
         ),
-        ButtonSegment<bool>(
-          value: true,
-          icon: const Icon(Icons.map_outlined, size: 14),
-          label: Text(
-            context.tr('explore.viewMap'),
-            key: const ValueKey('explore.view.map'),
+      ),
+    );
+  }
+}
+
+/// Single-select category rail. Icons instead of chips: category is the only
+/// dimension here, and the coloured glyph makes the five categories scannable.
+class CategorySelector extends StatelessWidget {
+  const CategorySelector({
+    super.key,
+    required this.categoryIds,
+    required this.selectedId,
+    required this.onSelected,
+    this.horizontalPadding = 16,
+  });
+
+  final List<String> categoryIds;
+  final String selectedId;
+  final ValueChanged<String> onSelected;
+
+  /// Horizontal inset, so the rail lines up with the content next to it.
+  final double horizontalPadding;
+
+  @override
+  Widget build(BuildContext context) {
+    // The label line grows with the accessibility text scale. Keep the rail at
+    // its 80dp design height at normal sizes, but never let the fixed height
+    // clip a scaled label.
+    final labelLine = MediaQuery.textScalerOf(context).scale(11 * 1.2);
+    final railHeight = math.max(80.0, 48 + 5 + labelLine + 2);
+    // A scaled label needs a wider slot too, otherwise long categories like
+    // "Mamalia laut" ellipsize before the user can read them.
+    final itemWidth = 72 * MediaQuery.textScalerOf(context).scale(11) / 11;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            horizontalPadding,
+            10,
+            horizontalPadding,
+            6,
+          ),
+          child: Text(
+            context.tr('p03_category_label'),
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: railHeight,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+            itemCount: categoryIds.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 14),
+            itemBuilder: (context, index) {
+              final id = categoryIds[index];
+              return _CategoryOption(
+                key: ValueKey('explore.category.$id'),
+                categoryId: id,
+                width: itemWidth,
+                selected: id == selectedId,
+                onTap: () => onSelected(id),
+              );
+            },
           ),
         ),
       ],
-      selected: {mapMode},
-      onSelectionChanged: (values) => onChanged(values.first),
-      showSelectedIcon: false,
-      style: SegmentedButton.styleFrom(
-        minimumSize: const Size(0, 48),
-        padding: const EdgeInsets.symmetric(horizontal: ExploreSpacing.x4),
-        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-        tapTargetSize: MaterialTapTargetSize.padded,
-        side: const BorderSide(color: AppColors.border),
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.textSecondary,
-        selectedBackgroundColor: AppColors.ocean,
-        selectedForegroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDimens.cardRadius),
+    );
+  }
+}
+
+class _CategoryOption extends StatelessWidget {
+  const _CategoryOption({
+    super.key,
+    required this.categoryId,
+    required this.width,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String categoryId;
+  final double width;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = CategoryIcons.colorFor(categoryId);
+    final label = context.tr('cat.$categoryId');
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: SizedBox(
+          width: width,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: selected ? color : color.withValues(alpha: 0.10),
+                  border: Border.all(
+                    color: selected ? color : color.withValues(alpha: 0.20),
+                    width: selected ? 2 : 1,
+                  ),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: color.withValues(alpha: 0.30),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: ExcludeSemantics(
+                  child: CategoryIcon(
+                    category: categoryId,
+                    // Artwork is a full circular badge: fill the 48dp ring and
+                    // leave only the selected-state border showing.
+                    size: 42,
+                    color: selected ? Colors.white : color,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  height: 1.2,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                  color: selected ? color : AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -228,9 +420,7 @@ class FilterButton extends StatelessWidget {
         backgroundColor: active ? AppColors.ocean : AppColors.surface,
         minimumSize: const Size.square(48),
         maximumSize: const Size.square(48),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       onPressed: onPressed,
     );
@@ -345,9 +535,8 @@ class ActiveFilterBar extends StatelessWidget {
           label:
               '${context.tr('p03_filter_distance')}: '
               '${context.tr('p03_distance_${selection.distance.name}')}',
-          onRemove: () => onChanged(
-            selection.copyWith(distance: DistanceBand.semua),
-          ),
+          onRemove: () =>
+              onChanged(selection.copyWith(distance: DistanceBand.semua)),
         ),
       if (selection.condition != null)
         _FilterToken(
@@ -385,7 +574,9 @@ class ActiveFilterBar extends StatelessWidget {
             key: const ValueKey('explore.clearFilters'),
             style: TextButton.styleFrom(
               foregroundColor: AppColors.ocean,
-              padding: const EdgeInsets.symmetric(horizontal: ExploreSpacing.x8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: ExploreSpacing.x8,
+              ),
               minimumSize: const Size(0, 48),
             ),
             // Clearing the sheet filters must not undo the category the user
@@ -393,10 +584,7 @@ class ActiveFilterBar extends StatelessWidget {
             onPressed: () => onChanged(selection.withoutRefinements),
             child: Text(
               context.tr('p03_clear_all'),
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -452,11 +640,7 @@ class _FilterToken extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: ExploreSpacing.x4),
-              const Icon(
-                Icons.close,
-                size: 14,
-                color: AppColors.textSecondary,
-              ),
+              const Icon(Icons.close, size: 14, color: AppColors.textSecondary),
             ],
           ),
         ),
@@ -522,9 +706,11 @@ class ExploreResultsBar extends StatelessWidget {
                             radius: 4,
                           )
                         : Text(
-                            context.tr('explore.projectCount', {
-                              'n': '$count',
-                            }),
+                            count == 1
+                                ? context.tr('explore.projectCountOne')
+                                : context.tr('explore.projectCount', {
+                                    'n': '$count',
+                                  }),
                             key: const ValueKey('explore.resultsCount'),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -591,8 +777,7 @@ class _MapCategoryChip extends StatelessWidget {
           fontWeight: FontWeight.w700,
           color: AppColors.ocean,
         ),
-        visualDensity: VisualDensity.compact,
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        materialTapTargetSize: MaterialTapTargetSize.padded,
         side: const BorderSide(color: AppColors.border),
         backgroundColor: AppColors.surface,
         onPressed: onPressed,

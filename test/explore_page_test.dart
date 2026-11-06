@@ -8,7 +8,6 @@ import 'package:blue_track/features/explore/presentation/explore_page.dart';
 import 'package:blue_track/features/explore/presentation/widgets/explore_header.dart';
 import 'package:blue_track/shared/widgets/empty_state.dart';
 import 'package:blue_track/shared/widgets/error_state.dart';
-import 'package:blue_track/shared/widgets/filter_chip_row.dart';
 import 'package:blue_track/shared/widgets/project_card.dart';
 import 'package:blue_track/shared/widgets/skeleton.dart';
 import 'package:flutter/material.dart';
@@ -148,24 +147,21 @@ Future<void> pullToRefresh(WidgetTester tester) async {
   }
 }
 
-/// The category row is a horizontal list; tests read the widget state instead
-/// of relying on a chip being mounted in the viewport.
-FilterChipRow categorySelector(WidgetTester tester) =>
-    tester.widget<FilterChipRow>(find.byType(FilterChipRow));
+/// The category rail is a horizontal list; tests read the widget state instead
+/// of relying on an option being mounted in the viewport.
+CategorySelector categorySelector(WidgetTester tester) =>
+    tester.widget<CategorySelector>(find.byType(CategorySelector));
 
 SavedScopeButton savedButton(WidgetTester tester) =>
     tester.widget<SavedScopeButton>(find.byType(SavedScopeButton));
 
 Future<void> tapCategory(WidgetTester tester, String id) async {
-  // The row lives at the top of the list and is disposed once it scrolls away,
-  // so a user has to scroll back up before changing category.
-  if (find.byType(FilterChipRow).evaluate().isEmpty) await scrollToTop(tester);
-  final row = categorySelector(tester);
-  final label = row.options.firstWhere((option) => option.id == id).label;
-  final finder = find.descendant(
-    of: find.byType(FilterChipRow),
-    matching: find.text(label),
-  );
+  // The rail lives at the top of the list and is disposed once it scrolls
+  // away, so a user has to scroll back up before changing category.
+  if (find.byType(CategorySelector).evaluate().isEmpty) {
+    await scrollToTop(tester);
+  }
+  final finder = find.byKey(ValueKey('explore.category.$id'));
   await tester.ensureVisible(finder);
   await tester.pumpAndSettle();
   await tester.tap(finder);
@@ -338,12 +334,12 @@ void main() {
       'while the search and scope stay fixed', (tester) async {
     await pumpExplore(tester, projects: FakeProjectRepository(twoCategories()));
 
-    // The chip row and the results line are part of the list, so they scroll
+    // The category rail and the results line are part of the list, so they scroll
     // away instead of permanently eating the viewport.
     expect(
       find.descendant(
         of: projectList(),
-        matching: find.byType(FilterChipRow),
+        matching: find.byType(CategorySelector),
       ),
       findsOneWidget,
     );
@@ -375,14 +371,11 @@ void main() {
     );
 
     final selector = categorySelector(tester);
-    expect(
-      selector.options.map((option) => option.id),
-      ['semua', 'penyu', 'karang'],
-    );
+    expect(selector.categoryIds, ['semua', 'penyu', 'karang']);
     expect(selector.selectedId, 'semua');
     expect(
       find.descendant(
-        of: find.byType(FilterChipRow),
+        of: find.byType(CategorySelector),
         matching: find.text('Tersimpan'),
       ),
       findsNothing,
@@ -528,10 +521,8 @@ void main() {
     expect(cardCount(tester), 4);
   });
 
-  testWidgets('saved projects that match nothing offer "Atur ulang filter", '
-      'which clears the saved scope, the category and the query', (
-    tester,
-  ) async {
+  testWidgets('saved projects that match nothing keep the controls and offer '
+      'both ways back', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await seedSavedProjects(tester, ['p01']);
     await pumpExplore(tester, projects: FakeProjectRepository(twoCategories()));
@@ -541,23 +532,49 @@ void main() {
     await tester.enterText(find.byType(TextField), 'Penyu');
     await pumpFrames(tester);
 
+    // The dead-end is gone: the rail, the count and the tokens stay.
     expect(find.byType(EmptyState), findsOneWidget);
-    expect(find.text('Atur ulang filter'), findsOneWidget);
+    expect(find.byType(CategorySelector), findsOneWidget);
+    expect(find.byKey(const ValueKey('explore.resultsCount')), findsOneWidget);
+    expect(
+      find.text('Tidak ada proyek tersimpan yang cocok dengan pencarian'),
+      findsOneWidget,
+    );
+    expect(find.text('Atur ulang filter'), findsNothing);
+    expect(find.text('Lihat semua kategori'), findsOneWidget);
+    expect(find.text('Lihat semua proyek'), findsOneWidget);
     expect(find.text('Coba lagi'), findsNothing);
 
-    await tester.tap(find.text('Atur ulang filter'));
+    // Primary: back to every saved category, still inside Tersimpan.
+    await tester.tap(find.text('Lihat semua kategori'));
     await pumpFrames(tester);
 
     expect(find.byType(EmptyState), findsNothing);
-    // p02 was never saved, so it is in the list again only because the saved
-    // scope is off. Counted from the list's children: a second card sits
-    // below the fold, so it is never mounted in this surface.
-    expect(cardCount(tester), 2);
-    expect(find.widgetWithText(ProjectCard, 'Penyu Hijau'), findsOneWidget);
+    expect(savedButton(tester).saved, isTrue);
     expect(categorySelector(tester).selectedId, 'semua');
-    expect(savedButton(tester).saved, isFalse);
+    expect(find.widgetWithText(ProjectCard, 'Penyu Hijau'), findsOneWidget);
+    expect(find.text('1 proyek'), findsOneWidget);
     final search = tester.widget<TextField>(find.byType(TextField));
     expect(search.controller?.text, isEmpty);
+
+    // A category-only miss names the category; the secondary action leaves
+    // the saved collection but keeps that category.
+    await tapCategory(tester, 'karang');
+    expect(
+      find.text('Tidak ada proyek tersimpan di kategori Karang'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Lihat semua proyek'));
+    await pumpFrames(tester);
+
+    expect(find.byType(EmptyState), findsNothing);
+    expect(savedButton(tester).saved, isFalse);
+    expect(categorySelector(tester).selectedId, 'karang');
+    expect(
+      find.widgetWithText(ProjectCard, 'Pemulihan Karang Razak'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('the saved scope keeps a comfortable touch target', (
@@ -681,11 +698,7 @@ void main() {
         buildProject(id: 'p03', title: 'Penyu Belimbing'),
         buildProject(id: 'p04', title: 'Monitoring Sarana Turtle Beach'),
       ]);
-      await pumpExplore(
-        tester,
-        projects: projects,
-        textScale: textScale,
-      );
+      await pumpExplore(tester, projects: projects, textScale: textScale);
 
       final rail = find.byKey(const ValueKey('explore.forYouRail'));
       expect(rail, findsOneWidget);

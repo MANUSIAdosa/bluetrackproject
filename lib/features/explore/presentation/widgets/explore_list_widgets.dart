@@ -19,10 +19,8 @@ abstract final class ExploreSpacing {
 /// caller's job, so both headings share the inset of the content below them.
 Widget exploreSectionHeader(BuildContext context, String text) => Text(
   text,
-  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-    fontSize: 18,
-    fontWeight: FontWeight.w800,
-  ),
+  style: Theme.of(context).textTheme.titleLarge
+      ?.copyWith(fontSize: 18, fontWeight: FontWeight.w800),
 );
 
 /// Horizontal "Untuk minatmu" rail.
@@ -45,37 +43,46 @@ class ForYouRail extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // 16dp margin + 12dp gap + 16dp peek leaves the visible card width.
-        // Tablets cap it so the rail never shows a full-width 16:9 card.
-        final cardWidth = math.min(
-          constraints.maxWidth -
-              ExploreSpacing.x16 -
-              ExploreSpacing.x12 -
-              ExploreSpacing.x16,
-          340.0,
+        // One card + one peek: 340 card + 16 left margin + 12 gap + 16 peek
+        // = 384. Wider screens keep that width so the peek can never exceed
+        // the card's own 16dp inner padding; otherwise the next card's text
+        // would start showing at the edge.
+        final viewport = math.min(
+          constraints.maxWidth,
+          340.0 + ExploreSpacing.x16 + ExploreSpacing.x12 + ExploreSpacing.x16,
         );
+        // peek = viewport - (margin 16 + card + gap 12) = 16 = inner padding.
+        final cardWidth =
+            viewport -
+            ExploreSpacing.x16 -
+            ExploreSpacing.x12 -
+            ExploreSpacing.x16;
         final itemExtent = cardWidth + ExploreSpacing.x12;
 
-        return SizedBox(
-          height: ProjectCard.heightFor(context, cardWidth),
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: _SnapToItemPhysics(itemExtent: itemExtent),
-            // The extra 12dp on the right lets the last card reach the 16dp
-            // margin when it snaps, instead of stopping short.
-            padding: const EdgeInsets.only(
-              left: ExploreSpacing.x16,
-              right: ExploreSpacing.x16 + ExploreSpacing.x12,
-            ),
-            itemCount: projects.length,
-            separatorBuilder: (_, _) =>
-                const SizedBox(width: ExploreSpacing.x12),
-            itemBuilder: (context, index) => SizedBox(
-              width: cardWidth,
-              child: ProjectCard(
-                project: projects[index],
-                rail: true,
-                onSavedChanged: onSavedChanged,
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: SizedBox(
+            width: viewport,
+            height: ProjectCard.heightFor(context, cardWidth),
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: _SnapToItemPhysics(itemExtent: itemExtent),
+              // The extra 12dp on the right lets the last card reach the 16dp
+              // margin when it snaps, instead of stopping short.
+              padding: const EdgeInsets.only(
+                left: ExploreSpacing.x16,
+                right: ExploreSpacing.x16 + ExploreSpacing.x12,
+              ),
+              itemCount: projects.length,
+              separatorBuilder: (_, _) =>
+                  const SizedBox(width: ExploreSpacing.x12),
+              itemBuilder: (context, index) => SizedBox(
+                width: cardWidth,
+                child: ProjectCard(
+                  project: projects[index],
+                  rail: true,
+                  onSavedChanged: onSavedChanged,
+                ),
               ),
             ),
           ),
@@ -92,12 +99,11 @@ class _SnapToItemPhysics extends ScrollPhysics {
 
   final double itemExtent;
 
-  static final SpringDescription _spring =
-      SpringDescription.withDampingRatio(
-        mass: 0.5,
-        stiffness: 100.0,
-        ratio: 1.1,
-      );
+  static final SpringDescription _spring = SpringDescription.withDampingRatio(
+    mass: 0.5,
+    stiffness: 100.0,
+    ratio: 1.1,
+  );
 
   @override
   _SnapToItemPhysics applyTo(ScrollPhysics? ancestor) =>
@@ -112,8 +118,7 @@ class _SnapToItemPhysics extends ScrollPhysics {
       return super.createBallisticSimulation(position, velocity);
     }
     final tolerance = toleranceFor(position);
-    final snap =
-        (position.pixels / itemExtent).roundToDouble() * itemExtent;
+    final snap = (position.pixels / itemExtent).roundToDouble() * itemExtent;
     final target = snap
         .clamp(position.minScrollExtent, position.maxScrollExtent)
         .toDouble();

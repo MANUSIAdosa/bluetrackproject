@@ -37,7 +37,10 @@ void main() {
       expect(find.text('Jelajahi'), findsOneWidget);
       expect(find.byType(TextField), findsOneWidget);
       expect(find.byType(NotificationBell), findsOneWidget);
-      expect(find.byKey(const ValueKey('explore.filterButton')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('explore.filterButton')),
+        findsOneWidget,
+      );
       expect(find.byKey(const ValueKey('explore.scope.saved')), findsOneWidget);
       // The view switch belongs to the results line, not the title row.
       expect(find.byKey(const ValueKey('explore.view.map')), findsNothing);
@@ -207,11 +210,7 @@ void main() {
       Future<Color?> backgroundOf(bool saved) async {
         await tester.pumpWidget(
           wrapPage(
-            SavedScopeButton(
-              saved: saved,
-              savedCount: 2,
-              onChanged: (_) {},
-            ),
+            SavedScopeButton(saved: saved, savedCount: 2, onChanged: (_) {}),
           ),
         );
         await tester.pump();
@@ -271,7 +270,10 @@ void main() {
 
       await tester.pumpWidget(
         wrapPage(
-          ExploreViewSwitch(mapMode: false, onChanged: (value) => picked = value),
+          ExploreViewSwitch(
+            mapMode: false,
+            onChanged: (value) => picked = value,
+          ),
         ),
       );
       await tester.pump();
@@ -282,7 +284,10 @@ void main() {
       picked = null;
       await tester.pumpWidget(
         wrapPage(
-          ExploreViewSwitch(mapMode: true, onChanged: (value) => picked = value),
+          ExploreViewSwitch(
+            mapMode: true,
+            onChanged: (value) => picked = value,
+          ),
         ),
       );
       await tester.pump();
@@ -291,7 +296,7 @@ void main() {
       expect(picked, isFalse);
     });
 
-    testWidgets('keeps the segmented control at a comfortable touch target', (
+    testWidgets('gives each icon segment a comfortable touch target', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -299,17 +304,18 @@ void main() {
       );
       await tester.pump();
 
-      expect(
-        tester.getSize(find.byType(SegmentedButton<bool>)).height,
-        greaterThanOrEqualTo(48),
-      );
-      expect(find.byKey(const ValueKey('explore.view.list')), findsOneWidget);
-      expect(find.byKey(const ValueKey('explore.view.map')), findsOneWidget);
+      for (final key in ['explore.view.list', 'explore.view.map']) {
+        final size = tester.getSize(find.byKey(ValueKey(key)));
+        expect(size.width, greaterThanOrEqualTo(48));
+        expect(size.height, greaterThanOrEqualTo(48));
+      }
     });
   });
 
   group('ActiveFilterBar', () {
-    testWidgets('stays out of the way when no filter is active', (tester) async {
+    testWidgets('stays out of the way when no filter is active', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         wrapPage(
           ActiveFilterBar(
@@ -340,7 +346,10 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byKey(const ValueKey('explore.activeFilters')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('explore.activeFilters')),
+        findsOneWidget,
+      );
       // The category is visible as the selected rail chip, so the bar never
       // repeats it as a token.
       expect(
@@ -413,11 +422,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         wrapPage(
-          ExploreResultsBar(
-            count: 4,
-            mapMode: false,
-            onViewChanged: (_) {},
-          ),
+          ExploreResultsBar(count: 4, mapMode: false, onViewChanged: (_) {}),
         ),
       );
       await tester.pump();
