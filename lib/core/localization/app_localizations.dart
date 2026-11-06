@@ -358,9 +358,17 @@ class AppLocalizations {
       'my_reports.report_date': 'Tanggal laporan',
       'my_reports.waiting_verification': 'Menunggu verifikasi',
       'my_reports.severity_chip': 'Tingkat: {level}',
-      'my_reports.open_actions': 'Lihat aksi terkait',
+      'my_reports.completion_proof': 'Bukti penyelesaian',
+      'my_reports.completion_proof_missing': 'Bukti belum diunggah.',
+      'my_reports.completion_photo_missing': 'Foto bukti belum tersedia.',
+      'my_reports.completion_proof_note': 'Catatan penyelesaian',
+      'my_reports.completion_date': 'Selesai pada',
+      'my_reports.completion_by': 'Pelaksana',
+      'my_reports.completion_proof_available': 'Bukti penyelesaian tersedia',
+      'my_reports.card_photo_semantics': 'Foto laporan',
+      'my_reports.open_actions': 'Lihat agenda aksi',
       'my_reports.open_actions_hint':
-          'Temukan kegiatan yang terhubung dengan laporan ini.',
+          'Jelajahi agenda kegiatan konservasi yang tersedia.',
       'my_reports.count': '{n} laporan',
       'my_reports.filtered_count': '{status} · {n} laporan',
       'my_reports.filter_title': 'Filter status',
@@ -765,10 +773,6 @@ class AppLocalizations {
       'report_success_view_reports': 'Lihat Laporan Saya',
       'report_success_new_report': 'Buat Laporan Lain',
       'report_success_not_found': 'Laporan tidak ditemukan di sesi ini.',
-      'report_mine_title': 'Laporan Saya',
-      'report_mine_empty':
-          'Belum ada laporan. Laporan yang kamu kirim akan muncul di sini.',
-      'report_mine_new': 'Buat Laporan',
       'report_photo_viewer_counter': '{current}/{total}',
       'report_photo_viewer_close': 'Tutup',
 
@@ -1112,8 +1116,19 @@ class AppLocalizations {
       'my_reports.report_date': 'Report date',
       'my_reports.waiting_verification': 'Waiting for verification',
       'my_reports.severity_chip': 'Severity: {level}',
-      'my_reports.open_actions': 'View related actions',
-      'my_reports.open_actions_hint': 'Find activities linked to this report.',
+      'my_reports.completion_proof': 'Completion proof',
+      'my_reports.completion_proof_missing':
+          'Completion proof has not been uploaded yet.',
+      'my_reports.completion_photo_missing':
+          'Completion proof photo is not available.',
+      'my_reports.completion_proof_note': 'Completion note',
+      'my_reports.completion_date': 'Completed on',
+      'my_reports.completion_by': 'Completed by',
+      'my_reports.completion_proof_available': 'Completion proof available',
+      'my_reports.card_photo_semantics': 'Report photo',
+      'my_reports.open_actions': 'View the action agenda',
+      'my_reports.open_actions_hint':
+          'Browse available conservation activities.',
       'my_reports.count': '{n} reports',
       'my_reports.filtered_count': '{status} · {n} reports',
       'my_reports.filter_title': 'Filter status',
@@ -1521,9 +1536,6 @@ class AppLocalizations {
       'report_success_new_report': 'Create Another Report',
       'report_success_not_found':
           'This report is no longer available in this session.',
-      'report_mine_title': 'My Reports',
-      'report_mine_empty': 'No reports yet. Reports you send will appear here.',
-      'report_mine_new': 'Create Report',
       'report_photo_viewer_counter': '{current}/{total}',
       'report_photo_viewer_close': 'Close',
 

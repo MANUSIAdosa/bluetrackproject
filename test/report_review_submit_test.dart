@@ -2,13 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:blue_track/core/config/app_config.dart';
 import 'package:blue_track/core/state/app_state.dart';
+import 'package:blue_track/features/my_reports/data/my_reports_store.dart';
+import 'package:blue_track/features/my_reports/presentation/my_reports_page.dart';
 import 'package:blue_track/features/project/domain/report.dart';
-import 'package:blue_track/features/report_submit/data/my_reports_store.dart';
 import 'package:blue_track/features/report_submit/data/report_draft_store.dart';
 import 'package:blue_track/features/report_submit/data/report_submission_service.dart';
 import 'package:blue_track/features/report_submit/domain/report_draft.dart';
-import 'package:blue_track/features/report_submit/presentation/pages/my_reports_page.dart';
 import 'package:blue_track/features/report_submit/presentation/pages/report_success_page.dart';
 import 'package:blue_track/features/report_submit/presentation/pages/report_wizard_page.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'support/fake_tile_provider.dart';
+import 'support/report_fixtures.dart';
 import 'support/test_harness.dart';
 
 /// 1x1 transparent PNG so `Image.file` has a real file to decode.
@@ -87,8 +89,8 @@ Report _buildReport(ReportWizardDraft draft, {String id = 'RPT-0001'}) {
   return Report(
     id: id,
     locationId: 'p01',
-    reporterId: 'u-me',
-    reporterName: 'Pengguna BlueTrack',
+    reporterId: AppConfig.reportCurrentUserId,
+    reporterName: AppConfig.reportCurrentUserName,
     category: draft.category ?? ReportCategory.damagedReef,
     severity: draft.severity ?? ReportSeverity.high,
     status: ReportStatus.submitted,
@@ -167,7 +169,10 @@ void main() {
         ),
         GoRoute(
           path: '/my-reports',
-          builder: (context, state) => MyReportsPage(store: reports),
+          builder: (context, state) => MyReportsPage(
+            repository: InMemoryReportRepository(reports: reports.reports),
+            store: reports,
+          ),
         ),
         GoRoute(
           path: '/explore',
@@ -289,14 +294,14 @@ void main() {
     expect(store.draft, isNull);
     expect(reports.reports, hasLength(1));
 
-    // "Lihat Laporan Saya" stays inactive until the list page ships.
+    // The report list is available from the success screen.
     final viewReports = tester.widget<FilledButton>(
       find.descendant(
         of: find.byKey(const ValueKey('report_success_view_reports')),
         matching: find.byType(FilledButton),
       ),
     );
-    expect(viewReports.onPressed, isNull);
+    expect(viewReports.onPressed, isNotNull);
 
     // Closing the success screen returns to Explore, never to the form.
     await tester.tap(find.byKey(const ValueKey('report_success_close')));
@@ -467,6 +472,7 @@ void main() {
   testWidgets('My Reports starts empty and offers a new report', (
     tester,
   ) async {
+    AuthController.instance.setSignedIn(true);
     phoneSurface(tester);
     final router = buildRouter(
       store: _RecordingStore(null),
@@ -479,8 +485,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Laporan Saya'), findsOneWidget);
-    expect(find.textContaining('Belum ada laporan'), findsOneWidget);
-    expect(find.text('Buat Laporan'), findsOneWidget);
+    expect(find.textContaining('Kamu belum punya laporan'), findsOneWidget);
+    expect(find.text('Buat laporan'), findsOneWidget);
   });
 
   test('the in-memory draft store keeps the draft only in memory', () async {

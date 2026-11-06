@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/report_metadata_chip.dart';
 import '../../../../shared/widgets/zoomable_photo_viewer.dart';
 import '../../../project/domain/report.dart';
 import '../../../project/presentation/p04_format.dart';
@@ -15,8 +16,8 @@ import '../../../project/presentation/p04_report_visuals.dart';
 ///
 /// The report is already loaded by the list, so the sheet does not fetch again:
 /// it shows the status tracker, the zoomable photo, a small map, the verifier
-/// note and the description. Reports that are being followed up or finished
-/// also link to the Aksi tab.
+/// note and the description. Followed-up and finished reports also expose a
+/// secondary link to the general Aksi agenda.
 Future<void> showMyReportDetailSheet(
   BuildContext context, {
   required Report report,
@@ -61,7 +62,7 @@ class _MyReportDetailSheet extends StatelessWidget {
   final Report report;
   final TileProvider? mapTileProvider;
 
-  bool get _hasRelatedActions =>
+  bool get _showActionsAgenda =>
       report.status == ReportStatus.followedUp ||
       report.status == ReportStatus.completed;
 
@@ -139,12 +140,12 @@ class _MyReportDetailSheet extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  _DetailChip(
+                  ReportMetadataChip(
                     icon: context.p04CategoryIcon(report.category),
                     label: context.p04CategoryLabel(report.category),
                     color: context.p04CategoryColor(report.category),
                   ),
-                  _DetailChip(
+                  ReportMetadataChip(
                     icon: Icons.speed_outlined,
                     label: context.p04SeverityLabel(report.severity),
                     color: context.p04SeverityColor(report.severity),
@@ -159,6 +160,19 @@ class _MyReportDetailSheet extends StatelessWidget {
                 title: context.tr('my_reports.tracker'),
                 child: _StatusTracker(status: report.status),
               ),
+              if (report.status == ReportStatus.completed) ...[
+                const SizedBox(height: 12),
+                _SectionCard(
+                  icon: Icons.fact_check_outlined,
+                  title: context.tr('my_reports.completion_proof'),
+                  child: report.completionProof == null
+                      ? const _CompletionProofEmptyState()
+                      : _CompletionProofDetails(
+                          proof: report.completionProof!,
+                          languageCode: lang,
+                        ),
+                ),
+              ],
               const SizedBox(height: 12),
               _SectionCard(
                 icon: Icons.notes_outlined,
@@ -184,7 +198,7 @@ class _MyReportDetailSheet extends StatelessWidget {
                 title: context.tr('p04_detail_location'),
                 child: _MiniMap(report: report, tileProvider: mapTileProvider),
               ),
-              if (_hasRelatedActions) ...[
+              if (_showActionsAgenda) ...[
                 const SizedBox(height: 12),
                 const _OpenActionsRow(),
               ],
@@ -775,40 +789,154 @@ class _OpenActionsRow extends StatelessWidget {
   }
 }
 
-class _DetailChip extends StatelessWidget {
-  const _DetailChip({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
+class _CompletionProofEmptyState extends StatelessWidget {
+  const _CompletionProofEmptyState();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      key: const ValueKey('my-report-completion-proof-empty'),
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(999),
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+          const Icon(Icons.info_outline, color: AppColors.textSecondary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              context.tr('my_reports.completion_proof_missing'),
+              style: const TextStyle(
+                fontSize: 13,
+                height: 1.45,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _CompletionProofDetails extends StatelessWidget {
+  const _CompletionProofDetails({
+    required this.proof,
+    required this.languageCode,
+  });
+
+  final CompletionProof proof;
+  final String languageCode;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (proof.photoPaths.isEmpty)
+          const _CompletionProofPhotoMissing()
+        else
+          _ReportPhoto(photoPaths: proof.photoPaths),
+        const SizedBox(height: 12),
+        Text(
+          context.tr('my_reports.completion_proof_note'),
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          proof.note,
+          style: const TextStyle(
+            fontSize: 14,
+            height: 1.5,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _CompletionProofInfoRow(
+          icon: Icons.calendar_today_outlined,
+          label: context.tr('my_reports.completion_date'),
+          value: P04Format.date(proof.completedAt.toLocal(), languageCode),
+        ),
+        const SizedBox(height: 8),
+        _CompletionProofInfoRow(
+          icon: Icons.person_outline,
+          label: context.tr('my_reports.completion_by'),
+          value: proof.completedBy,
+        ),
+      ],
+    );
+  }
+}
+
+class _CompletionProofPhotoMissing extends StatelessWidget {
+  const _CompletionProofPhotoMissing();
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(AppDimens.padding),
+        decoration: BoxDecoration(
+          color: AppColors.border,
+          borderRadius: BorderRadius.circular(AppDimens.cardRadius),
+        ),
+        child: Text(
+          context.tr('my_reports.completion_photo_missing'),
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
+      ),
+    );
+  }
+}
+
+class _CompletionProofInfoRow extends StatelessWidget {
+  const _CompletionProofInfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: AppColors.textSecondary),
+        const SizedBox(width: 8),
+        Text(
+          '$label: ',
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

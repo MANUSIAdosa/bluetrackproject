@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:blue_track/core/router/routes.dart';
 import 'package:blue_track/core/state/app_state.dart';
+import 'package:blue_track/features/my_reports/data/my_reports_store.dart';
 import 'package:blue_track/features/my_reports/presentation/my_reports_page.dart';
 import 'package:blue_track/features/project/data/report_repository.dart';
 import 'package:blue_track/features/project/domain/report.dart';
@@ -211,6 +212,7 @@ Future<void> _scrollToActions(WidgetTester tester) async {
 void main() {
   setUp(() {
     FlutterSecureStorage.setMockInitialValues({});
+    MyReportsStore.instance.reset();
   });
 
   tearDown(() async {

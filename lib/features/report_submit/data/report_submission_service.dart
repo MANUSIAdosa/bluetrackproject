@@ -1,7 +1,7 @@
 import '../../../core/config/app_config.dart';
+import '../../my_reports/data/my_reports_store.dart';
 import '../../project/domain/report.dart';
 import '../domain/report_draft.dart';
-import 'my_reports_store.dart';
 
 /// Sends a wizard draft to the (simulated) report store.
 ///
@@ -26,15 +26,12 @@ class ReportSubmissionException implements Exception {
 }
 
 /// Simulated submission: waits like a network call and saves the report to
-/// [MyReportsStore] in memory.
-///
-/// The real API does not exist yet, and the wizard does not collect the fields
-/// `ReportRepository.submitReport` requires (title, description, category
-/// metrics), so this service builds a report directly.
-///
-/// TODO(lapor): replace with `ReportRepository.submitReport` plus the real
-/// fields once the form and the backend are ready.
+/// [MyReportsStore], the same session collection read by My Reports.
 class MockReportSubmissionService implements ReportSubmissionService {
+  static const _mockReportTitle = 'Laporan temuan lapangan';
+  static const _mockReportDescription =
+      'Dikirim melalui Lapor Temuan BlueTrack.';
+
   MockReportSubmissionService({
     this.delay = AppConfig.reportSubmitDelay,
     this.simulateFailure = AppConfig.reportSubmitSimulateFailure,
@@ -78,8 +75,8 @@ class MockReportSubmissionService implements ReportSubmissionService {
       reportedAt: DateTime.now().toUtc(),
       // The wizard collects no free-text fields; these placeholders keep the
       // domain model happy until a detail step exists.
-      title: 'Laporan temuan lapangan',
-      description: 'Dikirim melalui Lapor Temuan BlueTrack.',
+      title: _mockReportTitle,
+      description: _mockReportDescription,
       latitude: latitude,
       longitude: longitude,
       photoPaths: List<String>.unmodifiable(draft.photoPaths),

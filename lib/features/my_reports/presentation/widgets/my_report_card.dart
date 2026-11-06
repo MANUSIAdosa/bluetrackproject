@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../project/domain/report.dart';
 import '../../../project/presentation/p04_format.dart';
 import '../../../project/presentation/p04_report_visuals.dart';
+import '../../../../shared/widgets/report_metadata_chip.dart';
 
 /// Report card in My Reports.
 ///
@@ -103,6 +104,8 @@ class MyReportCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
+              const Divider(height: 1, color: AppColors.border),
+              const SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
@@ -111,15 +114,27 @@ class MyReportCard extends StatelessWidget {
                       runSpacing: 6,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        _StatusPill(
+                        ReportMetadataChip(
                           icon: context.p04StatusIcon(report.status),
                           label: context.p04StatusLabel(report.status),
                           color: context.p04StatusColor(report.status),
+                          iconSize: 13,
+                          fontSize: 11,
                         ),
-                        _SeverityLabel(
+                        ReportMetadataChip(
+                          icon: Icons.speed_outlined,
+                          label: context.tr('my_reports.severity_chip', {
+                            'level': context.p04SeverityLabel(report.severity),
+                          }),
                           color: context.p04SeverityColor(report.severity),
-                          label: context.p04SeverityLabel(report.severity),
+                          filled: false,
+                          padding: EdgeInsets.zero,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
                         ),
+                        if (report.status == ReportStatus.completed &&
+                            report.hasCompletionProof)
+                          _CompletionProofMarker(),
                       ],
                     ),
                   ),
@@ -164,79 +179,43 @@ class _LeadingVisual extends StatelessWidget {
 
     if (!report.hasPhoto) return placeholder;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: Image.asset(
-        report.photoPaths.first,
-        width: 64,
-        height: 64,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => placeholder,
-      ),
-    );
-  }
-}
-
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SeverityLabel extends StatelessWidget {
-  const _SeverityLabel({required this.color, required this.label});
-
-  final Color color;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.speed_outlined, size: 14, color: color),
-        const SizedBox(width: 4),
-        Text(
-          context.tr('my_reports.severity_chip', {'level': label}),
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: color,
+    return Semantics(
+      image: true,
+      label: context.tr('my_reports.card_photo_semantics'),
+      child: ExcludeSemantics(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: Image.asset(
+            report.photoPaths.first,
+            width: 64,
+            height: 64,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => placeholder,
           ),
         ),
-      ],
+      ),
+    );
+  }
+}
+
+class _CompletionProofMarker extends StatelessWidget {
+  const _CompletionProofMarker();
+
+  @override
+  Widget build(BuildContext context) {
+    final label = context.tr('my_reports.completion_proof_available');
+    return Semantics(
+      container: true,
+      label: label,
+      child: ExcludeSemantics(
+        child: ReportMetadataChip(
+          icon: Icons.fact_check_outlined,
+          label: label,
+          color: AppColors.success,
+          iconSize: 13,
+          fontSize: 11,
+        ),
+      ),
     );
   }
 }
