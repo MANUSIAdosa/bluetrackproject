@@ -1,11 +1,15 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/category_icon.dart';
 import '../../../../shared/widgets/notification_bell.dart';
+import '../../../../shared/widgets/skeleton.dart';
 import '../../domain/explore_map_data.dart';
 import 'condition_label.dart';
+import 'explore_list_widgets.dart';
 import 'filter_sheet.dart';
 
 /// Compact gradient header of Jelajahi: identity, saved scope, search and
@@ -53,7 +57,12 @@ class ExploreHeader extends StatelessWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+          padding: const EdgeInsets.fromLTRB(
+            ExploreSpacing.x16,
+            ExploreSpacing.x8,
+            ExploreSpacing.x16,
+            ExploreSpacing.x12,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -79,7 +88,7 @@ class ExploreHeader extends StatelessWidget {
                   const NotificationBell(color: Colors.white),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: ExploreSpacing.x8),
               Row(
                 children: [
                   Expanded(
@@ -102,7 +111,9 @@ class ExploreHeader extends StatelessWidget {
                         filled: true,
                         fillColor: AppColors.surface,
                         isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide.none,
@@ -140,7 +151,9 @@ class ExploreHeader extends StatelessWidget {
 /// Compact two-segment control that shows both views and which one is active.
 ///
 /// The results line owns it: the switch sits next to the count it affects.
-/// Icons keep the bar slim; tooltips and semantics carry the labels.
+/// Each segment pairs its icon with a visible label; below 340 dp the icon is
+/// dropped so the labels still fit at 360 dp with large text. Tooltips and
+/// semantics keep the same label for screen readers.
 class ExploreViewSwitch extends StatelessWidget {
   const ExploreViewSwitch({
     super.key,
@@ -153,8 +166,9 @@ class ExploreViewSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final showIcons = MediaQuery.sizeOf(context).width >= 340;
     return Container(
-      height: 46,
+      height: 54,
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -166,14 +180,14 @@ class ExploreViewSwitch extends StatelessWidget {
         children: [
           _ViewSegment(
             key: const ValueKey('explore.view.list'),
-            icon: Icons.view_agenda_outlined,
+            icon: showIcons ? Icons.view_agenda_outlined : null,
             label: context.tr('explore.viewList'),
             selected: !mapMode,
             onTap: () => onChanged(false),
           ),
           _ViewSegment(
             key: const ValueKey('explore.view.map'),
-            icon: Icons.map_outlined,
+            icon: showIcons ? Icons.map_outlined : null,
             label: context.tr('explore.viewMap'),
             selected: mapMode,
             onTap: () => onChanged(true),
@@ -193,7 +207,8 @@ class _ViewSegment extends StatelessWidget {
     required this.onTap,
   });
 
-  final IconData icon;
+  /// Null on narrow screens, where the label alone identifies the view.
+  final IconData? icon;
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -201,6 +216,7 @@ class _ViewSegment extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foreground = selected ? Colors.white : AppColors.textSecondary;
+    final icon = this.icon;
 
     return Semantics(
       button: true,
@@ -214,13 +230,209 @@ class _ViewSegment extends StatelessWidget {
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: onTap,
-            child: SizedBox(
-              width: 40,
-              height: 40,
-              child: Center(
-                child: Icon(icon, size: 20, color: foreground),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minWidth: 48,
+                minHeight: 48,
+                maxHeight: 48,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (icon != null) ...[
+                      Icon(icon, size: 20, color: foreground),
+                      const SizedBox(width: 4),
+                    ],
+                    Text(
+                      label,
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: foreground,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Single-select category rail. Icons instead of chips: category is the only
+/// dimension here, and the coloured glyph makes the five categories scannable.
+class CategorySelector extends StatelessWidget {
+  const CategorySelector({
+    super.key,
+    required this.categoryIds,
+    required this.selectedId,
+    required this.onSelected,
+    this.horizontalPadding = 16,
+  });
+
+  final List<String> categoryIds;
+  final String selectedId;
+  final ValueChanged<String> onSelected;
+
+  /// Horizontal inset, so the rail lines up with the content next to it.
+  final double horizontalPadding;
+
+  @override
+  Widget build(BuildContext context) {
+    // Labels wrap to two lines ("Marine mammals" in English), so reserve two
+    // label lines. The rail keeps its 80dp design height at normal sizes and
+    // grows with the accessibility text scale instead of clipping.
+    final labelLine = MediaQuery.textScalerOf(context).scale(11 * 1.2) * 2;
+    final railHeight = math.max(80.0, 48 + 5 + labelLine + 2);
+    // The slot must fit the longest single word, otherwise a two-line label
+    // like "Marine mammals" still ellipsizes. Measure with the bold weight,
+    // which is the widest state, at the current text scale.
+    var itemWidth = 72.0;
+    for (final id in categoryIds) {
+      for (final word in context.tr('cat.$id').split(' ')) {
+        final painter = TextPainter(
+          text: TextSpan(
+            text: word,
+            style: const TextStyle(
+              fontSize: 11,
+              height: 1.2,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+        )..layout();
+        itemWidth = math.max(itemWidth, painter.width + 4);
+        painter.dispose();
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            horizontalPadding,
+            10,
+            horizontalPadding,
+            6,
+          ),
+          child: Text(
+            context.tr('p03_category_label'),
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: railHeight,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+            itemCount: categoryIds.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 14),
+            itemBuilder: (context, index) {
+              final id = categoryIds[index];
+              return _CategoryOption(
+                key: ValueKey('explore.category.$id'),
+                categoryId: id,
+                width: itemWidth,
+                selected: id == selectedId,
+                onTap: () => onSelected(id),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CategoryOption extends StatelessWidget {
+  const _CategoryOption({
+    super.key,
+    required this.categoryId,
+    required this.width,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String categoryId;
+  final double width;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = CategoryIcons.colorFor(categoryId);
+    final label = context.tr('cat.$categoryId');
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: SizedBox(
+          width: width,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: selected ? color : color.withValues(alpha: 0.10),
+                  border: Border.all(
+                    color: selected ? color : color.withValues(alpha: 0.20),
+                    width: selected ? 2 : 1,
+                  ),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: color.withValues(alpha: 0.30),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: ExcludeSemantics(
+                  child: CategoryIcon(
+                    category: categoryId,
+                    // Artwork fills the 48dp ring; "Semua" keeps the smaller
+                    // glyph it had before there was any artwork.
+                    size: categoryId == 'semua' ? 22 : 42,
+                    color: selected ? Colors.white : color,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  height: 1.2,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                  color: selected ? color : AppColors.textSecondary,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -255,9 +467,7 @@ class FilterButton extends StatelessWidget {
         backgroundColor: active ? AppColors.ocean : AppColors.surface,
         minimumSize: const Size.square(48),
         maximumSize: const Size.square(48),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       onPressed: onPressed,
     );
@@ -344,152 +554,6 @@ class SavedScopeButton extends StatelessWidget {
   }
 }
 
-/// Single-select category rail. Icons instead of chips: category is the only
-/// dimension here, and the coloured glyph makes the five categories scannable.
-class CategorySelector extends StatelessWidget {
-  const CategorySelector({
-    super.key,
-    required this.categoryIds,
-    required this.selectedId,
-    required this.onSelected,
-    this.horizontalPadding = 16,
-  });
-
-  final List<String> categoryIds;
-  final String selectedId;
-  final ValueChanged<String> onSelected;
-
-  /// Horizontal inset. The Explore list already has its own padding, so it
-  /// passes 0 to keep the rail aligned with the cards.
-  final double horizontalPadding;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.fromLTRB(
-            horizontalPadding,
-            10,
-            horizontalPadding,
-            6,
-          ),
-          child: Text(
-            context.tr('p03_category_label'),
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ),
-        SizedBox(
-          height: 80,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-            itemCount: categoryIds.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 14),
-            itemBuilder: (context, index) {
-              final id = categoryIds[index];
-              return _CategoryOption(
-                key: ValueKey('explore.category.$id'),
-                categoryId: id,
-                selected: id == selectedId,
-                onTap: () => onSelected(id),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _CategoryOption extends StatelessWidget {
-  const _CategoryOption({
-    super.key,
-    required this.categoryId,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String categoryId;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final all = categoryId == 'semua';
-    final color = all ? AppColors.ocean : CategoryIcons.colorFor(categoryId);
-    final icon = all
-        ? Icons.grid_view_rounded
-        : CategoryIcons.iconFor(categoryId);
-    final label = context.tr('cat.$categoryId');
-
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: label,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: SizedBox(
-          width: 72,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOut,
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: selected ? color : color.withValues(alpha: 0.10),
-                  border: Border.all(
-                    color: selected
-                        ? color
-                        : color.withValues(alpha: 0.20),
-                    width: selected ? 2 : 1,
-                  ),
-                  boxShadow: selected
-                      ? [
-                          BoxShadow(
-                            color: color.withValues(alpha: 0.30),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Icon(
-                  icon,
-                  size: 22,
-                  color: selected ? Colors.white : color,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                  color: selected ? color : AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// Tokens for the filters that are narrowing the results, each labelled with
 /// its dimension. This is the only place chips/tokens belong: they summarise
 /// active state and can be removed — they never navigate or select a view.
@@ -511,15 +575,6 @@ class ActiveFilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = <Widget>[
-      if (selection.category != 'semua')
-        _FilterToken(
-          key: const ValueKey('explore.activeFilter.category'),
-          icon: CategoryIcons.iconFor(selection.category),
-          label:
-              '${context.tr('p03_filter_category')}: '
-              '${context.tr('cat.${selection.category}')}',
-          onRemove: () => onChanged(selection.copyWith(category: 'semua')),
-        ),
       if (selection.distance != DistanceBand.semua)
         _FilterToken(
           key: const ValueKey('explore.activeFilter.distance'),
@@ -527,9 +582,8 @@ class ActiveFilterBar extends StatelessWidget {
           label:
               '${context.tr('p03_filter_distance')}: '
               '${context.tr('p03_distance_${selection.distance.name}')}',
-          onRemove: () => onChanged(
-            selection.copyWith(distance: DistanceBand.semua),
-          ),
+          onRemove: () =>
+              onChanged(selection.copyWith(distance: DistanceBand.semua)),
         ),
       if (selection.condition != null)
         _FilterToken(
@@ -546,28 +600,38 @@ class ActiveFilterBar extends StatelessWidget {
 
     return Padding(
       key: const ValueKey('explore.activeFilters'),
-      padding: EdgeInsets.fromLTRB(horizontalPadding, 10, horizontalPadding, 0),
+      padding: EdgeInsets.fromLTRB(
+        horizontalPadding,
+        ExploreSpacing.x12,
+        horizontalPadding,
+        0,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: Wrap(spacing: 8, runSpacing: 8, children: tokens),
+            child: Wrap(
+              spacing: ExploreSpacing.x8,
+              runSpacing: ExploreSpacing.x8,
+              children: tokens,
+            ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: ExploreSpacing.x4),
           TextButton(
             key: const ValueKey('explore.clearFilters'),
             style: TextButton.styleFrom(
               foregroundColor: AppColors.ocean,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              minimumSize: const Size(0, 36),
+              padding: const EdgeInsets.symmetric(
+                horizontal: ExploreSpacing.x8,
+              ),
+              minimumSize: const Size(0, 48),
             ),
-            onPressed: () => onChanged(ExploreFilterSelection.none),
+            // Clearing the sheet filters must not undo the category the user
+            // picked on the rail.
+            onPressed: () => onChanged(selection.withoutRefinements),
             child: Text(
               context.tr('p03_clear_all'),
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -599,12 +663,17 @@ class _FilterToken extends StatelessWidget {
         customBorder: const StadiumBorder(),
         onTap: onRemove,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(10, 6, 8, 6),
+          padding: const EdgeInsets.fromLTRB(
+            ExploreSpacing.x8,
+            ExploreSpacing.x4,
+            ExploreSpacing.x8,
+            ExploreSpacing.x4,
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 14, color: AppColors.ocean),
-              const SizedBox(width: 6),
+              const SizedBox(width: ExploreSpacing.x8),
               Flexible(
                 child: Text(
                   label,
@@ -617,12 +686,8 @@ class _FilterToken extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 4),
-              const Icon(
-                Icons.close,
-                size: 14,
-                color: AppColors.textSecondary,
-              ),
+              const SizedBox(width: ExploreSpacing.x4),
+              const Icon(Icons.close, size: 14, color: AppColors.textSecondary),
             ],
           ),
         ),
@@ -631,14 +696,13 @@ class _FilterToken extends StatelessWidget {
   }
 }
 
-/// Slim result line above the list. It stays fixed so the effect of a filter is
-/// visible while scrolling.
+/// Slim result line above the list. It scrolls with the list so the fixed
+/// header never eats the viewport.
 ///
 /// The line owns the view switch: `Daftar | Peta` sits next to the count it
-/// controls, so the user never has to look back up at the header. In map mode
-/// the rail is hidden, so [categoryId] adds a compact chip that opens the
-/// category picker. List mode passes null: the rail is right there, and showing
-/// both would be the duplication this layout removed.
+/// controls, so the user never has to look back up at the header. The count is
+/// plain text — it is information, not a control. In map mode the rail is
+/// hidden, so [categoryId] adds a compact chip that opens the category picker.
 class ExploreResultsBar extends StatelessWidget {
   const ExploreResultsBar({
     super.key,
@@ -647,6 +711,7 @@ class ExploreResultsBar extends StatelessWidget {
     required this.onViewChanged,
     this.categoryId,
     this.onCategoryPressed,
+    this.loading = false,
   });
 
   final int count;
@@ -655,39 +720,56 @@ class ExploreResultsBar extends StatelessWidget {
   final String? categoryId;
   final VoidCallback? onCategoryPressed;
 
+  /// While the first page loads the count is unknown; a skeleton keeps the
+  /// line's height so nothing jumps when the number arrives.
+  final bool loading;
+
   @override
   Widget build(BuildContext context) {
     final showCategory =
         mapMode && categoryId != null && onCategoryPressed != null;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+      padding: const EdgeInsets.fromLTRB(
+        ExploreSpacing.x16,
+        ExploreSpacing.x8,
+        ExploreSpacing.x16,
+        ExploreSpacing.x8,
+      ),
       child: Row(
         children: [
           Expanded(
             child: Row(
               children: [
-                Container(
-                  key: const ValueKey('explore.resultsCount'),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
+                // The map itself shows its project count, so the bar leaves
+                // that space to the category control there.
+                if (!showCategory)
+                  Flexible(
+                    child: loading
+                        ? const Skeleton(
+                            key: ValueKey('explore.resultsCount'),
+                            width: 88,
+                            height: 18,
+                            radius: 4,
+                          )
+                        : Text(
+                            count == 1
+                                ? context.tr('explore.projectCountOne')
+                                : context.tr('explore.projectCount', {
+                                    'n': '$count',
+                                  }),
+                            key: const ValueKey('explore.resultsCount'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.ocean,
+                            ),
+                          ),
                   ),
-                  decoration: BoxDecoration(
-                    color: AppColors.ocean.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    '${context.tr('explore.projects')} · $count',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.ocean,
-                    ),
-                  ),
-                ),
                 if (showCategory) ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: ExploreSpacing.x8),
                   // The chip gets the whole leftover width instead of sharing
                   // it with the spacer, so its label is not ellipsized on a
                   // phone even when the view switch is beside it.
@@ -701,7 +783,7 @@ class ExploreResultsBar extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: ExploreSpacing.x8),
           ExploreViewSwitch(mapMode: mapMode, onChanged: onViewChanged),
         ],
       ),
@@ -724,24 +806,47 @@ class _MapCategoryChip extends StatelessWidget {
 
     return Tooltip(
       message: context.tr('p03_category_label'),
-      child: ActionChip(
-        key: const ValueKey('explore.mapCategoryChip'),
-        avatar: Icon(
-          all ? Icons.grid_view_rounded : CategoryIcons.iconFor(categoryId),
-          size: 16,
-          color: AppColors.ocean,
+      child: Material(
+        color: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: AppColors.border),
         ),
-        label: Text(label),
-        labelStyle: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: AppColors.ocean,
+        child: InkWell(
+          key: const ValueKey('explore.mapCategoryChip'),
+          borderRadius: BorderRadius.circular(14),
+          onTap: onPressed,
+          child: SizedBox(
+            height: 48,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // The artwork shows the current value; the arrow marks the
+                  // chip as a picker, not a passive label.
+                  ExcludeSemantics(
+                    child: CategoryIcon(category: categoryId, size: 20),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ocean,
+                    ),
+                  ),
+                  const Icon(
+                    Icons.arrow_drop_down,
+                    size: 20,
+                    color: AppColors.ocean,
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
-        visualDensity: VisualDensity.compact,
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        side: const BorderSide(color: AppColors.border),
-        backgroundColor: AppColors.surface,
-        onPressed: onPressed,
       ),
     );
   }

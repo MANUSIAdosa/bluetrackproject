@@ -4,6 +4,7 @@ import 'package:blue_track/core/theme/app_colors.dart';
 import 'package:blue_track/features/explore/domain/explore_map_data.dart';
 import 'package:blue_track/features/explore/domain/project.dart';
 import 'package:blue_track/features/explore/presentation/widgets/explore_map.dart';
+import 'package:blue_track/shared/widgets/category_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,12 +14,73 @@ import 'support/test_harness.dart';
 
 /// One pixel of transparent PNG — keeps the tile layer off the network.
 final _transparentPng = Uint8List.fromList(const [
-  0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
-  0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-  0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00,
-  0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
-  0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49,
-  0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+  0x89,
+  0x50,
+  0x4E,
+  0x47,
+  0x0D,
+  0x0A,
+  0x1A,
+  0x0A,
+  0x00,
+  0x00,
+  0x00,
+  0x0D,
+  0x49,
+  0x48,
+  0x44,
+  0x52,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x08,
+  0x06,
+  0x00,
+  0x00,
+  0x00,
+  0x1F,
+  0x15,
+  0xC4,
+  0x89,
+  0x00,
+  0x00,
+  0x00,
+  0x0A,
+  0x49,
+  0x44,
+  0x41,
+  0x54,
+  0x78,
+  0x9C,
+  0x63,
+  0x00,
+  0x01,
+  0x00,
+  0x00,
+  0x05,
+  0x00,
+  0x01,
+  0x0D,
+  0x0A,
+  0x2D,
+  0xB4,
+  0x00,
+  0x00,
+  0x00,
+  0x00,
+  0x49,
+  0x45,
+  0x4E,
+  0x44,
+  0xAE,
+  0x42,
+  0x60,
+  0x82,
 ]);
 
 class _FakeTileProvider extends TileProvider {
@@ -53,11 +115,12 @@ Project _project({
 
 final _projects = [
   _project(id: 'p01', title: 'Peneluruhan Penyu', latitude: -6.18),
+  // Far enough from p01 that the two pins do not cluster at the test zoom.
   _project(
     id: 'p02',
     title: 'Pemulihan Karang',
     category: 'karang',
-    latitude: -6.22,
+    latitude: -6.6,
     longitude: 106.82,
   ),
 ];
@@ -70,11 +133,7 @@ const _mapData = ExploreMapData(
       id: 'a01',
       name: 'Kawasan Konservasi Uji',
       status: ProjectCondition.pemantauan,
-      points: [
-        LatLng(-6.3, 106.7),
-        LatLng(-6.3, 106.9),
-        LatLng(-6.1, 106.9),
-      ],
+      points: [LatLng(-6.3, 106.7), LatLng(-6.3, 106.9), LatLng(-6.1, 106.9)],
     ),
   ],
 );
@@ -95,13 +154,43 @@ Future<void> pumpMap(
         showConservationLayer: showConservationLayer,
         offline: offline,
         tileProvider: _FakeTileProvider(),
-        initialZoom: 8,
         onOpenProject: onOpenProject,
         onConservationLayerChanged: onConservationLayerChanged,
       ),
     ),
   );
   await tester.pumpAndSettle();
+}
+
+Future<void> _pumpProjects(WidgetTester tester, List<Project> projects) async {
+  await tester.pumpWidget(
+    wrapPage(
+      ExploreMap(
+        projects: projects,
+        mapData: _mapData,
+        userLocationLabel: 'Jakarta',
+        tileProvider: _FakeTileProvider(),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+void _expectOnScreen(WidgetTester tester, String projectId) {
+  final map = tester.getRect(find.byType(ExploreMap));
+  final marker = tester.getRect(
+    find.byKey(ValueKey('explore.marker.$projectId')),
+  );
+  expect(
+    marker.center.dx,
+    inInclusiveRange(map.left, map.right),
+    reason: '$projectId is outside the viewport horizontally',
+  );
+  expect(
+    marker.center.dy,
+    inInclusiveRange(map.top, map.bottom),
+    reason: '$projectId is outside the viewport vertically',
+  );
 }
 
 void main() {
@@ -112,11 +201,103 @@ void main() {
     expect(find.byKey(const ValueKey('explore.marker.p02')), findsOneWidget);
   });
 
+  testWidgets('a marker keeps a 48dp target and names the project', (
+    tester,
+  ) async {
+    await pumpMap(tester);
+
+    final marker = find.byKey(const ValueKey('explore.marker.p01'));
+    expect(tester.getSize(marker), const Size(48, 48));
+    final categoryIcon = find.descendant(
+      of: marker,
+      matching: find.byType(CategoryIcon),
+    );
+    expect(tester.getSize(categoryIcon), const Size(36, 36));
+    expect(find.bySemanticsLabel('Peneluruhan Penyu'), findsOneWidget);
+  });
+
+  testWidgets('nearby markers merge into a cluster and split when zoomed', (
+    tester,
+  ) async {
+    // ~2.2 km apart: a few pixels at the test zoom, ~58 px at the cluster's
+    // max zoom, so the fit really separates them.
+    await tester.pumpWidget(
+      wrapPage(
+        ExploreMap(
+          projects: [
+            _project(id: 'p01', title: 'Peneluruhan Penyu', latitude: -6.18),
+            _project(
+              id: 'p02',
+              title: 'Pemulihan Karang',
+              category: 'karang',
+              latitude: -6.20,
+            ),
+          ],
+          mapData: _mapData,
+          userLocationLabel: 'Jakarta',
+          tileProvider: _FakeTileProvider(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('explore.cluster')), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
+    expect(find.byKey(const ValueKey('explore.marker.p01')), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('explore.cluster')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('explore.marker.p01')), findsOneWidget);
+    expect(find.byKey(const ValueKey('explore.marker.p02')), findsOneWidget);
+    expect(find.byKey(const ValueKey('explore.cluster')), findsNothing);
+  });
+
+  testWidgets('the first frame fits every project into the viewport', (
+    tester,
+  ) async {
+    // Jakarta and Manado are ~1,900 km apart: only a bounds fit shows both.
+    await _pumpProjects(tester, [
+      _project(id: 'p01', title: 'Peneluruhan Penyu', latitude: -6.2),
+      _project(
+        id: 'p02',
+        title: 'Pemulihan Karang',
+        latitude: 1.5,
+        longitude: 124.8,
+      ),
+    ]);
+
+    _expectOnScreen(tester, 'p01');
+    _expectOnScreen(tester, 'p02');
+  });
+
+  testWidgets('a new result set moves the camera to its projects', (
+    tester,
+  ) async {
+    await _pumpProjects(tester, [
+      _project(id: 'p01', title: 'Peneluruhan Penyu', latitude: -6.2),
+    ]);
+    await _pumpProjects(tester, [
+      _project(
+        id: 'p03',
+        title: 'Mangrove Manado',
+        latitude: 1.5,
+        longitude: 124.8,
+      ),
+    ]);
+
+    // Without a refit the old camera still centres Jakarta, ~3,300 px away.
+    _expectOnScreen(tester, 'p03');
+  });
+
   testWidgets('the conservation layer only draws when it is switched on', (
     tester,
   ) async {
     await pumpMap(tester);
-    expect(find.byKey(const ValueKey('explore.conservationLayer')), findsNothing);
+    expect(
+      find.byKey(const ValueKey('explore.conservationLayer')),
+      findsNothing,
+    );
 
     await pumpMap(tester, showConservationLayer: true);
     expect(

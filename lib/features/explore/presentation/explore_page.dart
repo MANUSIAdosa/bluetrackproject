@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ import '../data/explore_map_repository.dart';
 import '../data/project_repository.dart';
 import '../data/saved_project_store.dart';
 import '../domain/explore_map_data.dart';
+import '../domain/interest_categories.dart';
 import '../domain/project.dart';
 import 'widgets/category_picker.dart';
 import 'widgets/explore_header.dart';
@@ -157,6 +159,7 @@ class _ExplorePageState extends State<ExplorePage> {
   }
 
   Future<void> _load() async {
+    final gen = ++_loadGen;
     _resetPaging();
     setState(() {
       _loading = true;
@@ -172,7 +175,15 @@ class _ExplorePageState extends State<ExplorePage> {
           : await _projects.getProjects();
       final categories = await _filters.getCategoryIds();
       final interests = await OnboardingState.readInterests();
-      if (!mounted) return;
+      if (!mounted || gen != _loadGen) return;
+      if (!offline) {
+        unawaited(
+          SavedProjectStore.instance.refresh(
+            projects,
+            SavedProjectsController.instance.ids,
+          ),
+        );
+      }
       setState(() {
         _all = projects;
         _categoryIds = categories;
@@ -180,7 +191,7 @@ class _ExplorePageState extends State<ExplorePage> {
         _loading = false;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || gen != _loadGen) return;
       setState(() {
         _error = true;
         _loading = false;
@@ -201,12 +212,15 @@ class _ExplorePageState extends State<ExplorePage> {
   /// delay, so the placeholder below the list behaves like a real request.
   Future<void> _loadNextPage() async {
     if (_loading || _loadingMore) return;
-    final total = _visible.length;
+    _recompute();
+    final total = _mainProjects.length;
     if (_visibleCount >= total) return;
+    final gen = _loadGen;
     setState(() => _loadingMore = true);
     await Future<void>.delayed(_pageLatency);
-    // A reload (pull to refresh / retry) already reset the paging.
-    if (!mounted || _loading) return;
+    // A reload (pull to refresh / retry) already reset the paging; its result
+    // must not be extended by this stale page.
+    if (!mounted || gen != _loadGen || _loading) return;
     setState(() {
       _visibleCount = math.min(_visibleCount + _pageSize, total);
       _loadingMore = false;
@@ -241,6 +255,17 @@ class _ExplorePageState extends State<ExplorePage> {
   void _showAllProjects() {
     _resetPaging();
     setState(() => _savedScope = false);
+  }
+
+  /// Saved-scope recovery that keeps the collection: drop the category and the
+  /// search so every saved project is reachable again.
+  void _showAllSavedCategories() {
+    _searchController.clear();
+    _resetPaging();
+    setState(() {
+      _query = '';
+      _category = 'semua';
+    });
   }
 
   /// Map data is loaded on demand: the list never pays for an asset only the
@@ -356,10 +381,7 @@ class _ExplorePageState extends State<ExplorePage> {
           selection.distance == DistanceBand.semua ||
           mapData == null ||
           selection.distance.matches(
-            distanceKm(
-              mapData.userLocation,
-              LatLng(p.latitude, p.longitude),
-            ),
+            distanceKm(mapData.userLocation, LatLng(p.latitude, p.longitude)),
           );
       return matchesSaved &&
           matchesCategory &&
@@ -369,27 +391,86 @@ class _ExplorePageState extends State<ExplorePage> {
     }).toList();
   }
 
-  List<Project> get _visible {
+  /// Cached result of [_recompute]. Build and the paging code read these
+  /// instead of filtering on every rebuild.
+  List<Project> _visible = const [];
+  List<Project> _forYouProjects = const [];
+  List<Project> _mainProjects = const [];
+
+  /// What the cache was computed from. A cheap signature, not a dirty flag, so
+  /// a filter changed from any setState still refreshes the lists.
+  int? _derivedSignature;
+
+  /// Bumped by every [_load], so a slow read that finishes after a newer one
+  /// started can never overwrite the fresher result.
+  int _loadGen = 0;
+
+  void _recompute() {
+    final signature = Object.hash(
+      _all,
+      _interests,
+      _category,
+      _query,
+      _savedScope,
+      _distance,
+      _condition,
+      _mapData,
+      Object.hashAll(SavedProjectsController.instance.ids),
+    );
+    if (signature == _derivedSignature) return;
+    _derivedSignature = signature;
+
     var list = _applyFilters(
       selection: _selection,
       query: _query,
       savedScope: _savedScope,
     );
 
-    // Personalized sorting: interest matches first.
+    // Personalized sorting: interest matches first. The original index breaks
+    // ties so equal-ranked projects keep the filter order.
     if (_interests.isNotEmpty) {
-      list = [...list]
+      final indexed = list.asMap().entries.toList()
         ..sort((a, b) {
-          final aRank = _interests.contains(a.category) ? 0 : 1;
-          final bRank = _interests.contains(b.category) ? 0 : 1;
-          return aRank.compareTo(bRank);
+          final byRank = _interestRank(a.value)
+              .compareTo(_interestRank(b.value));
+          return byRank != 0 ? byRank : a.key.compareTo(b.key);
         });
+      list = [for (final entry in indexed) entry.value];
     }
-    return list;
+
+    _visible = list;
+    _forYouProjects = _railVisible
+        ? list
+              .where(
+                (project) =>
+                    InterestCategories.anyMatches(_interests, project.category),
+              )
+              .take(5)
+              .toList()
+        : const [];
+    // Cards already in the rail are removed from the list so the same project
+    // never appears twice; paging counts this list.
+    final railIds = _forYouProjects.map((project) => project.id).toSet();
+    _mainProjects = railIds.isEmpty
+        ? list
+        : list.where((project) => !railIds.contains(project.id)).toList();
   }
+
+  int _interestRank(Project project) =>
+      InterestCategories.anyMatches(_interests, project.category) ? 0 : 1;
+
+  /// The rail only exists in the plain Explore list: the saved collection is
+  /// already personal, and a search, a category or a missing interest leaves
+  /// nothing to personalise.
+  bool get _railVisible =>
+      !_savedScope &&
+      _category == 'semua' &&
+      _query.isEmpty &&
+      _interests.any((id) => InterestCategories.categoriesOf(id).isNotEmpty);
 
   @override
   Widget build(BuildContext context) {
+    _recompute();
     final visible = _visible;
     final savedCount = SavedProjectsController.instance.ids.length;
 
@@ -417,28 +498,132 @@ class _ExplorePageState extends State<ExplorePage> {
               setState(() => _savedScope = saved);
             },
           ),
-          if (!_loading && !_error)
+          // In list mode the results line scrolls with the content (see
+          // [_buildList]); only the map, which does not scroll, keeps it fixed.
+          // The active filter tokens stay fixed with it, above the map (not
+          // floating over its zoom and layer controls).
+          if (_mapMode && !_loading && !_error) ...[
             ExploreResultsBar(
               count: visible.length,
-              mapMode: _mapMode,
+              mapMode: true,
               onViewChanged: _setMapMode,
-              // Map mode hides the rail, so the result line carries the one
-              // category control. List mode leaves it to the rail below.
-              categoryId: _mapMode ? _category : null,
-              onCategoryPressed: _mapMode ? _pickCategory : null,
+              categoryId: _category,
+              onCategoryPressed: _pickCategory,
             ),
+            if (_selection.activeCount > 0)
+              ActiveFilterBar(
+                selection: _selection,
+                onChanged: (value) {
+                  _resetPaging();
+                  setState(() {
+                    _distance = value.distance;
+                    _condition = value.condition;
+                  });
+                },
+                horizontalPadding: ExploreSpacing.x16,
+              ),
+          ],
           Expanded(child: _buildBody(visible)),
         ],
       ),
     );
   }
 
+  /// Results line + category chips + active filter tokens. Shared by the
+  /// filled and the empty list so the controls never disappear.
+  List<Widget> _listControls(BuildContext context, int count) => [
+    // The results line scrolls with the content, so the fixed header stays
+    // under a sixth of the screen.
+    ExploreResultsBar(count: count, mapMode: false, onViewChanged: _setMapMode),
+    // The icon rail sits at the page margin, aligned with the cards.
+    CategorySelector(
+      categoryIds: _categoryIds,
+      selectedId: _category,
+      onSelected: (id) {
+        _resetPaging();
+        setState(() => _category = id);
+      },
+      horizontalPadding: ExploreSpacing.x16,
+    ),
+    // The category is already visible as the selected chip, so the token bar
+    // only summarises the distance/condition filters from the sheet.
+    if (_selection.activeCount > 0)
+      ActiveFilterBar(
+        selection: _selection,
+        onChanged: (value) {
+          _resetPaging();
+          setState(() {
+            _distance = value.distance;
+            _condition = value.condition;
+          });
+        },
+        horizontalPadding: ExploreSpacing.x16,
+      ),
+  ];
+
+  /// The recovery choices depend on why the list is empty. The saved scope
+  /// keeps its collection unless the user explicitly leaves it.
+  Widget _emptyState(BuildContext context) {
+    if (!_savedScope) {
+      return EmptyState(
+        icon: Icons.search_off,
+        message: context.tr('explore.empty.title'),
+        actionLabel: context.tr('explore.resetFilter'),
+        onAction: _resetFilters,
+      );
+    }
+    // Nothing saved yet: the invitation to save stays a single action.
+    if (SavedProjectsController.instance.ids.isEmpty) {
+      return EmptyState(
+        icon: Icons.bookmark_outline,
+        message: context.tr('explore.emptySaved.title'),
+        actionLabel: context.tr('explore.viewAll'),
+        onAction: _showAllProjects,
+      );
+    }
+    // Saved projects exist but the other filters hide them.
+    final message = _query.isNotEmpty
+        ? context.tr('explore.emptySavedFiltered.search')
+        : _category != 'semua'
+        ? context.tr('explore.emptySavedFiltered.category', {
+            'category': context.tr('cat.$_category'),
+          })
+        : context.tr('explore.emptySavedFiltered.title');
+    return EmptyState(
+      icon: Icons.search_off,
+      message: message,
+      actionLabel: context.tr('explore.viewAllCategories'),
+      onAction: _showAllSavedCategories,
+      secondaryLabel: context.tr('explore.viewAll'),
+      onSecondary: _showAllProjects,
+    );
+  }
+
   Widget _buildBody(List<Project> visible) {
     if (_loading) {
+      // The results line keeps its exact position from the loaded list, so the
+      // count arriving does not shift the page. Header is fixed above.
       return ListView(
         key: const ValueKey('explore.projectList'),
-        padding: const EdgeInsets.all(16),
-        children: const [SkeletonCard(), SizedBox(height: 16), SkeletonCard()],
+        padding: EdgeInsets.zero,
+        children: [
+          ExploreResultsBar(
+            count: 0,
+            mapMode: false,
+            onViewChanged: _setMapMode,
+            loading: true,
+          ),
+          const SizedBox(height: ExploreSpacing.x24),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: ExploreSpacing.x16),
+            child: SkeletonCard(),
+          ),
+          const SizedBox(height: ExploreSpacing.x12),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: ExploreSpacing.x16),
+            child: SkeletonCard(),
+          ),
+        ],
       );
     }
     if (_error) {
@@ -449,7 +634,8 @@ class _ExplorePageState extends State<ExplorePage> {
     }
     if (visible.isEmpty) {
       // The offline list can be empty for its own reason: nothing was saved
-      // before losing the connection.
+      // before losing the connection. Controls would not recover that, so it
+      // keeps its own full-page state.
       if (_offline) {
         return EmptyState(
           icon: Icons.cloud_off,
@@ -458,94 +644,132 @@ class _ExplorePageState extends State<ExplorePage> {
           onAction: _load,
         );
       }
-      // Two different failures behind the same saved scope: nothing has been
-      // saved yet, or the saved projects do not match the other filters.
-      if (_savedScope) {
-        final nothingSaved = SavedProjectsController.instance.ids.isEmpty;
-        return EmptyState(
-          icon: nothingSaved ? Icons.bookmark_outline : Icons.search_off,
-          message: context.tr(
-            nothingSaved
-                ? 'explore.emptySaved.title'
-                : 'explore.emptySavedFiltered.title',
-          ),
-          actionLabel: context.tr(
-            nothingSaved ? 'explore.viewAll' : 'explore.resetFilter',
-          ),
-          onAction: nothingSaved ? _showAllProjects : _resetFilters,
-        );
-      }
-      return EmptyState(
-        icon: Icons.search_off,
-        message: context.tr('explore.empty.title'),
-        actionLabel: context.tr('explore.resetFilter'),
-        onAction: _resetFilters,
+      // Zero results must not dead-end: the results line, chips and filter
+      // tokens stay in the same scroll view, and only the area below them
+      // becomes the empty state.
+      return RefreshIndicator(
+        onRefresh: _load,
+        child: CustomScrollView(
+          key: const ValueKey('explore.projectList'),
+          // The filled state fits one screen; without this the pull gesture
+          // would have nothing to drag.
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: _listControls(context, visible.length),
+              ),
+            ),
+            // SliverFillRemaining is the sliver form of "minHeight = the rest
+            // of the viewport": it centres the state in the leftover space
+            // and grows with the scroll view when the controls need it.
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: _emptyState(context),
+            ),
+          ],
+        ),
       );
     }
 
-    // The saved collection is already a personal selection, so the interest
-    // rail stays out of the way while that scope is active.
-    final forYou = (_savedScope || _interests.isEmpty)
-        ? const <Project>[]
-        : visible
-              .where((p) => _interests.contains(p.category))
-              .take(5)
-              .toList();
-    final page = visible.take(_visibleCount).toList();
+    final forYou = _forYouProjects;
+    final others = _mainProjects;
+    final page = others.take(_visibleCount).toList();
+    final sectionTitle = _savedScope
+        ? context.tr('explore.savedProjects')
+        : forYou.isNotEmpty
+        ? context.tr('explore.moreProjects')
+        : context.tr('explore.allProjects');
+    final twoColumns = MediaQuery.sizeOf(context).width >= 600;
+
+    Widget card(Project project) =>
+        ProjectCard(project: project, onSavedChanged: () => setState(() {}));
+
+    List<Widget> cardRows(List<Project> projects) {
+      if (twoColumns) {
+        return [
+          for (var i = 0; i < projects.length; i += 2) ...[
+            if (i > 0) const SizedBox(height: ExploreSpacing.x12),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: ExploreSpacing.x16,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: card(projects[i])),
+                  const SizedBox(width: ExploreSpacing.x16),
+                  Expanded(
+                    child: i + 1 < projects.length
+                        ? card(projects[i + 1])
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ];
+      }
+      return [
+        for (var i = 0; i < projects.length; i++) ...[
+          if (i > 0) const SizedBox(height: ExploreSpacing.x12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: ExploreSpacing.x16),
+            child: card(projects[i]),
+          ),
+        ],
+      ];
+    }
 
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
         key: const ValueKey('explore.projectList'),
         controller: _scrollController,
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        padding: EdgeInsets.zero,
         children: [
-          // Secondary controls live inside the scroll view: they are useful at
-          // the top, but must not permanently eat half the viewport.
-          CategorySelector(
-            categoryIds: _categoryIds,
-            selectedId: _category,
-            onSelected: (id) {
-              _resetPaging();
-              setState(() => _category = id);
-            },
-            horizontalPadding: 0,
-          ),
-          if (_selection.hasAny)
-            ActiveFilterBar(
-              selection: _selection,
-              onChanged: (value) {
-                _resetPaging();
-                setState(() {
-                  _category = value.category;
-                  _distance = value.distance;
-                  _condition = value.condition;
-                });
-              },
-              horizontalPadding: 0,
+          // The controls scroll with the content in list mode: the results
+          // line, the category chips and any active sheet filters stay
+          // visible in every state, including zero results.
+          ..._listControls(context, visible.length),
+          if (forYou.isNotEmpty) ...[
+            const SizedBox(height: ExploreSpacing.x24),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: ExploreSpacing.x16,
+              ),
+              child: exploreSectionHeader(
+                context,
+                context.tr('explore.forYou'),
+              ),
             ),
-          if (forYou.isNotEmpty && _category == 'semua' && _query.isEmpty) ...[
-            exploreSectionHeader(context.tr('explore.forYou')),
-            ForYouRail(
-              key: const ValueKey('explore.forYouRail'),
-              projects: forYou,
-              onSavedChanged: () => setState(() {}),
-            ),
-            const SizedBox(height: 8),
+            const SizedBox(height: ExploreSpacing.x12),
+            ForYouList(projects: forYou, onSavedChanged: () => setState(() {})),
           ],
-          for (final project in page) ...[
-            ProjectCard(
-              project: project,
-              onSavedChanged: () => setState(() {}),
+          if (others.isNotEmpty) ...[
+            const SizedBox(height: ExploreSpacing.x24),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: ExploreSpacing.x16,
+              ),
+              child: exploreSectionHeader(context, sectionTitle),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: ExploreSpacing.x12),
+            ...cardRows(page),
           ],
           // Small placeholder while the next page is appended.
           if (_loadingMore)
             const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
+              padding: EdgeInsets.fromLTRB(
+                ExploreSpacing.x16,
+                ExploreSpacing.x12,
+                ExploreSpacing.x16,
+                0,
+              ),
               child: Skeleton(height: 72, radius: 12),
             ),
+          const SizedBox(height: ExploreSpacing.x24),
         ],
       ),
     );

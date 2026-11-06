@@ -5,36 +5,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'support/test_harness.dart';
 
 void main() {
-  testWidgets('each sea category renders its own icon and colour', (
+  testWidgets('no Material glyph flashes before the artwork has a frame', (
     tester,
   ) async {
-    const categories = [
-      'penyu',
-      'karang',
-      'mangrove',
-      'mamalia_laut',
-      'lamun',
-    ];
-
-    for (final category in categories) {
+    for (final category in CategoryIcons.categories) {
       await tester.pumpWidget(
         wrapPage(CategoryIcon(category: category, size: 24)),
       );
-      // The localization delegate resolves on the next frame; until then
-      // `Localizations` renders a placeholder instead of its child.
+      // The localization delegate resolves on the next frame; the first
+      // painted state must already be the neutral disc, not the fallback.
       await tester.pump();
 
-      final icon = tester.widget<Icon>(find.byType(Icon));
       expect(
-        icon.icon,
-        CategoryIcons.iconFor(category),
-        reason: 'icon for $category',
+        find.byType(Icon),
+        findsNothing,
+        reason: '$category must not flash its Material glyph',
       );
-      expect(
-        icon.color,
-        CategoryIcons.colorFor(category),
-        reason: 'colour for $category',
-      );
+      expect(find.byType(Image), findsOneWidget);
     }
   });
 
@@ -51,9 +38,21 @@ void main() {
     expect(colors, hasLength(CategoryIcons.categories.length));
   });
 
-  test('an unknown category falls back to the generic sea icon', () {
+  test('categories without artwork use their Material glyph directly', () {
+    expect(CategoryIcons.assetFor('semua'), isNull);
+    expect(CategoryIcons.assetFor('entah'), isNull);
+    expect(CategoryIcons.iconFor('semua'), Icons.grid_view_rounded);
     expect(CategoryIcons.iconFor('entah'), Icons.waves);
-    expect(CategoryIcons.colorFor('entah'), isNotNull);
+  });
+
+  testWidgets('the all-categories icon does not request a missing asset', (
+    tester,
+  ) async {
+    await tester.pumpWidget(wrapPage(const CategoryIcon(category: 'semua')));
+    await tester.pump();
+
+    expect(find.byType(Image), findsNothing);
+    expect(find.byIcon(Icons.grid_view_rounded), findsOneWidget);
   });
 
   testWidgets('the icon is labelled with the localized category name', (

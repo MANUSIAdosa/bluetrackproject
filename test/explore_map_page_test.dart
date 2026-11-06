@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:blue_track/core/config/app_config.dart';
+import 'package:blue_track/core/theme/app_colors.dart';
 import 'package:blue_track/core/state/app_state.dart';
 import 'package:blue_track/features/explore/data/explore_map_repository.dart';
 import 'package:blue_track/features/explore/data/saved_project_store.dart';
@@ -56,7 +58,10 @@ class FakeExploreMapRepository implements ExploreMapRepository {
 final _mapData = ExploreMapData(
   userLocation: const LatLng(-6.2, 106.816666),
   userLocationLabel: 'Jakarta',
-  conditions: const {'p01': ProjectCondition.baik, 'p02': ProjectCondition.kritis},
+  conditions: const {
+    'p01': ProjectCondition.baik,
+    'p02': ProjectCondition.kritis,
+  },
   conservationAreas: const [
     ConservationArea(
       id: 'a01',
@@ -69,11 +74,13 @@ final _mapData = ExploreMapData(
 
 List<Project> _twoProjects() => [
   _project(id: 'p01', title: 'Peneluruhan Penyu', category: 'penyu'),
+  // Far from p01 on any zoom so the two pins stay separately tappable.
   _project(
     id: 'p02',
     title: 'Pemulihan Karang',
     category: 'karang',
-    latitude: -6.22,
+    latitude: 3.2,
+    longitude: 105.9,
   ),
 ];
 
@@ -87,11 +94,7 @@ Future<void> pumpExplore(
     wrapPage(
       ExplorePage(
         projectRepository: projects,
-        filterRepository: FakeFilterRepository([
-          'semua',
-          'penyu',
-          'karang',
-        ]),
+        filterRepository: FakeFilterRepository(['semua', 'penyu', 'karang']),
         mapRepository: FakeExploreMapRepository(_mapData),
       ),
     ),
@@ -189,7 +192,10 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('explore.mapCategoryChip')));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('explore.categoryPicker')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('explore.categoryPicker')),
+      findsOneWidget,
+    );
 
     await tester.tap(
       find.byKey(const ValueKey('explore.categoryPicker.karang')),
@@ -217,15 +223,48 @@ void main() {
     expect(find.byKey(const ValueKey('explore.marker.p01')), findsNothing);
   });
 
+  testWidgets('map mode keeps the active filter tokens above the map', (
+    tester,
+  ) async {
+    await pumpExplore(tester, projects: FakeProjectRepository(_twoProjects()));
+    await tapKey(tester, 'explore.view.map');
+    expect(find.byKey(const ValueKey('explore.activeFilters')), findsNothing);
+
+    await openFilterSheet(tester);
+    await tapSheetOption(tester, 'explore.filter.condition.kritis');
+    await tester.tap(find.byKey(const ValueKey('explore.filter.apply')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('explore.activeFilters')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('explore.activeFilter.condition')),
+      findsOneWidget,
+    );
+
+    // Removing a token widens the markers without leaving the map.
+    await tester.tap(
+      find.byKey(const ValueKey('explore.activeFilter.condition')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('explore.activeFilter.condition')),
+      findsNothing,
+    );
+    expect(find.byKey(const ValueKey('explore.marker.p01')), findsOneWidget);
+    expect(find.byKey(const ValueKey('explore.marker.p02')), findsOneWidget);
+  });
+
   testWidgets('the conservation layer is a toggle on the map', (tester) async {
     await pumpExplore(tester, projects: FakeProjectRepository(_twoProjects()));
     await tapKey(tester, 'explore.view.map');
 
-    expect(find.byKey(const ValueKey('explore.conservationLayer')), findsNothing);
-
-    await tester.tap(
-      find.byKey(const ValueKey('explore.conservationSwitch')),
+    expect(
+      find.byKey(const ValueKey('explore.conservationLayer')),
+      findsNothing,
     );
+
+    await tester.tap(find.byKey(const ValueKey('explore.conservationSwitch')));
     await tester.pumpAndSettle();
 
     expect(
@@ -234,7 +273,40 @@ void main() {
     );
   });
 
-  testWidgets('filter button badges how many groups are active', (tester) async {
+  testWidgets('conservation switch keeps 3:1 tracks on the white card', (
+    tester,
+  ) async {
+    await pumpExplore(tester, projects: FakeProjectRepository(_twoProjects()));
+    await tapKey(tester, 'explore.view.map');
+
+    final toggle = tester.widget<Switch>(
+      find.byKey(const ValueKey('explore.conservationSwitch')),
+    );
+    final active = toggle.activeTrackColor!;
+    final inactive = toggle.inactiveTrackColor!;
+    expect(_contrast(active, AppColors.surface), greaterThanOrEqualTo(3));
+    expect(_contrast(inactive, AppColors.surface), greaterThanOrEqualTo(3));
+    expect(active, isNot(inactive));
+  });
+
+  testWidgets('coincident markers merge into one cluster on the page map', (
+    tester,
+  ) async {
+    final stacked = FakeProjectRepository([
+      _project(id: 'p01', title: 'Marker Satu', category: 'penyu'),
+      _project(id: 'p02', title: 'Marker Dua', category: 'karang'),
+    ]);
+    await pumpExplore(tester, projects: stacked);
+    await tapKey(tester, 'explore.view.map');
+
+    expect(find.byKey(const ValueKey('explore.cluster')), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
+    expect(find.byKey(const ValueKey('explore.marker.p01')), findsNothing);
+  });
+
+  testWidgets('filter button badges how many groups are active', (
+    tester,
+  ) async {
     await pumpExplore(tester, projects: FakeProjectRepository(_twoProjects()));
     expect(find.byKey(const ValueKey('explore.filterCount')), findsNothing);
 
@@ -300,6 +372,15 @@ void main() {
 
     expect(find.textContaining('Jakarta'), findsOneWidget);
   });
+}
+
+/// WCAG contrast ratio between two opaque colours.
+double _contrast(Color a, Color b) {
+  final la = a.computeLuminance();
+  final lb = b.computeLuminance();
+  final hi = math.max(la, lb);
+  final lo = math.min(la, lb);
+  return (hi + 0.05) / (lo + 0.05);
 }
 
 /// Map repository whose read the test completes by hand.

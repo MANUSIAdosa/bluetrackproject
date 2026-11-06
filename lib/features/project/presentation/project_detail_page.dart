@@ -12,6 +12,7 @@ import '../../../shared/widgets/skeleton.dart';
 import '../../../shared/widgets/verification_sheet.dart';
 import '../../../shared/widgets/verified_badge.dart';
 import '../../explore/data/project_repository.dart';
+import '../../explore/data/saved_project_store.dart';
 import '../../explore/domain/project.dart';
 import '../../repositories.dart';
 import '../data/project_data_repositories.dart';
@@ -135,7 +136,18 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                     ? Icons.bookmark
                     : Icons.bookmark_outline,
                 onPressed: () async {
-                  await SavedProjectsController.instance.toggle(project.id);
+                  final messenger = ScaffoldMessenger.of(context);
+                  final failedLabel = context.tr('p03_save_failed');
+                  try {
+                    // Goes through the shared entry point so the offline
+                    // snapshot is written together with the saved id.
+                    await toggleSavedProject(project);
+                  } catch (_) {
+                    if (!mounted) return;
+                    messenger
+                      ..hideCurrentSnackBar()
+                      ..showSnackBar(SnackBar(content: Text(failedLabel)));
+                  }
                   if (!mounted) return;
                   setState(() {});
                 },

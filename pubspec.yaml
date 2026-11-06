@@ -41,6 +41,7 @@ flutter:
   assets:
     - assets/mock/
     - assets/images/interests/
+    - assets/icons/categories/
   fonts:
     - family: PlusJakartaSans
       fonts:

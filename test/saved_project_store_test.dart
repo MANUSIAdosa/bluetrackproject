@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:blue_track/core/config/app_config.dart';
 import 'package:blue_track/core/state/app_state.dart';
 import 'package:blue_track/features/explore/data/saved_project_store.dart';
+import 'package:blue_track/features/explore/domain/project.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 
@@ -53,15 +55,18 @@ void main() {
     expect(await SavedProjectStore.instance.loadAll(), isEmpty);
   });
 
-  test('toggling a project flips the saved id and writes the snapshot', () async {
-    final project = buildProject(id: 'p01');
+  test(
+    'toggling a project flips the saved id and writes the snapshot',
+    () async {
+      final project = buildProject(id: 'p01');
 
-    final saved = await toggleSavedProject(project);
+      final saved = await toggleSavedProject(project);
 
-    expect(saved, isTrue);
-    expect(SavedProjectsController.instance.isSaved('p01'), isTrue);
-    expect((await SavedProjectStore.instance.loadAll()).single.id, 'p01');
-  });
+      expect(saved, isTrue);
+      expect(SavedProjectsController.instance.isSaved('p01'), isTrue);
+      expect((await SavedProjectStore.instance.loadAll()).single.id, 'p01');
+    },
+  );
 
   test('toggling twice removes both the id and the snapshot', () async {
     final project = buildProject(id: 'p01');
@@ -73,4 +78,67 @@ void main() {
     expect(SavedProjectsController.instance.isSaved('p01'), isFalse);
     expect(await SavedProjectStore.instance.loadAll(), isEmpty);
   });
+
+  test('refresh updates saved snapshots and leaves the rest alone', () async {
+    await SavedProjectStore.instance.save(
+      buildProject(id: 'p01', raisedAmount: 1000),
+    );
+    await SavedProjectStore.instance.save(
+      buildProject(id: 'p02', raisedAmount: 2000),
+    );
+
+    await SavedProjectStore.instance.refresh(
+      [
+        buildProject(id: 'p01', raisedAmount: 9000),
+        buildProject(id: 'p02', raisedAmount: 8000),
+        buildProject(id: 'p03', raisedAmount: 7000),
+      ],
+      {'p01'},
+    );
+
+    final loaded = await SavedProjectStore.instance.loadAll();
+    expect(loaded.map((p) => p.id), unorderedEquals(['p01', 'p02']));
+    expect(
+      loaded.firstWhere((p) => p.id == 'p01').raisedAmount,
+      9000,
+      reason: 'the saved project takes the fresh figures',
+    );
+    expect(
+      loaded.firstWhere((p) => p.id == 'p02').raisedAmount,
+      2000,
+      reason: 'an unsaved snapshot is not refreshed',
+    );
+  });
+
+  test(
+    'a failed snapshot write rolls the saved id back and rethrows',
+    () async {
+      // NaN cannot be JSON-encoded, so the snapshot write fails after the id
+      // was already flipped — the case the rollback exists for.
+      final unencodable = Project(
+        id: 'p01',
+        title: 'Penyu',
+        category: 'penyu',
+        orgId: 'o01',
+        orgName: 'Yayasan Laut Biru',
+        orgVerified: true,
+        location: 'Jakarta',
+        latitude: double.nan,
+        longitude: 106.8,
+        raisedAmount: 1,
+        targetAmount: 2,
+        description: 'Deskripsi',
+        about: const [],
+        budget: const [],
+        galleryColors: const [],
+      );
+
+      await expectLater(
+        toggleSavedProject(unencodable),
+        throwsA(isA<JsonUnsupportedObjectError>()),
+      );
+
+      expect(SavedProjectsController.instance.isSaved('p01'), isFalse);
+    },
+  );
 }

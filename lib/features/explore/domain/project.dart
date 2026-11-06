@@ -42,47 +42,46 @@ class Project {
       targetAmount == 0 ? 0 : (raisedAmount / targetAmount).clamp(0.0, 1.0);
 
   factory Project.fromJson(Map<String, dynamic> json) => Project(
-        id: json['id'] as String,
-        title: json['title'] as String,
-        category: json['category'] as String,
-        orgId: json['orgId'] as String,
-        orgName: json['orgName'] as String,
-        orgVerified: json['orgVerified'] as bool? ?? false,
-        location: json['location'] as String,
-        latitude: (json['latitude'] as num).toDouble(),
-        longitude: (json['longitude'] as num).toDouble(),
-        raisedAmount: json['raisedAmount'] as int,
-        targetAmount: json['targetAmount'] as int,
-        description: json['description'] as String,
-        about: (json['about'] as List<dynamic>).cast<String>(),
-        budget: (json['budget'] as List<dynamic>)
-            .map((e) => BudgetLine.fromJson(e as Map<String, dynamic>))
-            .toList(),
-        galleryColors:
-            (json['galleryColors'] as List<dynamic>).cast<String>(),
-      );
+    id: json['id'] as String,
+    title: json['title'] as String,
+    category: json['category'] as String,
+    orgId: json['orgId'] as String,
+    orgName: json['orgName'] as String,
+    orgVerified: json['orgVerified'] as bool? ?? false,
+    location: json['location'] as String,
+    latitude: (json['latitude'] as num).toDouble(),
+    longitude: (json['longitude'] as num).toDouble(),
+    raisedAmount: json['raisedAmount'] as int,
+    targetAmount: json['targetAmount'] as int,
+    description: json['description'] as String,
+    about: (json['about'] as List<dynamic>).cast<String>(),
+    budget: (json['budget'] as List<dynamic>)
+        .map((e) => BudgetLine.fromJson(e as Map<String, dynamic>))
+        .toList(),
+    galleryColors: (json['galleryColors'] as List<dynamic>).cast<String>(),
+  );
 
   /// Round-trips [Project.fromJson] — used to cache a project for offline use.
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'category': category,
-        'orgId': orgId,
-        'orgName': orgName,
-        'orgVerified': orgVerified,
-        'location': location,
-        'latitude': latitude,
-        'longitude': longitude,
-        'raisedAmount': raisedAmount,
-        'targetAmount': targetAmount,
-        'description': description,
-        'about': about,
-        'budget': [
-          for (final line in budget)
-            {'item': line.item, 'amount': line.amount, 'percent': line.percent},
-        ],
-        'galleryColors': galleryColors,
-      };
+    'id': id,
+    'title': title,
+    'category': category,
+    'orgId': orgId,
+    'orgName': orgName,
+    'orgVerified': orgVerified,
+    'location': location,
+    'latitude': latitude,
+    'longitude': longitude,
+    'raisedAmount': raisedAmount,
+    'targetAmount': targetAmount,
+    'description': description,
+    'about': about,
+    'budget': [
+      for (final line in budget)
+        {'item': line.item, 'amount': line.amount, 'percent': line.percent},
+    ],
+    'galleryColors': galleryColors,
+  };
 }
 
 class BudgetLine {
@@ -99,8 +98,8 @@ class BudgetLine {
   final int percent;
 
   factory BudgetLine.fromJson(Map<String, dynamic> json) => BudgetLine(
-        item: json['item'] as String,
-        amount: json['amount'] as int,
-        percent: json['percent'] as int,
-      );
+    item: json['item'] as String,
+    amount: json['amount'] as int,
+    percent: json['percent'] as int,
+  );
 }
