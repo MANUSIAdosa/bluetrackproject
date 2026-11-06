@@ -11,6 +11,7 @@ EducationArticle _article(String id, {String title = 'Artikel laut'}) =>
       title: title,
       summary: 'Ringkasan lengkap',
       content: 'Isi artikel lengkap.',
+      author: 'Penulis Uji',
       category: 'polusi',
       readingMinutes: 5,
       publishedAt: DateTime(2026, 10, 20),

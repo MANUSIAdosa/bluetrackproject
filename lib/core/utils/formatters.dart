@@ -20,6 +20,12 @@ abstract final class Formatters {
     unawaited(initializeDateFormatting());
   }
 
+  /// Short calendar date with day first (e.g. "20 Okt 2026" / "20 Oct 2026").
+  static String shortDate(DateTime date, String localeLanguageCode) {
+    _ensureDateSymbols();
+    return DateFormat('d MMM y', _locale(localeLanguageCode)).format(date);
+  }
+
   /// Long calendar date (P08/P05 style, e.g. "24 Oktober 2026").
   static String date(DateTime date, String localeLanguageCode) {
     _ensureDateSymbols();
