@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../domain/education_article.dart';
+
+const double _gap = 8;
 
 class ArticleCard extends StatelessWidget {
   const ArticleCard({
@@ -20,6 +23,12 @@ class ArticleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localeCode = Localizations.localeOf(context).languageCode;
+    final readingTime = context.tr('learn.readingTime', {
+      'n': '${article.readingMinutes}',
+    });
+    final published = Formatters.shortDate(article.publishedAt, localeCode);
+
     return Card(
       key: ValueKey('learn-article-${article.id}'),
       margin: EdgeInsets.zero,
@@ -76,34 +85,57 @@ class ArticleCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: AppDimens.gap),
+              const SizedBox(height: _gap),
               Text(
                 article.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                   height: 1.3,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: _gap),
+              Text(
+                article.summary,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: _gap),
+              _MetaRow(
+                icon: Icons.schedule,
+                text: '$readingTime · $published',
+              ),
+              const SizedBox(height: _gap),
+              _MetaRow(
+                icon: Icons.person_outline,
+                text: context.tr('learn.byAuthor', {'author': article.author}),
+              ),
+              const SizedBox(height: _gap),
               Row(
                 children: [
-                  const Icon(
-                    Icons.schedule,
-                    size: 14,
-                    color: AppColors.textSecondary,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    context.tr('learn.readingTime', {
-                      'n': '${article.readingMinutes}',
-                    }),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
+                  Expanded(
+                    child: Text(
+                      context.tr('learn.readMore'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.ocean,
+                      ),
                     ),
+                  ),
+                  const Icon(
+                    Icons.arrow_forward,
+                    size: 20,
+                    color: AppColors.ocean,
                   ),
                 ],
               ),
@@ -111,6 +143,34 @@ class ArticleCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _MetaRow extends StatelessWidget {
+  const _MetaRow({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: AppColors.textSecondary),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
