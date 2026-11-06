@@ -770,6 +770,33 @@ void main() {
     });
   }
 
+  testWidgets('an onboarding interest reaches its project categories', (
+    tester,
+  ) async {
+    // Onboarding stores "terumbu_karang"; the project is categorised "karang".
+    SharedPreferences.setMockInitialValues({
+      AppConfig.interestsKey: ['terumbu_karang'],
+    });
+    await pumpExplore(
+      tester,
+      projects: FakeProjectRepository([
+        buildProject(id: 'p01', title: 'Penyu Hijau', category: 'penyu'),
+        buildProject(id: 'p02', title: 'Pemulihan Karang', category: 'karang'),
+      ]),
+    );
+
+    final rail = find.byKey(const ValueKey('explore.forYouRail'));
+    expect(rail, findsOneWidget);
+    expect(
+      find.descendant(of: rail, matching: find.text('Pemulihan Karang')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: rail, matching: find.text('Penyu Hijau')),
+      findsNothing,
+    );
+  });
+
   testWidgets('the "Untuk minatmu" rail shows one full card, no edge sliver', (
     tester,
   ) async {

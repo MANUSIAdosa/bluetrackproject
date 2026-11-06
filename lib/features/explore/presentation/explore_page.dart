@@ -16,6 +16,7 @@ import '../data/explore_map_repository.dart';
 import '../data/project_repository.dart';
 import '../data/saved_project_store.dart';
 import '../domain/explore_map_data.dart';
+import '../domain/interest_categories.dart';
 import '../domain/project.dart';
 import 'widgets/category_picker.dart';
 import 'widgets/explore_header.dart';
@@ -384,30 +385,39 @@ class _ExplorePageState extends State<ExplorePage> {
       savedScope: _savedScope,
     );
 
-    // Personalized sorting: interest matches first.
+    // Personalized sorting: interest matches first. The original index breaks
+    // ties so equal-ranked projects keep the filter order.
     if (_interests.isNotEmpty) {
-      list = [...list]
+      final indexed = list.asMap().entries.toList()
         ..sort((a, b) {
-          final aRank = _interests.contains(a.category) ? 0 : 1;
-          final bRank = _interests.contains(b.category) ? 0 : 1;
-          return aRank.compareTo(bRank);
+          final byRank = _interestRank(a.value).compareTo(
+            _interestRank(b.value),
+          );
+          return byRank != 0 ? byRank : a.key.compareTo(b.key);
         });
+      list = [for (final entry in indexed) entry.value];
     }
     return list;
   }
+
+  int _interestRank(Project project) =>
+      InterestCategories.anyMatches(_interests, project.category) ? 0 : 1;
 
   /// The rail only exists in the plain Explore list: the saved collection is
   /// already personal, and a search, a category or a missing interest leaves
   /// nothing to personalise.
   bool get _railVisible =>
       !_savedScope &&
-      _interests.isNotEmpty &&
       _category == 'semua' &&
-      _query.isEmpty;
+      _query.isEmpty &&
+      _interests.any((id) => InterestCategories.categoriesOf(id).isNotEmpty);
 
   List<Project> get _forYouProjects => _railVisible
       ? _visible
-            .where((project) => _interests.contains(project.category))
+            .where(
+              (project) =>
+                  InterestCategories.anyMatches(_interests, project.category),
+            )
             .take(5)
             .toList()
       : const [];
