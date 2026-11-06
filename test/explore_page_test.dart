@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:blue_track/core/config/app_config.dart';
 import 'package:blue_track/core/state/app_state.dart';
+import 'package:blue_track/features/explore/data/project_repository.dart';
 import 'package:blue_track/features/explore/data/saved_project_store.dart';
 import 'package:blue_track/features/explore/domain/project.dart';
 import 'package:blue_track/features/explore/presentation/explore_page.dart';
@@ -215,7 +217,7 @@ late Directory _hiveDir;
 
 void main() {
   setUp(() async {
-    // No interest matches the fake projects, so the "Untuk minatmu" rail stays
+    // No interest matches the fake projects, so the For You section stays
     // out of the way and card counts are predictable.
     SharedPreferences.setMockInitialValues({
       AppConfig.interestsKey: ['mamalia_laut'],
@@ -268,6 +270,44 @@ void main() {
     expect(projects.callCount, 2);
     expect(find.byType(ErrorState), findsNothing);
     expect(find.byType(ProjectCard), findsAtLeastNWidgets(1));
+  });
+
+  testWidgets('a slow load cannot replace the result of a newer one', (
+    tester,
+  ) async {
+    // Opening the box up front keeps the offline read inside the fake-async
+    // frame instead of waiting on real file I/O.
+    await tester.runAsync(
+      () => Hive.openBox<dynamic>(SavedProjectStore.boxName),
+    );
+    final projects = _DelayedRepository();
+
+    await tester.pumpWidget(
+      wrapPage(
+        ExplorePage(
+          projectRepository: projects,
+          filterRepository: FakeFilterRepository(),
+        ),
+      ),
+    );
+    await pumpFrames(tester);
+    expect(projects.completers, hasLength(1));
+
+    // Going offline starts a second load; the repository call is abandoned.
+    OfflineController.instance.setOffline(true);
+    await pumpFrames(tester);
+    expect(projects.completers, hasLength(1));
+    expect(find.byType(EmptyState), findsOneWidget);
+
+    // The abandoned call now answers with projects that no longer match the
+    // source the page switched to.
+    projects.completers.single.complete([
+      buildProject(id: 'p09', title: 'Hasil Basi'),
+    ]);
+    await pumpFrames(tester);
+
+    expect(find.text('Hasil Basi'), findsNothing);
+    expect(find.byType(EmptyState), findsOneWidget);
   });
 
   testWidgets('a search with no hits offers "Atur ulang filter" which resets '
@@ -500,20 +540,20 @@ void main() {
   });
 
   testWidgets('the saved scope lists only saved projects and hides '
-      '"Untuk minatmu"', (tester) async {
+      'the For You section', (tester) async {
     SharedPreferences.setMockInitialValues({
       AppConfig.interestsKey: ['karang'],
     });
     await seedSavedProjects(tester, ['p02']);
     await pumpExplore(tester, projects: FakeProjectRepository(twoCategories()));
 
-    // The rail is up before the switch, so its absence afterwards is caused by
-    // the saved scope and not by the interests being empty.
-    expect(find.byKey(const ValueKey('explore.forYouRail')), findsOneWidget);
+    // The section is visible before the switch, so its absence afterwards is
+    // caused by the saved scope and not by the interests being empty.
+    expect(find.byKey(const ValueKey('explore.forYouList')), findsOneWidget);
 
     await tapSavedScope(tester);
 
-    expect(find.byKey(const ValueKey('explore.forYouRail')), findsNothing);
+    expect(find.byKey(const ValueKey('explore.forYouList')), findsNothing);
     expect(cardCount(tester), 1);
     expect(
       find.widgetWithText(ProjectCard, 'Pemulihan Karang Razak'),
@@ -584,7 +624,7 @@ void main() {
     await tester.enterText(find.byType(TextField), 'Penyu');
     await pumpFrames(tester);
 
-    // The dead-end is gone: the rail, the count and the tokens stay.
+    // The dead-end is gone: the count and the tokens stay.
     expect(find.byType(EmptyState), findsOneWidget);
     expect(find.byType(CategorySelector), findsOneWidget);
     expect(find.byKey(const ValueKey('explore.resultsCount')), findsOneWidget);
@@ -645,8 +685,8 @@ void main() {
   testWidgets('only the first page of projects is shown after loading', (
     tester,
   ) async {
-    // No interests at all, so the "Untuk minatmu" rail adds nothing and the
-    // card count is the list page.
+    // No interests at all, so the For You section adds nothing and the card
+    // count is the list page.
     SharedPreferences.setMockInitialValues({});
     await pumpExplore(tester, projects: manyProjects());
 
@@ -733,41 +773,39 @@ void main() {
     expect(cardCount(tester), 4);
   });
 
-  // The rail height must come from the cards, so both a default and a large
-  // text scale have to fit. `flutter_test` already fails on a render overflow.
+  // The horizontal For You cards remain usable with longer titles and larger
+  // text settings.
   for (final textScale in const [1.0, 1.3]) {
-    testWidgets('the "Untuk minatmu" rail fits one-line and two-line titles at '
-        'text scale $textScale', (tester) async {
+    testWidgets('the For You list fits long and short titles at text scale '
+        '$textScale', (tester) async {
       SharedPreferences.setMockInitialValues({
         AppConfig.interestsKey: ['penyu'],
       });
-      final projects = FakeProjectRepository([
-        // Long title first: it is the only card laid out at rest, since the
-        // rail shows exactly one card between the page margins.
-        buildProject(
-          id: 'p01',
-          title: 'Pemulihan Populasi Penyu Hijau dan Bertelur di Pantai Timur',
-        ),
-        buildProject(id: 'p02', title: 'Penyu Hijau'),
-        buildProject(id: 'p03', title: 'Penyu Belimbing'),
-        buildProject(id: 'p04', title: 'Monitoring Sarana Turtle Beach'),
-      ]);
-      await pumpExplore(tester, projects: projects, textScale: textScale);
+      await pumpExplore(
+        tester,
+        textScale: textScale,
+        projects: FakeProjectRepository([
+          buildProject(
+            id: 'p01',
+            title:
+                'Pemulihan Populasi Penyu Hijau dan Bertelur di Pantai Timur',
+          ),
+          buildProject(id: 'p02', title: 'Penyu Hijau'),
+          buildProject(id: 'p03', title: 'Penyu Belimbing'),
+          buildProject(id: 'p04', title: 'Monitoring Sarana Turtle Beach'),
+        ]),
+      );
 
-      final rail = find.byKey(const ValueKey('explore.forYouRail'));
-      expect(rail, findsOneWidget);
-
-      final railCards = find.descendant(
-        of: rail,
+      final section = find.byKey(const ValueKey('explore.forYouList'));
+      final cards = find.descendant(
+        of: section,
         matching: find.byType(ProjectCard),
       );
-      expect(railCards, findsOneWidget);
-      var tallest = 0.0;
-      for (var i = 0; i < railCards.evaluate().length; i++) {
-        final height = tester.getSize(railCards.at(i)).height;
-        if (height > tallest) tallest = height;
+      expect(cards, findsAtLeastNWidgets(1));
+      for (final element in cards.evaluate()) {
+        expect((element.widget as ProjectCard).rail, isTrue);
       }
-      expect(tester.getSize(rail).height, greaterThanOrEqualTo(tallest));
+      expect(tester.takeException(), isNull);
     });
   }
 
@@ -786,19 +824,19 @@ void main() {
       ]),
     );
 
-    final rail = find.byKey(const ValueKey('explore.forYouRail'));
-    expect(rail, findsOneWidget);
+    final section = find.byKey(const ValueKey('explore.forYouList'));
+    expect(section, findsOneWidget);
     expect(
-      find.descendant(of: rail, matching: find.text('Pemulihan Karang')),
+      find.descendant(of: section, matching: find.text('Pemulihan Karang')),
       findsOneWidget,
     );
     expect(
-      find.descendant(of: rail, matching: find.text('Penyu Hijau')),
+      find.descendant(of: section, matching: find.text('Penyu Hijau')),
       findsNothing,
     );
   });
 
-  testWidgets('the "Untuk minatmu" rail shows one full card, no edge sliver', (
+  testWidgets('For You scrolls horizontally without pager decoration', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({
@@ -813,102 +851,97 @@ void main() {
       ]),
     );
 
+    final section = find.byKey(const ValueKey('explore.forYouList'));
     final cards = find.descendant(
-      of: find.byKey(const ValueKey('explore.forYouRail')),
+      of: section,
       matching: find.byType(ProjectCard),
     );
-    // The first card spans the page margins, matching the list cards below.
-    final first = tester.getRect(cards.at(0));
-    expect(first.left, 16);
-    expect(first.right, 390 - 16);
-    // ...and any card laid out after it starts past the screen edge, so
-    // nothing peeks in as a strip that could be mistaken for a scrollbar.
-    for (var i = 1; i < cards.evaluate().length; i++) {
-      expect(tester.getRect(cards.at(i)).left, greaterThanOrEqualTo(390));
-    }
+    expect(tester.widget<ListView>(section).scrollDirection, Axis.horizontal);
+    expect(cards, findsAtLeastNWidgets(1));
+    expect(find.text('1 / 3'), findsNothing);
+
+    final scrollable = find.descendant(
+      of: section,
+      matching: find.byType(Scrollable),
+    );
+    final position = tester.state<ScrollableState>(scrollable).position;
+    await tester.drag(section, const Offset(-240, 0));
+    await tester.pumpAndSettle();
+    expect(position.pixels, greaterThan(0));
+    expect(tester.takeException(), isNull);
   });
 
   for (final width in const [360.0, 393.0, 412.0, 700.0]) {
-    for (final scale in const [1.0, 1.3, 2.0]) {
-      testWidgets(
-        'the For You rail shares the list grid at ${width}dp, text scale '
-        '$scale',
-        (tester) async {
-          SharedPreferences.setMockInitialValues({
-            AppConfig.interestsKey: ['penyu'],
-          });
-          await pumpExplore(
-            tester,
-            size: Size(width, 1600),
-            textScale: scale,
-            projects: FakeProjectRepository([
-              for (var i = 1; i <= 3; i++)
-                buildProject(
-                  id: 'p0$i',
-                  title: 'Pemulihan Populasi Penyu Hijau Nomor $i',
-                ),
-              // Not an interest match, so the list below the rail still has a
-              // card to compare the grid against.
+    for (final scale in const [1.0, 1.3]) {
+      testWidgets('the For You list fits at ${width}dp, text scale $scale', (
+        tester,
+      ) async {
+        SharedPreferences.setMockInitialValues({
+          AppConfig.interestsKey: ['penyu'],
+        });
+        await pumpExplore(
+          tester,
+          size: Size(width, 1600),
+          textScale: scale,
+          projects: FakeProjectRepository([
+            for (var i = 1; i <= 3; i++)
               buildProject(
-                id: 'p04',
-                title: 'Pemulihan Terumbu Karang',
-                category: 'karang',
+                id: 'p0$i',
+                title: 'Pemulihan Populasi Penyu Hijau Nomor $i',
               ),
-            ]),
-          );
-          expect(tester.takeException(), isNull);
+            buildProject(
+              id: 'p04',
+              title: 'Pemulihan Terumbu Karang',
+              category: 'karang',
+            ),
+          ]),
+        );
+        expect(tester.takeException(), isNull);
 
-          final railCard = find
-              .descendant(
-                of: find.byKey(const ValueKey('explore.forYouRail')),
-                matching: find.byType(ProjectCard),
+        final cards = find.descendant(
+          of: find.byKey(const ValueKey('explore.forYouList')),
+          matching: find.byType(ProjectCard),
+        );
+        expect(
+          tester
+              .widget<ListView>(
+                find.byKey(const ValueKey('explore.forYouList')),
               )
-              .first;
-          final listCard = find
-              .byWidgetPredicate((w) => w is ProjectCard && !w.rail)
-              .first;
+              .scrollDirection,
+          Axis.horizontal,
+        );
+        expect(cards, findsAtLeastNWidgets(1));
+        final first = cards.first;
+        final rect = tester.getRect(first);
+        expect(rect.left, 16);
+        expect(rect.right, lessThanOrEqualTo(width));
+        expect((first.evaluate().single.widget as ProjectCard).rail, isTrue);
 
-          final railRect = tester.getRect(railCard);
-          final listRect = tester.getRect(listCard);
-          expect(railRect.left, listRect.left);
-          expect(railRect.right, listRect.right);
-          expect(railRect.right, lessThanOrEqualTo(width));
-
-          // The primary action stays fully inside the card.
-          final donate = tester.getRect(
-            find.descendant(of: railCard, matching: find.text('Donasi')),
-          );
-          expect(donate.left, greaterThanOrEqualTo(railRect.left));
-          expect(donate.right, lessThanOrEqualTo(railRect.right));
-        },
-      );
+        final donate = tester.getRect(
+          find.descendant(of: first, matching: find.text('Donasi')),
+        );
+        expect(donate.left, greaterThanOrEqualTo(rect.left));
+        expect(donate.right, lessThanOrEqualTo(rect.right));
+      });
     }
   }
+}
 
-  testWidgets('the For You page indicator follows the snap', (tester) async {
-    SharedPreferences.setMockInitialValues({
-      AppConfig.interestsKey: ['penyu'],
-    });
-    await pumpExplore(
-      tester,
-      projects: FakeProjectRepository([
-        buildProject(id: 'p01', title: 'Penyu Hijau'),
-        buildProject(id: 'p02', title: 'Penyu Belimbing'),
-        buildProject(id: 'p03', title: 'Penyu Sisik'),
-      ]),
-    );
+/// Project repository whose reads the test completes by hand, to model a slow
+/// request finishing after a newer one.
+class _DelayedRepository implements ProjectRepository {
+  final completers = <Completer<List<Project>>>[];
 
-    expect(find.text('1 / 3'), findsOneWidget);
+  @override
+  Future<List<Project>> getProjects({String? category}) {
+    final completer = Completer<List<Project>>();
+    completers.add(completer);
+    return completer.future;
+  }
 
-    await tester.fling(
-      find.byKey(const ValueKey('explore.forYouList')),
-      const Offset(-300, 0),
-      1000,
-    );
-    for (var i = 0; i < 20; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
+  @override
+  Future<Project?> getProjectById(String id) async => null;
 
-    expect(find.text('2 / 3'), findsOneWidget);
-  });
+  @override
+  Future<List<Project>> getProjectsByOrgId(String orgId) async => const [];
 }

@@ -3,7 +3,7 @@
 ///
 /// The two vocabularies differ on purpose: an interest says what the user
 /// wants to support, a category says what a project works on. This is the only
-/// place that knows the mapping — the list and the "Untuk minatmu" rail both
+/// place that knows the mapping — the Explore list and its For You section
 /// read it.
 abstract final class InterestCategories {
   static const Map<String, List<String>> byInterest = {

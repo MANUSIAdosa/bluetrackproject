@@ -370,7 +370,9 @@ class _ProjectMarker extends StatelessWidget {
                   child: ExcludeSemantics(
                     child: CategoryIcon(
                       category: project.category,
-                      size: 20,
+                      // The 40dp pin has a 2dp border on each side; use the
+                      // full 36dp inner circle for the category artwork.
+                      size: 36,
                       color: Colors.white,
                     ),
                   ),

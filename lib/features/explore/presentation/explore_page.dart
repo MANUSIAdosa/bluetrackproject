@@ -159,6 +159,7 @@ class _ExplorePageState extends State<ExplorePage> {
   }
 
   Future<void> _load() async {
+    final gen = ++_loadGen;
     _resetPaging();
     setState(() {
       _loading = true;
@@ -174,6 +175,7 @@ class _ExplorePageState extends State<ExplorePage> {
           : await _projects.getProjects();
       final categories = await _filters.getCategoryIds();
       final interests = await OnboardingState.readInterests();
+      if (!mounted || gen != _loadGen) return;
       if (!offline) {
         unawaited(
           SavedProjectStore.instance.refresh(
@@ -182,7 +184,6 @@ class _ExplorePageState extends State<ExplorePage> {
           ),
         );
       }
-      if (!mounted) return;
       setState(() {
         _all = projects;
         _categoryIds = categories;
@@ -190,7 +191,7 @@ class _ExplorePageState extends State<ExplorePage> {
         _loading = false;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || gen != _loadGen) return;
       setState(() {
         _error = true;
         _loading = false;
@@ -211,12 +212,15 @@ class _ExplorePageState extends State<ExplorePage> {
   /// delay, so the placeholder below the list behaves like a real request.
   Future<void> _loadNextPage() async {
     if (_loading || _loadingMore) return;
+    _recompute();
     final total = _mainProjects.length;
     if (_visibleCount >= total) return;
+    final gen = _loadGen;
     setState(() => _loadingMore = true);
     await Future<void>.delayed(_pageLatency);
-    // A reload (pull to refresh / retry) already reset the paging.
-    if (!mounted || _loading) return;
+    // A reload (pull to refresh / retry) already reset the paging; its result
+    // must not be extended by this stale page.
+    if (!mounted || gen != _loadGen || _loading) return;
     setState(() {
       _visibleCount = math.min(_visibleCount + _pageSize, total);
       _loadingMore = false;
@@ -387,7 +391,35 @@ class _ExplorePageState extends State<ExplorePage> {
     }).toList();
   }
 
-  List<Project> get _visible {
+  /// Cached result of [_recompute]. Build and the paging code read these
+  /// instead of filtering on every rebuild.
+  List<Project> _visible = const [];
+  List<Project> _forYouProjects = const [];
+  List<Project> _mainProjects = const [];
+
+  /// What the cache was computed from. A cheap signature, not a dirty flag, so
+  /// a filter changed from any setState still refreshes the lists.
+  int? _derivedSignature;
+
+  /// Bumped by every [_load], so a slow read that finishes after a newer one
+  /// started can never overwrite the fresher result.
+  int _loadGen = 0;
+
+  void _recompute() {
+    final signature = Object.hash(
+      _all,
+      _interests,
+      _category,
+      _query,
+      _savedScope,
+      _distance,
+      _condition,
+      _mapData,
+      Object.hashAll(SavedProjectsController.instance.ids),
+    );
+    if (signature == _derivedSignature) return;
+    _derivedSignature = signature;
+
     var list = _applyFilters(
       selection: _selection,
       query: _query,
@@ -405,7 +437,23 @@ class _ExplorePageState extends State<ExplorePage> {
         });
       list = [for (final entry in indexed) entry.value];
     }
-    return list;
+
+    _visible = list;
+    _forYouProjects = _railVisible
+        ? list
+              .where(
+                (project) =>
+                    InterestCategories.anyMatches(_interests, project.category),
+              )
+              .take(5)
+              .toList()
+        : const [];
+    // Cards already in the rail are removed from the list so the same project
+    // never appears twice; paging counts this list.
+    final railIds = _forYouProjects.map((project) => project.id).toSet();
+    _mainProjects = railIds.isEmpty
+        ? list
+        : list.where((project) => !railIds.contains(project.id)).toList();
   }
 
   int _interestRank(Project project) =>
@@ -420,27 +468,9 @@ class _ExplorePageState extends State<ExplorePage> {
       _query.isEmpty &&
       _interests.any((id) => InterestCategories.categoriesOf(id).isNotEmpty);
 
-  List<Project> get _forYouProjects => _railVisible
-      ? _visible
-            .where(
-              (project) =>
-                  InterestCategories.anyMatches(_interests, project.category),
-            )
-            .take(5)
-            .toList()
-      : const [];
-
-  /// Projects shown in the main list. Cards already in the rail are removed so
-  /// the same project never appears twice; paging counts this list.
-  List<Project> get _mainProjects {
-    final rail = _forYouProjects;
-    if (rail.isEmpty) return _visible;
-    final railIds = rail.map((project) => project.id).toSet();
-    return _visible.where((project) => !railIds.contains(project.id)).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
+    _recompute();
     final visible = _visible;
     final savedCount = SavedProjectsController.instance.ids.length;
 
@@ -656,6 +686,42 @@ class _ExplorePageState extends State<ExplorePage> {
     Widget card(Project project) =>
         ProjectCard(project: project, onSavedChanged: () => setState(() {}));
 
+    List<Widget> cardRows(List<Project> projects) {
+      if (twoColumns) {
+        return [
+          for (var i = 0; i < projects.length; i += 2) ...[
+            if (i > 0) const SizedBox(height: ExploreSpacing.x12),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: ExploreSpacing.x16,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: card(projects[i])),
+                  const SizedBox(width: ExploreSpacing.x16),
+                  Expanded(
+                    child: i + 1 < projects.length
+                        ? card(projects[i + 1])
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ];
+      }
+      return [
+        for (var i = 0; i < projects.length; i++) ...[
+          if (i > 0) const SizedBox(height: ExploreSpacing.x12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: ExploreSpacing.x16),
+            child: card(projects[i]),
+          ),
+        ],
+      ];
+    }
+
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
@@ -679,11 +745,7 @@ class _ExplorePageState extends State<ExplorePage> {
               ),
             ),
             const SizedBox(height: ExploreSpacing.x12),
-            ForYouRail(
-              key: const ValueKey('explore.forYouRail'),
-              projects: forYou,
-              onSavedChanged: () => setState(() {}),
-            ),
+            ForYouList(projects: forYou, onSavedChanged: () => setState(() {})),
           ],
           if (others.isNotEmpty) ...[
             const SizedBox(height: ExploreSpacing.x24),
@@ -694,37 +756,7 @@ class _ExplorePageState extends State<ExplorePage> {
               child: exploreSectionHeader(context, sectionTitle),
             ),
             const SizedBox(height: ExploreSpacing.x12),
-            if (twoColumns)
-              for (var i = 0; i < page.length; i += 2) ...[
-                if (i > 0) const SizedBox(height: ExploreSpacing.x12),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: ExploreSpacing.x16,
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: card(page[i])),
-                      const SizedBox(width: ExploreSpacing.x16),
-                      Expanded(
-                        child: i + 1 < page.length
-                            ? card(page[i + 1])
-                            : const SizedBox.shrink(),
-                      ),
-                    ],
-                  ),
-                ),
-              ]
-            else
-              for (var i = 0; i < page.length; i++) ...[
-                if (i > 0) const SizedBox(height: ExploreSpacing.x12),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: ExploreSpacing.x16,
-                  ),
-                  child: card(page[i]),
-                ),
-              ],
+            ...cardRows(page),
           ],
           // Small placeholder while the next page is appended.
           if (_loadingMore)

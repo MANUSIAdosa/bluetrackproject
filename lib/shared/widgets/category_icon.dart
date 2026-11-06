@@ -38,9 +38,10 @@ abstract final class CategoryIcons {
     'lamun': AppColors.oceanDeep,
   };
 
-  /// Artwork for [category]; drop a PNG at this path to replace the glyph.
-  static String assetFor(String category) =>
-      'assets/icons/categories/$category.png';
+  /// Artwork for categories that have a bundled PNG; other ids use the glyph.
+  static String? assetFor(String category) => categories.contains(category)
+      ? 'assets/icons/categories/$category.png'
+      : null;
 
   /// Generic sea icon for an unknown category, so callers never crash on data
   /// that is newer than the app.
@@ -50,8 +51,9 @@ abstract final class CategoryIcons {
       _colors[category] ?? AppColors.ocean;
 }
 
-/// Category glyph with the localized category name attached for screen
-/// readers. Unknown categories render the generic sea icon.
+/// Category artwork with the localized category name attached for screen
+/// readers. Until the PNG has a frame — and whenever the file is missing — the
+/// widget stays on a neutral tinted disc, so no Material glyph flashes first.
 class CategoryIcon extends StatelessWidget {
   const CategoryIcon({
     super.key,
@@ -75,17 +77,35 @@ class CategoryIcon extends StatelessWidget {
       size: size,
       color: color ?? CategoryIcons.colorFor(category),
     );
+    // Neutral disc at the artwork's footprint; only the missing-file state
+    // falls back to the Material glyph.
+    final placeholder = DecoratedBox(
+      decoration: BoxDecoration(
+        color: CategoryIcons.colorFor(category).withValues(alpha: 0.12),
+        shape: BoxShape.circle,
+      ),
+      child: SizedBox.square(dimension: size),
+    );
+    final asset = CategoryIcons.assetFor(category);
+    if (asset == null) {
+      return Semantics(label: label, child: fallback);
+    }
+
+    // Artwork is 434 px wide but a badge/marker shows it at 20–48 dp; decode
+    // at the physical size the screen actually paints.
+    final pixels = (size * MediaQuery.devicePixelRatioOf(context)).ceil();
     return Semantics(
       label: label,
       child: Image.asset(
-        CategoryIcons.assetFor(category),
+        asset,
         width: size,
         height: size,
         fit: BoxFit.contain,
+        cacheWidth: pixels,
+        cacheHeight: pixels,
         // The artwork keeps its own colours; [color] only tints the fallback.
-        // Show the glyph until the artwork has a frame, and keep it when the
-        // category has no file yet: pages render without assets.
-        frameBuilder: (_, child, frame, _) => frame == null ? fallback : child,
+        frameBuilder: (_, child, frame, _) =>
+            frame == null ? placeholder : child,
         errorBuilder: (_, _, _) => fallback,
       ),
     );

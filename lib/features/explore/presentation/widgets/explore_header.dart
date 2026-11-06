@@ -151,7 +151,9 @@ class ExploreHeader extends StatelessWidget {
 /// Compact two-segment control that shows both views and which one is active.
 ///
 /// The results line owns it: the switch sits next to the count it affects.
-/// Icons keep the bar slim; tooltips and semantics carry the labels.
+/// Each segment pairs its icon with a visible label; below 340 dp the icon is
+/// dropped so the labels still fit at 360 dp with large text. Tooltips and
+/// semantics keep the same label for screen readers.
 class ExploreViewSwitch extends StatelessWidget {
   const ExploreViewSwitch({
     super.key,
@@ -164,6 +166,7 @@ class ExploreViewSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final showIcons = MediaQuery.sizeOf(context).width >= 340;
     return Container(
       height: 54,
       padding: const EdgeInsets.all(2),
@@ -177,14 +180,14 @@ class ExploreViewSwitch extends StatelessWidget {
         children: [
           _ViewSegment(
             key: const ValueKey('explore.view.list'),
-            icon: Icons.view_agenda_outlined,
+            icon: showIcons ? Icons.view_agenda_outlined : null,
             label: context.tr('explore.viewList'),
             selected: !mapMode,
             onTap: () => onChanged(false),
           ),
           _ViewSegment(
             key: const ValueKey('explore.view.map'),
-            icon: Icons.map_outlined,
+            icon: showIcons ? Icons.map_outlined : null,
             label: context.tr('explore.viewMap'),
             selected: mapMode,
             onTap: () => onChanged(true),
@@ -204,7 +207,8 @@ class _ViewSegment extends StatelessWidget {
     required this.onTap,
   });
 
-  final IconData icon;
+  /// Null on narrow screens, where the label alone identifies the view.
+  final IconData? icon;
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -212,6 +216,7 @@ class _ViewSegment extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foreground = selected ? Colors.white : AppColors.textSecondary;
+    final icon = this.icon;
 
     return Semantics(
       button: true,
@@ -225,10 +230,33 @@ class _ViewSegment extends StatelessWidget {
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: onTap,
-            child: SizedBox(
-              width: 48,
-              height: 48,
-              child: Center(child: Icon(icon, size: 20, color: foreground)),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minWidth: 48,
+                minHeight: 48,
+                maxHeight: 48,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (icon != null) ...[
+                      Icon(icon, size: 20, color: foreground),
+                      const SizedBox(width: 4),
+                    ],
+                    Text(
+                      label,
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: foreground,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

@@ -4,6 +4,7 @@ import 'package:blue_track/core/theme/app_colors.dart';
 import 'package:blue_track/features/explore/domain/explore_map_data.dart';
 import 'package:blue_track/features/explore/domain/project.dart';
 import 'package:blue_track/features/explore/presentation/widgets/explore_map.dart';
+import 'package:blue_track/shared/widgets/category_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -207,6 +208,11 @@ void main() {
 
     final marker = find.byKey(const ValueKey('explore.marker.p01'));
     expect(tester.getSize(marker), const Size(48, 48));
+    final categoryIcon = find.descendant(
+      of: marker,
+      matching: find.byType(CategoryIcon),
+    );
+    expect(tester.getSize(categoryIcon), const Size(36, 36));
     expect(find.bySemanticsLabel('Peneluruhan Penyu'), findsOneWidget);
   });
 

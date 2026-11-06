@@ -51,7 +51,7 @@ class ProjectCard extends StatelessWidget {
   static const double _targetSize = 12;
   static const double _targetHeight = 1.2;
   static const double _iconSize = 14;
-  static const double _badgeSize = 16;
+  static const double _badgeSize = 20;
 
   final Project project;
   final VoidCallback? onSavedChanged;
@@ -323,8 +323,9 @@ class _CardText {
   final TextStyle? badge;
 }
 
-/// Category badge over the gallery: an 8dp colour dot plus the category name.
-/// The glyphs belonged to the map markers; the card only needs the colour cue.
+/// Category badge over the gallery: the same [CategoryIcon] artwork the rail
+/// and map markers use, followed by the category name. It sits inside the
+/// 16:9 gallery, so its height never adds to [ProjectCard.heightFor].
 class _CategoryBadge extends StatelessWidget {
   const _CategoryBadge({required this.category, required this.text});
 
@@ -349,14 +350,7 @@ class _CategoryBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: CategoryIcons.colorFor(category),
-              shape: BoxShape.circle,
-            ),
-          ),
+          CategoryIcon(category: category, size: ProjectCard._badgeSize),
           const SizedBox(width: 4),
           Text(context.tr('cat.$category'), style: text.badge),
         ],
