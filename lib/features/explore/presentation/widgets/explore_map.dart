@@ -491,7 +491,13 @@ class _SaveButton extends StatelessWidget {
           tooltip: context.tr(saved ? 'p03_saved' : 'p03_save'),
           icon: Icon(saved ? Icons.bookmark : Icons.bookmark_outline),
           color: saved ? AppColors.ocean : AppColors.textSecondary,
-          onPressed: () => toggleSavedProject(project),
+          onPressed: () async {
+            try {
+              await toggleSavedProject(project);
+            } catch (_) {
+              // Rolls back inside the entry point; the sheet stays open.
+            }
+          },
         );
       },
     );

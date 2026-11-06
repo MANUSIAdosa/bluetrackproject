@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -173,6 +174,14 @@ class _ExplorePageState extends State<ExplorePage> {
           : await _projects.getProjects();
       final categories = await _filters.getCategoryIds();
       final interests = await OnboardingState.readInterests();
+      if (!offline) {
+        unawaited(
+          SavedProjectStore.instance.refresh(
+            projects,
+            SavedProjectsController.instance.ids,
+          ),
+        );
+      }
       if (!mounted) return;
       setState(() {
         _all = projects;
@@ -390,9 +399,8 @@ class _ExplorePageState extends State<ExplorePage> {
     if (_interests.isNotEmpty) {
       final indexed = list.asMap().entries.toList()
         ..sort((a, b) {
-          final byRank = _interestRank(a.value).compareTo(
-            _interestRank(b.value),
-          );
+          final byRank = _interestRank(a.value)
+              .compareTo(_interestRank(b.value));
           return byRank != 0 ? byRank : a.key.compareTo(b.key);
         });
       list = [for (final entry in indexed) entry.value];

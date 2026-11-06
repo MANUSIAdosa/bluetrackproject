@@ -11,14 +11,23 @@ import '../domain/project.dart';
 ///
 /// Single entry point for every bookmark button — the list card, the map
 /// sheet — so an id can never be saved without its offline copy.
+///
+/// If the snapshot write fails the id is toggled back and the error is
+/// rethrown, so the caller can tell the user instead of leaving a bookmark
+/// with no offline copy.
 Future<bool> toggleSavedProject(Project project) async {
   final controller = SavedProjectsController.instance;
   final wasSaved = controller.isSaved(project.id);
   await controller.toggle(project.id);
-  if (wasSaved) {
-    await SavedProjectStore.instance.remove(project.id);
-  } else {
-    await SavedProjectStore.instance.save(project);
+  try {
+    if (wasSaved) {
+      await SavedProjectStore.instance.remove(project.id);
+    } else {
+      await SavedProjectStore.instance.save(project);
+    }
+  } catch (_) {
+    await controller.toggle(project.id);
+    rethrow;
   }
   return !wasSaved;
 }
@@ -50,6 +59,21 @@ class SavedProjectStore {
   Future<void> remove(String projectId) async {
     final box = await _box();
     await box.delete(projectId);
+  }
+
+  /// Rewrites the offline copy of every project in [projects] whose id is in
+  /// [savedIds], so a saved card does not keep a stale raised amount between an
+  /// online session and a later offline one. Best-effort: a failed write leaves
+  /// the old snapshot in place instead of breaking the caller.
+  Future<void> refresh(Iterable<Project> projects, Set<String> savedIds) async {
+    for (final project in projects) {
+      if (!savedIds.contains(project.id)) continue;
+      try {
+        await save(project);
+      } catch (_) {
+        // The saved id is still valid; its snapshot keeps the old value.
+      }
+    }
   }
 
   /// Every snapshot that can be decoded, oldest insertion first.

@@ -404,7 +404,14 @@ class _SaveButton extends StatelessWidget {
           maximumSize: const Size.square(48),
         ),
         onPressed: () async {
-          await toggleSavedProject(project);
+          try {
+            await toggleSavedProject(project);
+          } catch (_) {
+            // The entry point rolls the id back; the card shows a SnackBar
+            // only on the detail page, so a failure here just leaves the
+            // bookmark unchanged.
+            return;
+          }
           onSavedChanged?.call();
         },
       ),
