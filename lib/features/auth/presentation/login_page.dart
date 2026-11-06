@@ -17,24 +17,24 @@ import '../../../shared/widgets/primary_button.dart';
 const double _sidePadding = 24;
 
 /// Clearance under the app bar, so the heading does not crowd it.
-const double _topPadding = 32;
+const double _topPadding = 16;
 
 const double _bottomPadding = 24;
 
-/// Gap between the heading block and the first field.
-const double _headingToFieldGap = 32;
+/// Regular spacing follows an 8dp rhythm; compact spacing protects the form
+/// when the keyboard or a short viewport reduces available height.
+const double _regularSectionGap = 24;
+const double _loginHeadingToFieldGap = 40;
+const double _otpHeadingGap = 32;
+const double _compactSectionGap = 16;
 
-/// Gap above and below the "OR" rule, so it reads as a separator rather than
-/// as part of either field.
-const double _dividerGap = 20;
+/// Compact spacing around the email/phone separator keeps both options grouped.
+const double _dividerGap = 8;
 
-/// Gap between the form and its button. Wider than the usual 20 so the form
-/// does not read as one solid block.
-const double _fieldToButtonGap = 28;
-
-/// Distance from the button down to the legal notice — near enough to belong
-/// to the form, far enough not to look glued to the button.
-const double _noticeGap = 32;
+/// Primary and secondary actions stay grouped but visually distinct.
+const double _consentToButtonGap = 16;
+const double _verifyToResendGap = 24;
+const double _resendPromptGap = 8;
 
 /// Indonesian mobile prefix. Kept in one place so the input box and the
 /// identifier sent to the mock sign-in can never drift apart.
@@ -49,7 +49,7 @@ const String _countryCode = '+62';
 ///
 /// The page stays top-aligned and scrollable. A centred form is what the
 /// mobile keyboard covers, so the heading starts near the app bar and the
-/// page only scrolls when the form (or the legal notice) outgrows the space
+/// page only scrolls when the form outgrows the space
 /// left above the keyboard.
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key, this.redirect});
@@ -72,6 +72,7 @@ class _LoginPageState extends State<LoginPage> {
 
   _AuthStage _stage = _AuthStage.identifier;
   bool _loading = false;
+  bool _consentAccepted = false;
 
   String? _emailErrorKey;
   String? _phoneErrorKey;
@@ -80,6 +81,7 @@ class _LoginPageState extends State<LoginPage> {
   String? _identifierErrorKey;
 
   String? _otpErrorKey;
+  String? _consentErrorKey;
 
   /// Email or `+62` phone that the OTP was sent to. Resolved when the user
   /// continues, then reused for the subtitle and the mock sign-in token.
@@ -111,10 +113,20 @@ class _LoginPageState extends State<LoginPage> {
 
   String get _otpCode => _otpControllers.map((c) => c.text).join();
 
+  bool _isCompactLayout(BuildContext context) {
+    final media = MediaQuery.of(context);
+    return media.viewInsets.bottom > 0 || media.size.height < 600;
+  }
+
+  double _adaptiveSectionGap(BuildContext context, {double? regularGap}) {
+    return _isCompactLayout(context)
+        ? _compactSectionGap
+        : (regularGap ?? _regularSectionGap);
+  }
+
   // --- Combined email + phone form ----------------------------------------
 
   void _onEmailChanged(String _) {
-    if (_emailErrorKey == null && _identifierErrorKey == null) return;
     setState(() {
       _emailErrorKey = null;
       _identifierErrorKey = null;
@@ -122,18 +134,23 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _onPhoneChanged(String _) {
-    if (_phoneErrorKey == null && _identifierErrorKey == null) return;
     setState(() {
       _phoneErrorKey = null;
       _identifierErrorKey = null;
     });
   }
 
-  /// Validates both fields, then opens the OTP step for the filled channel.
+  void _onConsentChanged(bool accepted) {
+    setState(() {
+      _consentAccepted = accepted;
+      if (accepted) _consentErrorKey = null;
+    });
+  }
+
+  /// Validates the selected identifier and consent before opening the OTP step.
   ///
-  /// At least one field must be valid. Empty fields are optional; a field with
-  /// content must be valid, so a half-typed number cannot be sent by mistake.
-  /// When both are valid, email wins because it is the first field on screen.
+  /// The user chooses one contact method. Clearing its field re-enables the
+  /// other method so switching remains straightforward.
   void _continue() {
     final email = _emailController.text.trim();
     final phone = _phoneController.text.trim();
@@ -145,6 +162,7 @@ class _LoginPageState extends State<LoginPage> {
         ? null
         : 'auth.phone.invalid';
     final nothingFilled = email.isEmpty && phone.isEmpty;
+    final bothFilled = email.isNotEmpty && phone.isNotEmpty;
 
     if (emailError != null || phoneError != null || nothingFilled) {
       setState(() {
@@ -152,6 +170,16 @@ class _LoginPageState extends State<LoginPage> {
         _phoneErrorKey = phoneError;
         _identifierErrorKey = nothingFilled ? 'auth.identifier.missing' : null;
       });
+      return;
+    }
+
+    if (bothFilled) {
+      setState(() => _identifierErrorKey = 'auth.identifier.chooseOne');
+      return;
+    }
+
+    if (!_consentAccepted) {
+      setState(() => _consentErrorKey = 'auth.consent.required');
       return;
     }
 
@@ -164,6 +192,7 @@ class _LoginPageState extends State<LoginPage> {
       _emailErrorKey = null;
       _phoneErrorKey = null;
       _identifierErrorKey = null;
+      _consentErrorKey = null;
       for (final c in _otpControllers) {
         c.clear();
       }
@@ -205,7 +234,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _verify() async {
-    if (_otpLocked || _loading) return;
+    if (_otpLocked || _loading || _otpCode.length != 6) return;
     final identifier = _identifier;
     if (identifier == null || identifier.isEmpty) return;
 
@@ -248,9 +277,9 @@ class _LoginPageState extends State<LoginPage> {
     if (value.isEmpty && index > 0) {
       _otpFocusNodes[index - 1].requestFocus();
     }
-    if (_otpCode.length == 6 && !_otpLocked) {
-      _verify();
-    }
+
+    // Rebuild the Verify CTA as the number of entered digits changes.
+    setState(() {});
   }
 
   // --- Shared --------------------------------------------------------------
@@ -293,7 +322,7 @@ class _LoginPageState extends State<LoginPage> {
       body: SafeArea(
         child: SingleChildScrollView(
           // Dragging the form away also closes the keyboard, so the user can
-          // bring the Continue button and the legal notice into view.
+          // bring the primary action and related controls into view.
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.only(
             left: _sidePadding,
@@ -308,8 +337,6 @@ class _LoginPageState extends State<LoginPage> {
                 _buildIdentifierStep()
               else
                 _buildOtpStep(),
-              const SizedBox(height: _noticeGap),
-              const _LegalNotice(),
             ],
           ),
         ),
@@ -318,6 +345,11 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildIdentifierStep() {
+    final hasEmail = _emailController.text.trim().isNotEmpty;
+    final hasPhone = _phoneController.text.trim().isNotEmpty;
+    final emailEnabled = !hasPhone;
+    final phoneEnabled = !hasEmail;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -338,10 +370,16 @@ class _LoginPageState extends State<LoginPage> {
             color: AppColors.textSecondary,
           ),
         ),
-        const SizedBox(height: _headingToFieldGap),
+        SizedBox(
+          height: _adaptiveSectionGap(
+            context,
+            regularGap: _loginHeadingToFieldGap,
+          ),
+        ),
         TextField(
           key: const Key('auth_email_field'),
           controller: _emailController,
+          enabled: emailEnabled,
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
           autofillHints: const [AutofillHints.email],
@@ -354,9 +392,14 @@ class _LoginPageState extends State<LoginPage> {
                 : context.tr(_emailErrorKey!),
           ),
           onChanged: _onEmailChanged,
-          // Leaves the choice open: the user can keep typing an email or move
-          // down to the phone field instead.
-          onSubmitted: (_) => FocusScope.of(context).nextFocus(),
+          // Move to phone only when the user has not started an email.
+          onSubmitted: (_) {
+            if (hasEmail) {
+              FocusScope.of(context).unfocus();
+            } else {
+              FocusScope.of(context).nextFocus();
+            }
+          },
         ),
         const SizedBox(height: _dividerGap),
         const _OrDivider(),
@@ -364,18 +407,30 @@ class _LoginPageState extends State<LoginPage> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              // Matches the field's 14dp content padding, so the prefix box
-              // and the input line up while staying compact.
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(AppDimens.cardRadius),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: const Text(
-                _countryCode,
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+            Opacity(
+              opacity: phoneEnabled ? 1 : 0.5,
+              child: Container(
+                // Matches the field's 14dp content padding, so the prefix box
+                // and the input line up while staying compact.
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppDimens.cardRadius),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Text(
+                  _countryCode,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: phoneEnabled
+                        ? AppColors.textPrimary
+                        : AppColors.textSecondary,
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 10),
@@ -383,6 +438,7 @@ class _LoginPageState extends State<LoginPage> {
               child: TextField(
                 key: const Key('auth_phone_field'),
                 controller: _phoneController,
+                enabled: phoneEnabled,
                 keyboardType: TextInputType.phone,
                 textInputAction: TextInputAction.done,
                 autofillHints: const [AutofillHints.telephoneNumber],
@@ -407,13 +463,59 @@ class _LoginPageState extends State<LoginPage> {
             message: context.tr(_identifierErrorKey!),
           ),
         ],
-        const SizedBox(height: _fieldToButtonGap),
+        SizedBox(height: _adaptiveSectionGap(context)),
+        _buildConsentNotice(context),
+        const SizedBox(height: _consentToButtonGap),
         PrimaryButton(
           label: context.tr('common.continue'),
           onPressed: _continue,
           color: AppColors.ocean,
         ),
       ],
+    );
+  }
+
+  Widget _buildConsentNotice(BuildContext context) {
+    final errorKey = _consentErrorKey;
+    return _ConsentNotice(
+      value: _consentAccepted,
+      errorMessage: errorKey == null ? null : context.tr(errorKey),
+      onChanged: _onConsentChanged,
+    );
+  }
+
+  Widget _buildResendControl(BuildContext context) {
+    if (_resendSeconds > 0) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.schedule_rounded,
+            size: 18,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              context.tr('auth.otp.resendIn', {'s': '$_resendSeconds'}),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        key: const Key('auth_resend_button'),
+        onPressed: _resendCode,
+        icon: const Icon(Icons.refresh_rounded, size: 18),
+        label: Text(context.tr('auth.otp.resend')),
+      ),
     );
   }
 
@@ -427,48 +529,56 @@ class _LoginPageState extends State<LoginPage> {
             'target': _identifier ?? '',
           }),
         ),
-        const SizedBox(height: _headingToFieldGap),
+        SizedBox(
+          height: _adaptiveSectionGap(context, regularGap: _otpHeadingGap),
+        ),
         LayoutBuilder(
           builder: (context, constraints) {
-            // Six boxes shrink to 38dp on very narrow phones and stay 46dp
-            // everywhere else, so the row never overflows.
+            // Keep a fixed gap and let each box share the available row width.
+            // The cap prevents oversized boxes on tablets and desktop previews.
             const gap = 8.0;
-            final width = ((constraints.maxWidth - gap * 5) / 6)
-                .clamp(38.0, 46.0)
-                .toDouble();
+            final rowWidth = constraints.maxWidth.clamp(0.0, 360.0).toDouble();
 
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                for (var i = 0; i < 6; i++)
-                  SizedBox(
-                    width: width,
-                    child: TextField(
-                      key: ValueKey('auth_otp_$i'),
-                      controller: _otpControllers[i],
-                      focusNode: _otpFocusNodes[i],
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      maxLength: 1,
-                      enabled: !_otpLocked && !_loading,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      decoration: const InputDecoration(
-                        counterText: '',
-                        errorText: null,
-                        isDense: true,
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 14,
+            return Center(
+              child: SizedBox(
+                key: const Key('auth_otp_row'),
+                width: rowWidth,
+                child: Row(
+                  children: [
+                    for (var i = 0; i < 6; i++) ...[
+                      if (i > 0) const SizedBox(width: gap),
+                      Expanded(
+                        child: TextField(
+                          key: ValueKey('auth_otp_$i'),
+                          controller: _otpControllers[i],
+                          focusNode: _otpFocusNodes[i],
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          maxLength: 1,
+                          enabled: !_otpLocked && !_loading,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          decoration: const InputDecoration(
+                            counterText: '',
+                            errorText: null,
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 14,
+                            ),
+                          ),
+                          onChanged: (value) => _onOtpChanged(i, value),
                         ),
                       ),
-                      onChanged: (value) => _onOtpChanged(i, value),
-                    ),
-                  ),
-              ],
+                    ],
+                  ],
+                ),
+              ),
             );
           },
         ),
@@ -493,31 +603,28 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ],
         ],
-        const SizedBox(height: _fieldToButtonGap),
+        SizedBox(
+          height: _otpErrorKey == null
+              ? _adaptiveSectionGap(context)
+              : _compactSectionGap,
+        ),
         PrimaryButton(
           label: context.tr('auth.verify'),
           loading: _loading,
           onPressed: (_otpCode.length == 6 && !_otpLocked) ? _verify : null,
           color: AppColors.ocean,
         ),
-        const SizedBox(height: 8),
-        // Left-aligned like the rest of the column; centred here read as a
-        // separate block floating under the button.
-        _resendSeconds > 0
-            ? Text(
-                context.tr('auth.otp.resendIn', {'s': '$_resendSeconds'}),
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                ),
-              )
-            : Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  onPressed: _resendCode,
-                  child: Text(context.tr('auth.otp.resend')),
-                ),
-              ),
+        const SizedBox(height: _verifyToResendGap),
+        Text(
+          context.tr('auth.otp.resendPrompt'),
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: _resendPromptGap),
+        _buildResendControl(context),
       ],
     );
   }
@@ -619,22 +726,25 @@ class _InlineError extends StatelessWidget {
   }
 }
 
-/// One sentence of legal copy with both documents as inline links.
-///
-/// This used to be three tappable targets stacked together — two legal
-/// buttons plus "continue without signing in" — which invited misclicks. The
-/// skip action is gone (the app-bar back arrow leaves the page), so the notice
-/// is the only thing left and reads as the sentence it always was.
-class _LegalNotice extends StatefulWidget {
-  const _LegalNotice();
+/// Consent remains a distinct control from the Continue/Verify buttons, with
+/// each legal document still available as an inline link.
+class _ConsentNotice extends StatefulWidget {
+  const _ConsentNotice({
+    required this.value,
+    required this.onChanged,
+    this.errorMessage,
+  });
+
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final String? errorMessage;
 
   @override
-  State<_LegalNotice> createState() => _LegalNoticeState();
+  State<_ConsentNotice> createState() => _ConsentNoticeState();
 }
 
-class _LegalNoticeState extends State<_LegalNotice> {
-  // Held as fields so they outlive a single build and are disposed with the
-  // state; recognizers created inline in `build` would leak on every rebuild.
+class _ConsentNoticeState extends State<_ConsentNotice> {
+  // Keep recognizers alive across rebuilds and dispose them with this widget.
   final TapGestureRecognizer _policyTap = TapGestureRecognizer();
   final TapGestureRecognizer _termsTap = TapGestureRecognizer();
 
@@ -650,36 +760,74 @@ class _LegalNoticeState extends State<_LegalNotice> {
     _policyTap.onTap = () => context.push('/legal/privacy');
     _termsTap.onTap = () => context.push('/legal/terms');
 
-    const base = TextStyle(fontSize: 12, color: AppColors.textSecondary);
+    const base = TextStyle(
+      fontSize: 12,
+      height: 1.4,
+      color: AppColors.textSecondary,
+    );
     const link = TextStyle(
       fontSize: 12,
+      height: 1.4,
       color: AppColors.ocean,
       decoration: TextDecoration.underline,
       decorationColor: AppColors.ocean,
     );
 
-    return Text.rich(
-      TextSpan(
-        style: base,
-        children: [
-          TextSpan(text: '${context.tr('auth.privacy.lead')} '),
-          TextSpan(
-            text: context.tr('auth.privacyPolicy'),
-            style: link,
-            recognizer: _policyTap,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Semantics(
+              label: context.tr('auth.consent.semantic'),
+              checked: widget.value,
+              onTap: () => widget.onChanged(!widget.value),
+              child: ExcludeSemantics(
+                child: Checkbox(
+                  key: const Key('auth_consent_checkbox'),
+                  value: widget.value,
+                  onChanged: (value) => widget.onChanged(value ?? false),
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text.rich(
+                  TextSpan(
+                    style: base,
+                    children: [
+                      TextSpan(text: '${context.tr('auth.consent.lead')} '),
+                      TextSpan(
+                        text: context.tr('auth.privacyPolicy'),
+                        style: link,
+                        recognizer: _policyTap,
+                      ),
+                      TextSpan(text: ' ${context.tr('auth.privacy.and')} '),
+                      TextSpan(
+                        text: context.tr('auth.terms'),
+                        style: link,
+                        recognizer: _termsTap,
+                      ),
+                      const TextSpan(text: '.'),
+                    ],
+                  ),
+                  textAlign: TextAlign.start,
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (widget.errorMessage != null) ...[
+          const SizedBox(height: 4),
+          _InlineError(
+            key: const Key('auth_consent_error'),
+            message: widget.errorMessage!,
           ),
-          TextSpan(text: ' ${context.tr('auth.privacy.and')} '),
-          TextSpan(
-            text: context.tr('auth.terms'),
-            style: link,
-            recognizer: _termsTap,
-          ),
-          // Sentence punctuation is identical in both locales, so it stays
-          // out of the localization maps.
-          const TextSpan(text: '.'),
         ],
-      ),
-      textAlign: TextAlign.center,
+      ],
     );
   }
 }

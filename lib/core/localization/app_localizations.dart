@@ -172,7 +172,7 @@ class AppLocalizations {
       // The title lives in the body heading, not the app bar. Email and phone
       // share one page, so the heading is not tied to either field.
       'auth.title': 'Selamat datang kembali',
-      'auth.subtitle': 'Masuk dengan email atau nomor telepon Anda.',
+      'auth.subtitle': 'Pilih email atau nomor telepon.',
       'auth.email.label': 'Email',
       'auth.email.hint': 'nama@email.com',
       'auth.email.invalid': 'Format email tidak valid',
@@ -181,22 +181,26 @@ class AppLocalizations {
       'auth.phone.hint': '8123456789',
       'auth.phone.invalid': 'Nomor telepon tidak valid',
       'auth.identifier.missing': 'Masukkan email atau nomor telepon.',
+      'auth.identifier.chooseOne': 'Pilih salah satu cara masuk.',
       'auth.otp.title': 'Masukkan kode verifikasi',
       'auth.otp.subtitle': 'Kode dikirim ke {target}',
       'auth.otp.mismatch': 'Kode tidak cocok',
       'auth.otp.attemptsLeft': 'Sisa percobaan: {n}',
       'auth.otp.locked':
           'Terlalu banyak percobaan. Kirim ulang kode untuk melanjutkan.',
+      'auth.otp.resendPrompt': 'Belum menerima kode?',
       'auth.otp.resendIn': 'Kirim ulang dalam {s} detik',
       'auth.otp.resend': 'Kirim ulang kode',
       'auth.otp.sent': 'Kode verifikasi terkirim (mock: 123456)',
       'auth.verify': 'Verifikasi',
-      // Split around the two inline document links so each document name stays a
-      // separately tappable span instead of being parsed back out of a string.
-      'auth.privacy.lead': 'Dengan melanjutkan, Anda menyetujui',
+      // Keep consent as a distinct, required checkbox before each next step.
+      'auth.consent.lead': 'Saya menyetujui',
+      'auth.consent.semantic':
+          'Setuju dengan Kebijakan Privasi dan Syarat & Ketentuan',
+      'auth.consent.required': 'Centang persetujuan untuk melanjutkan.',
       'auth.privacyPolicy': 'Kebijakan Privasi',
       'auth.privacy.and': 'dan',
-      'auth.terms': 'Syarat & Ketentuan',
+      'auth.terms': 'Syarat\u00a0&\u00a0Ketentuan',
 
       // --- Explore (P03) ---
       'explore.title': 'Jelajahi',
@@ -915,7 +919,7 @@ class AppLocalizations {
       // The title lives in the body heading, not the app bar. Email and phone
       // share one page, so the heading is not tied to either field.
       'auth.title': 'Welcome back',
-      'auth.subtitle': 'Sign in with your email or phone number.',
+      'auth.subtitle': 'Choose email or phone number.',
       'auth.email.label': 'Email',
       'auth.email.hint': 'name@email.com',
       'auth.email.invalid': 'Invalid email format',
@@ -924,21 +928,25 @@ class AppLocalizations {
       'auth.phone.hint': '8123456789',
       'auth.phone.invalid': 'Invalid phone number',
       'auth.identifier.missing': 'Enter your email or phone number.',
+      'auth.identifier.chooseOne': 'Choose one sign-in method.',
       'auth.otp.title': 'Enter verification code',
       'auth.otp.subtitle': 'Code sent to {target}',
       'auth.otp.mismatch': "Code doesn't match",
       'auth.otp.attemptsLeft': 'Attempts left: {n}',
       'auth.otp.locked': 'Too many attempts. Resend the code to continue.',
+      'auth.otp.resendPrompt': "Didn't receive the code?",
       'auth.otp.resendIn': 'Resend in {s}s',
       'auth.otp.resend': 'Resend code',
       'auth.otp.sent': 'Verification code sent (mock: 123456)',
       'auth.verify': 'Verify',
-      // Split around the two inline document links so each document name stays a
-      // separately tappable span instead of being parsed back out of a string.
-      'auth.privacy.lead': 'By continuing, you agree to the',
+      // Keep consent as a distinct, required checkbox before each next step.
+      'auth.consent.lead': 'I agree to the',
+      'auth.consent.semantic':
+          'Agree to the Privacy Policy and Terms & Conditions',
+      'auth.consent.required': 'Check the box to continue.',
       'auth.privacyPolicy': 'Privacy Policy',
       'auth.privacy.and': 'and',
-      'auth.terms': 'Terms & Conditions',
+      'auth.terms': 'Terms\u00a0&\u00a0Conditions',
 
       // --- Explore (P03) ---
       'explore.title': 'Explore',
