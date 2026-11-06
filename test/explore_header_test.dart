@@ -291,7 +291,7 @@ void main() {
       expect(picked, isFalse);
     });
 
-    testWidgets('keeps each segment at a comfortable touch target', (
+    testWidgets('keeps the segmented control at a comfortable touch target', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -299,61 +299,12 @@ void main() {
       );
       await tester.pump();
 
-      final list = tester.getSize(
-        find.byKey(const ValueKey('explore.view.list')),
-      );
-      final map = tester.getSize(
-        find.byKey(const ValueKey('explore.view.map')),
-      );
-      expect(list.height, greaterThanOrEqualTo(40));
-      expect(map.height, greaterThanOrEqualTo(40));
-    });
-  });
-
-  group('CategorySelector', () {
-    testWidgets('shows one icon option per project category', (tester) async {
-      await tester.pumpWidget(
-        wrapPage(
-          CategorySelector(
-            categoryIds: const ['semua', 'penyu', 'karang', 'mangrove'],
-            selectedId: 'semua',
-            onSelected: (_) {},
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('Kategori'), findsOneWidget);
-      expect(find.byKey(const ValueKey('explore.category.semua')), findsOneWidget);
-      expect(find.byKey(const ValueKey('explore.category.penyu')), findsOneWidget);
-      expect(find.byKey(const ValueKey('explore.category.karang')), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('explore.category.mangrove')),
-        findsOneWidget,
+        tester.getSize(find.byType(SegmentedButton<bool>)).height,
+        greaterThanOrEqualTo(48),
       );
-      // The saved collection is a scope, never a category option.
-      expect(
-        find.byKey(const ValueKey('explore.category.tersimpan')),
-        findsNothing,
-      );
-    });
-
-    testWidgets('reports the selected category', (tester) async {
-      String? picked;
-
-      await tester.pumpWidget(
-        wrapPage(
-          CategorySelector(
-            categoryIds: const ['semua', 'penyu', 'karang'],
-            selectedId: 'semua',
-            onSelected: (id) => picked = id,
-          ),
-        ),
-      );
-      await tester.pump();
-
-      await tester.tap(find.byKey(const ValueKey('explore.category.karang')));
-      expect(picked, 'karang');
+      expect(find.byKey(const ValueKey('explore.view.list')), findsOneWidget);
+      expect(find.byKey(const ValueKey('explore.view.map')), findsOneWidget);
     });
   });
 

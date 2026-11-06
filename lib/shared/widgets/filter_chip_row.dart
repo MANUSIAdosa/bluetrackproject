@@ -15,11 +15,16 @@ class FilterChipRow extends StatelessWidget {
     required this.options,
     required this.selectedId,
     required this.onSelected,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16),
   });
 
   final List<ChipOption> options;
   final String selectedId;
   final ValueChanged<String> onSelected;
+
+  /// Horizontal inset. Explore passes a left-only inset so the row bleeds to
+  /// the screen edge and the next chip peeks as a scroll hint.
+  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +32,7 @@ class FilterChipRow extends StatelessWidget {
       height: 40,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: padding,
         itemCount: options.length,
         separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {

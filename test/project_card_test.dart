@@ -88,19 +88,6 @@ void main() {
     expect(find.byType(FilledButton), findsNothing);
   });
 
-  testWidgets('compact card hides the Donasi button', (tester) async {
-    await tester.pumpWidget(
-      wrapPage(
-        phoneSized(
-          ProjectCard(project: buildProject(), showDonateButton: false),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('Donasi'), findsNothing);
-  });
-
   testWidgets('tapping the card still opens the project detail route',
       (tester) async {
     final router = _cardRouter(card: ProjectCard(project: buildProject()));

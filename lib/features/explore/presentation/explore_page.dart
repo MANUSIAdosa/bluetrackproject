@@ -9,6 +9,7 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/state/app_state.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_state.dart';
+import '../../../shared/widgets/filter_chip_row.dart';
 import '../../../shared/widgets/project_card.dart';
 import '../../../shared/widgets/skeleton.dart';
 import '../../repositories.dart';
@@ -417,15 +418,15 @@ class _ExplorePageState extends State<ExplorePage> {
               setState(() => _savedScope = saved);
             },
           ),
-          if (!_loading && !_error)
+          // In list mode the results line scrolls with the content (see
+          // [_buildList]); only the map, which does not scroll, keeps it fixed.
+          if (_mapMode && !_loading && !_error)
             ExploreResultsBar(
               count: visible.length,
-              mapMode: _mapMode,
+              mapMode: true,
               onViewChanged: _setMapMode,
-              // Map mode hides the rail, so the result line carries the one
-              // category control. List mode leaves it to the rail below.
-              categoryId: _mapMode ? _category : null,
-              onCategoryPressed: _mapMode ? _pickCategory : null,
+              categoryId: _category,
+              onCategoryPressed: _pickCategory,
             ),
           Expanded(child: _buildBody(visible)),
         ],
@@ -435,10 +436,29 @@ class _ExplorePageState extends State<ExplorePage> {
 
   Widget _buildBody(List<Project> visible) {
     if (_loading) {
+      // The results line keeps its exact position from the loaded list, so the
+      // count arriving does not shift the page. Header is fixed above.
       return ListView(
         key: const ValueKey('explore.projectList'),
-        padding: const EdgeInsets.all(16),
-        children: const [SkeletonCard(), SizedBox(height: 16), SkeletonCard()],
+        padding: EdgeInsets.zero,
+        children: [
+          ExploreResultsBar(
+            count: 0,
+            mapMode: false,
+            onViewChanged: _setMapMode,
+            loading: true,
+          ),
+          const SizedBox(height: ExploreSpacing.x24),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: ExploreSpacing.x16),
+            child: SkeletonCard(),
+          ),
+          const SizedBox(height: ExploreSpacing.x12),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: ExploreSpacing.x16),
+            child: SkeletonCard(),
+          ),
+        ],
       );
     }
     if (_error) {
@@ -498,18 +518,28 @@ class _ExplorePageState extends State<ExplorePage> {
       child: ListView(
         key: const ValueKey('explore.projectList'),
         controller: _scrollController,
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        padding: EdgeInsets.zero,
         children: [
-          // Secondary controls live inside the scroll view: they are useful at
-          // the top, but must not permanently eat half the viewport.
-          CategorySelector(
-            categoryIds: _categoryIds,
+          // The results line scrolls with the content, so the fixed header
+          // stays under a sixth of the screen.
+          ExploreResultsBar(
+            count: visible.length,
+            mapMode: false,
+            onViewChanged: _setMapMode,
+          ),
+          // The chip row bleeds to the right edge: a cut chip hints that the
+          // row scrolls.
+          FilterChipRow(
+            options: [
+              for (final id in _categoryIds)
+                ChipOption(id: id, label: context.tr('cat.$id')),
+            ],
             selectedId: _category,
             onSelected: (id) {
               _resetPaging();
               setState(() => _category = id);
             },
-            horizontalPadding: 0,
+            padding: const EdgeInsets.only(left: ExploreSpacing.x16),
           ),
           if (_selection.hasAny)
             ActiveFilterBar(
@@ -522,30 +552,59 @@ class _ExplorePageState extends State<ExplorePage> {
                   _condition = value.condition;
                 });
               },
-              horizontalPadding: 0,
+              horizontalPadding: ExploreSpacing.x16,
             ),
           if (forYou.isNotEmpty && _category == 'semua' && _query.isEmpty) ...[
-            exploreSectionHeader(context.tr('explore.forYou')),
+            const SizedBox(height: ExploreSpacing.x24),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: ExploreSpacing.x16,
+              ),
+              child: exploreSectionHeader(context.tr('explore.forYou')),
+            ),
+            const SizedBox(height: ExploreSpacing.x12),
             ForYouRail(
               key: const ValueKey('explore.forYouRail'),
               projects: forYou,
               onSavedChanged: () => setState(() {}),
             ),
-            const SizedBox(height: 8),
           ],
-          for (final project in page) ...[
-            ProjectCard(
-              project: project,
-              onSavedChanged: () => setState(() {}),
+          const SizedBox(height: ExploreSpacing.x24),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: ExploreSpacing.x16,
             ),
-            const SizedBox(height: 12),
+            child: exploreSectionHeader(
+              context.tr('explore.allProjectsWithCount', {
+                'n': '${visible.length}',
+              }),
+            ),
+          ),
+          const SizedBox(height: ExploreSpacing.x12),
+          for (var i = 0; i < page.length; i++) ...[
+            if (i > 0) const SizedBox(height: ExploreSpacing.x12),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: ExploreSpacing.x16,
+              ),
+              child: ProjectCard(
+                project: page[i],
+                onSavedChanged: () => setState(() {}),
+              ),
+            ),
           ],
           // Small placeholder while the next page is appended.
           if (_loadingMore)
             const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
+              padding: EdgeInsets.fromLTRB(
+                ExploreSpacing.x16,
+                ExploreSpacing.x12,
+                ExploreSpacing.x16,
+                0,
+              ),
               child: Skeleton(height: 72, radius: 12),
             ),
+          const SizedBox(height: ExploreSpacing.x24),
         ],
       ),
     );

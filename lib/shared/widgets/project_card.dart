@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -11,33 +13,90 @@ import 'category_icon.dart';
 import 'progress_bar.dart';
 import 'verified_badge.dart';
 
-/// Project card used by Explore (list + "for you" rail) and Org Profile.
+/// Project card used by Explore (vertical list + "for you" rail) and Org
+/// Profile.
 ///
-/// The card sizes itself from its content; hosts that need a fixed height
-/// (the horizontal rail) must measure it instead of guessing — see
-/// `ForYouRail`.
+/// Every instance shows the same Donate CTA; only its width differs. The title
+/// area is reserved for two lines, so a one-line and a two-line title produce
+/// the same card height. All line heights are explicit, which lets
+/// [heightFor] give the horizontal rail the exact cross-axis extent a
+/// `ListView.separated` needs.
 class ProjectCard extends StatelessWidget {
   const ProjectCard({
     super.key,
     required this.project,
     this.onSavedChanged,
-    this.showDonateButton = true,
   });
+
+  static const double _gap4 = 4;
+  static const double _gap8 = 8;
+  static const double _gap12 = 12;
+  static const double _padding = 16;
+  static const double _donateHeight = 48;
+  static const double _progressHeight = 8;
+
+  static const double _titleSize = 16;
+  static const double _titleHeight = 1.3;
+  static const double _orgSize = 13;
+  static const double _orgHeight = 1.3;
+  static const double _locationSize = 12;
+  static const double _locationHeight = 1.2;
+  static const double _percentSize = 12;
+  static const double _percentHeight = 1.2;
+  static const double _amountSize = 15;
+  static const double _amountHeight = 1.2;
+  static const double _targetSize = 11;
+  static const double _targetHeight = 1.2;
+  static const double _iconSize = 14;
+  static const double _badgeSize = 16;
 
   final Project project;
   final VoidCallback? onSavedChanged;
 
-  /// The donate CTA is an outlined button (the coral primary belongs to one
-  /// button per screen). Horizontal cards hide it to stay compact.
-  final bool showDonateButton;
+  static double _line(double size, double height, double scale) =>
+      size * height * scale;
+
+  static double _orgRowHeight(double scale) =>
+      math.max(_line(_orgSize, _orgHeight, scale), _badgeSize);
+
+  static double _locationRowHeight(double scale) =>
+      math.max(_line(_locationSize, _locationHeight, scale), _iconSize);
+
+  static double _titleAreaHeight(double scale) =>
+      (_line(_titleSize, _titleHeight, scale) * 2).ceilToDouble();
+
+  /// Exact height of the card at [width]. The horizontal rail cannot ask a
+  /// `ListView` for an intrinsic height, so it asks the card instead.
+  static double heightFor(BuildContext context, double width) {
+    final scale = MediaQuery.textScalerOf(context).scale(1);
+    return width * 9 / 16 +
+        _padding * 2 +
+        _titleAreaHeight(scale) +
+        _gap8 +
+        _orgRowHeight(scale) +
+        _gap4 +
+        _locationRowHeight(scale) +
+        _gap12 +
+        _line(_percentSize, _percentHeight, scale) +
+        _gap4 +
+        _progressHeight +
+        _gap12 +
+        _line(_amountSize, _amountHeight, scale) +
+        _line(_targetSize, _targetHeight, scale) +
+        _gap12 +
+        _donateHeight +
+        1; // guard against fractional line heights
+  }
 
   @override
   Widget build(BuildContext context) {
     final lang = Localizations.localeOf(context).languageCode;
     final saved = SavedProjectsController.instance.isSaved(project.id);
     final percent = (project.progress * 100).round();
+    final scale = MediaQuery.textScalerOf(context).scale(1);
 
     return Card(
+      elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppDimens.cardRadius),
@@ -60,25 +119,25 @@ class ProjectCard extends StatelessWidget {
                       gradient: _galleryGradient(project.galleryColors),
                     ),
                   ),
-                  // Scrim keeps the white category badge readable on any
-                  // gallery colour.
+                  // 60% black at the top keeps white icons above 4.5:1 even on
+                  // the lightest mock gallery colour.
                   const DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [Color(0x33000000), Colors.transparent],
+                        colors: [Color(0x99000000), Color(0x00000000)],
                       ),
                     ),
                   ),
                   Positioned(
-                    left: 12,
-                    top: 12,
+                    left: _gap12,
+                    top: _gap12,
                     child: _CategoryBadge(category: project.category),
                   ),
                   Positioned(
-                    top: 8,
-                    right: 8,
+                    top: _gap8,
+                    right: _gap8,
                     child: _SaveButton(
                       project: project,
                       saved: saved,
@@ -89,104 +148,132 @@ class ProjectCard extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+              padding: const EdgeInsets.all(_padding),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    project.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                      height: 1.3,
+                  SizedBox(
+                    width: double.infinity,
+                    height: _titleAreaHeight(scale),
+                    child: Align(
+                      alignment: Alignment.topLeft,
+                      child: Text(
+                        project.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: _titleSize,
+                          height: _titleHeight,
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          project.orgName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
+                  const SizedBox(height: _gap8),
+                  SizedBox(
+                    height: _orgRowHeight(scale),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            project.orgName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: _orgSize,
+                              height: _orgHeight,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                         ),
-                      ),
-                      if (project.orgVerified)
-                        const VerifiedBadge(compact: true),
-                    ],
+                        if (project.orgVerified)
+                          const VerifiedBadge(compact: true),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.place_outlined,
-                        size: 14,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          project.location,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
+                  const SizedBox(height: _gap4),
+                  SizedBox(
+                    height: _locationRowHeight(scale),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.place_outlined,
+                          size: _iconSize,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: _gap4),
+                        Expanded(
+                          child: Text(
+                            project.location,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: _locationSize,
+                              height: _locationHeight,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: _gap12),
                   Text(
                     context.tr('p03_percent_funded', {'n': '$percent'}),
+                    maxLines: 1,
                     style: const TextStyle(
-                      fontSize: 12,
+                      fontSize: _percentSize,
+                      height: _percentHeight,
                       fontWeight: FontWeight.w700,
                       color: AppColors.ocean,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  ProgressBar(value: project.progress),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              Formatters.currency(project.raisedAmount, lang),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 15,
-                                color: AppColors.ocean,
-                              ),
-                            ),
-                            Text(
-                              '${context.tr('project.target')}: '
-                              '${Formatters.currency(project.targetAmount, lang)}',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
+                  const SizedBox(height: _gap4),
+                  ProgressBar(
+                    value: project.progress,
+                    height: _progressHeight,
+                  ),
+                  const SizedBox(height: _gap12),
+                  // Nominal and target stay on one line each; the ellipsis is a
+                  // last-resort guard, the required widths fit without it.
+                  Text(
+                    Formatters.currency(project.raisedAmount, lang),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      height: _amountHeight,
+                      fontWeight: FontWeight.w800,
+                      fontSize: _amountSize,
+                      color: AppColors.ocean,
+                    ),
+                  ),
+                  Text(
+                    '${context.tr('project.target')}: '
+                    '${Formatters.currency(project.targetAmount, lang)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      height: _targetHeight,
+                      fontSize: _targetSize,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: _gap12),
+                  SizedBox(
+                    width: double.infinity,
+                    height: _donateHeight,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(_donateHeight),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: _padding,
                         ),
                       ),
-                      if (showDonateButton) ...[
-                        const SizedBox(width: 12),
-                        _DonateButton(projectId: project.id),
-                      ],
-                    ],
+                      onPressed: () =>
+                          context.push('/donate/${project.id}'),
+                      child: Text(context.tr('project.donate')),
+                    ),
                   ),
                 ],
               ),
@@ -208,7 +295,7 @@ class _CategoryBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(999),
@@ -224,7 +311,7 @@ class _CategoryBadge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           CategoryIcon(category: category, size: 14),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
           Text(
             context.tr('cat.$category'),
             style: const TextStyle(
@@ -256,40 +343,22 @@ class _SaveButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.black.withValues(alpha: 0.24),
-      shape: CircleBorder(
-        side: BorderSide(color: Colors.white.withValues(alpha: 0.35)),
-      ),
+      shape: const CircleBorder(),
       child: IconButton(
         key: ValueKey('projectCard.save.${project.id}'),
         tooltip: context.tr(saved ? 'p03_saved' : 'p03_save'),
-        icon: Icon(
-          saved ? Icons.bookmark : Icons.bookmark_outline,
-          color: Colors.white,
+        isSelected: saved,
+        icon: const Icon(Icons.bookmark_outline, color: Colors.white),
+        selectedIcon: const Icon(Icons.bookmark, color: Colors.white),
+        style: IconButton.styleFrom(
+          minimumSize: const Size.square(48),
+          maximumSize: const Size.square(48),
         ),
         onPressed: () async {
           await toggleSavedProject(project);
           onSavedChanged?.call();
         },
       ),
-    );
-  }
-}
-
-/// Outlined donate CTA → the existing donation route for that project.
-class _DonateButton extends StatelessWidget {
-  const _DonateButton({required this.projectId});
-
-  final String projectId;
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton(
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size(0, 40),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-      ),
-      onPressed: () => context.push('/donate/$projectId'),
-      child: Text(context.tr('project.donate')),
     );
   }
 }

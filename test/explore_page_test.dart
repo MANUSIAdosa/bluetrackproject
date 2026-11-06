@@ -8,6 +8,7 @@ import 'package:blue_track/features/explore/presentation/explore_page.dart';
 import 'package:blue_track/features/explore/presentation/widgets/explore_header.dart';
 import 'package:blue_track/shared/widgets/empty_state.dart';
 import 'package:blue_track/shared/widgets/error_state.dart';
+import 'package:blue_track/shared/widgets/filter_chip_row.dart';
 import 'package:blue_track/shared/widgets/project_card.dart';
 import 'package:blue_track/shared/widgets/skeleton.dart';
 import 'package:flutter/material.dart';
@@ -79,12 +80,14 @@ FakeProjectRepository manyProjects({int count = 9}) => FakeProjectRepository([
 Finder projectList() => find.byKey(const ValueKey('explore.projectList'));
 
 /// Cards in the current page. A lazy ListView only mounts what is near the
-/// viewport, so read the children the page handed to the list.
+/// viewport, so read the children the page handed to the list. Cards sit inside
+/// a horizontal padding wrapper so the list can bleed other rows to the edges.
 int cardCount(WidgetTester tester) {
   final delegate = tester.widget<ListView>(projectList()).childrenDelegate;
-  return (delegate as SliverChildListDelegate).children
-      .whereType<ProjectCard>()
-      .length;
+  return (delegate as SliverChildListDelegate).children.where((child) {
+    final widget = child is Padding ? child.child : child;
+    return widget is ProjectCard;
+  }).length;
 }
 
 /// Scrolls down in small steps, like a finger, until the next page starts
@@ -145,19 +148,24 @@ Future<void> pullToRefresh(WidgetTester tester) async {
   }
 }
 
-/// The category selector is a horizontal list; tests read the widget state
-/// instead of relying on a chip being mounted in the viewport.
-CategorySelector categorySelector(WidgetTester tester) =>
-    tester.widget<CategorySelector>(find.byType(CategorySelector));
+/// The category row is a horizontal list; tests read the widget state instead
+/// of relying on a chip being mounted in the viewport.
+FilterChipRow categorySelector(WidgetTester tester) =>
+    tester.widget<FilterChipRow>(find.byType(FilterChipRow));
 
 SavedScopeButton savedButton(WidgetTester tester) =>
     tester.widget<SavedScopeButton>(find.byType(SavedScopeButton));
 
 Future<void> tapCategory(WidgetTester tester, String id) async {
-  final finder = find.byKey(ValueKey('explore.category.$id'));
-  // The rail lives at the top of the list and is disposed once it scrolls
-  // away, so a user has to scroll back up before changing category.
-  if (finder.evaluate().isEmpty) await scrollToTop(tester);
+  // The row lives at the top of the list and is disposed once it scrolls away,
+  // so a user has to scroll back up before changing category.
+  if (find.byType(FilterChipRow).evaluate().isEmpty) await scrollToTop(tester);
+  final row = categorySelector(tester);
+  final label = row.options.firstWhere((option) => option.id == id).label;
+  final finder = find.descendant(
+    of: find.byType(FilterChipRow),
+    matching: find.text(label),
+  );
   await tester.ensureVisible(finder);
   await tester.pumpAndSettle();
   await tester.tap(finder);
@@ -324,19 +332,25 @@ void main() {
       ),
       findsNothing,
     );
-    expect(find.byType(SegmentedButton<bool>), findsNothing);
   });
 
-  testWidgets('secondary controls scroll with the list while search, scope and '
-      'the result count stay fixed', (tester) async {
+  testWidgets('secondary controls and the results line scroll with the list '
+      'while the search and scope stay fixed', (tester) async {
     await pumpExplore(tester, projects: FakeProjectRepository(twoCategories()));
 
-    // The category rail is part of the list, so it scrolls away instead of
-    // permanently eating the viewport.
+    // The chip row and the results line are part of the list, so they scroll
+    // away instead of permanently eating the viewport.
     expect(
       find.descendant(
         of: projectList(),
-        matching: find.byType(CategorySelector),
+        matching: find.byType(FilterChipRow),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: projectList(),
+        matching: find.byType(ExploreResultsBar),
       ),
       findsOneWidget,
     );
@@ -348,19 +362,12 @@ void main() {
       findsNothing,
     );
     expect(
-      find.descendant(
-        of: projectList(),
-        matching: find.byType(ExploreResultsBar),
-      ),
-      findsNothing,
-    );
-    expect(
       find.descendant(of: projectList(), matching: find.byType(TextField)),
       findsNothing,
     );
   });
 
-  testWidgets('the category selector holds project categories only, never the '
+  testWidgets('the category row holds project categories only, never the '
       'saved collection', (tester) async {
     await pumpExplore(
       tester,
@@ -368,10 +375,16 @@ void main() {
     );
 
     final selector = categorySelector(tester);
-    expect(selector.categoryIds, ['semua', 'penyu', 'karang']);
+    expect(
+      selector.options.map((option) => option.id),
+      ['semua', 'penyu', 'karang'],
+    );
     expect(selector.selectedId, 'semua');
     expect(
-      find.byKey(const ValueKey('explore.category.tersimpan')),
+      find.descendant(
+        of: find.byType(FilterChipRow),
+        matching: find.text('Tersimpan'),
+      ),
       findsNothing,
     );
   });

@@ -8,8 +8,8 @@ import 'package:blue_track/features/explore/data/saved_project_store.dart';
 import 'package:blue_track/features/explore/domain/explore_map_data.dart';
 import 'package:blue_track/features/explore/domain/project.dart';
 import 'package:blue_track/features/explore/presentation/explore_page.dart';
-import 'package:blue_track/features/explore/presentation/widgets/explore_header.dart';
 import 'package:blue_track/shared/widgets/empty_state.dart';
+import 'package:blue_track/shared/widgets/filter_chip_row.dart';
 import 'package:blue_track/shared/widgets/project_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -163,11 +163,11 @@ void main() {
     tester,
   ) async {
     await pumpExplore(tester, projects: FakeProjectRepository(_twoProjects()));
-    expect(find.byType(CategorySelector), findsOneWidget);
+    expect(find.byType(FilterChipRow), findsOneWidget);
 
     await tapKey(tester, 'explore.view.map');
 
-    expect(find.byType(CategorySelector), findsNothing);
+    expect(find.byType(FilterChipRow), findsNothing);
     expect(find.byKey(const ValueKey('explore.marker.p01')), findsOneWidget);
   });
 
@@ -180,7 +180,7 @@ void main() {
 
     await tapKey(tester, 'explore.view.map');
 
-    expect(find.byType(CategorySelector), findsNothing);
+    expect(find.byType(FilterChipRow), findsNothing);
     expect(
       find.byKey(const ValueKey('explore.mapCategoryChip')),
       findsOneWidget,
