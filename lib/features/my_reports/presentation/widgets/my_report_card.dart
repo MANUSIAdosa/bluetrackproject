@@ -2,27 +2,35 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/report_metadata_chip.dart';
 import '../../../project/domain/report.dart';
 import '../../../project/presentation/p04_format.dart';
 import '../../../project/presentation/p04_report_visuals.dart';
-import '../../../../shared/widgets/report_metadata_chip.dart';
 
 /// Report card in My Reports.
 ///
 /// The category, date, status and severity come from the P04 helpers so the
 /// list never drifts from the report visuals used on project pages. The photo
 /// leads the card; without one the category icon fills the same slot, keeping
-/// every row aligned. The card is a full-width tap target for the detail sheet.
+/// every row aligned. The card remains a full-width tap target for its detail.
 class MyReportCard extends StatelessWidget {
-  const MyReportCard({super.key, required this.report, required this.onTap});
+  const MyReportCard({
+    super.key,
+    required this.report,
+    required this.onTap,
+    this.onCompletionProofTap,
+  });
 
   final Report report;
   final VoidCallback onTap;
+  final VoidCallback? onCompletionProofTap;
 
   @override
   Widget build(BuildContext context) {
-    final lang = Localizations.localeOf(context).languageCode;
+    final languageCode = Localizations.localeOf(context).languageCode;
+    final textTheme = Theme.of(context).textTheme;
     final categoryColor = context.p04CategoryColor(report.category);
+    final statusColor = context.p04StatusColor(report.status);
 
     return Card(
       margin: EdgeInsets.zero,
@@ -34,120 +42,142 @@ class MyReportCard extends StatelessWidget {
       child: InkWell(
         key: ValueKey('my-report-${report.id}'),
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+        child: Stack(
+          children: [
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 4,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: statusColor,
+                  borderRadius: BorderRadius.horizontal(
+                    left: Radius.circular(AppDimens.cardRadius),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _LeadingVisual(
-                    report: report,
-                    categoryColor: categoryColor,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          context.p04CategoryLabel(report.category),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: categoryColor,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          report.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 14.5,
-                            height: 1.35,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _LeadingVisual(
+                        report: report,
+                        categoryColor: categoryColor,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(
-                              Icons.calendar_today_outlined,
-                              size: 13,
-                              color: AppColors.textSecondary,
+                            Text(
+                              context.p04CategoryLabel(report.category),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: textTheme.labelSmall?.copyWith(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: categoryColor,
+                              ),
                             ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                P04Format.date(
-                                  report.reportedAt.toLocal(),
-                                  lang,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 11,
+                            const SizedBox(height: 4),
+                            Text(
+                              report.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: textTheme.titleSmall?.copyWith(
+                                fontSize: 15,
+                                height: 1.35,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.calendar_today_outlined,
+                                  size: 13,
                                   color: AppColors.textSecondary,
                                 ),
-                              ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    P04Format.date(
+                                      report.reportedAt.toLocal(),
+                                      languageCode,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: textTheme.bodySmall?.copyWith(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(height: 1, color: AppColors.border),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Wrap(
+                          spacing: 10,
+                          runSpacing: 6,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            ReportMetadataChip(
+                              icon: context.p04StatusIcon(report.status),
+                              label: context.p04StatusLabel(report.status),
+                              color: statusColor,
+                              iconSize: 14,
+                              fontSize: 12,
+                            ),
+                            ReportMetadataChip(
+                              icon: Icons.speed_outlined,
+                              label: context.tr('my_reports.severity_chip', {
+                                'level': context.p04SeverityLabel(
+                                  report.severity,
+                                ),
+                              }),
+                              color: context.p04SeverityColor(report.severity),
+                              filled: false,
+                              padding: EdgeInsets.zero,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            if (report.status == ReportStatus.completed &&
+                                report.hasCompletionProof)
+                              _CompletionProofMarker(
+                                onTap: onCompletionProofTap ?? onTap,
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.chevron_right,
+                        size: 20,
+                        color: AppColors.inactiveTab,
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              const Divider(height: 1, color: AppColors.border),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: Wrap(
-                      spacing: 10,
-                      runSpacing: 6,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        ReportMetadataChip(
-                          icon: context.p04StatusIcon(report.status),
-                          label: context.p04StatusLabel(report.status),
-                          color: context.p04StatusColor(report.status),
-                          iconSize: 13,
-                          fontSize: 11,
-                        ),
-                        ReportMetadataChip(
-                          icon: Icons.speed_outlined,
-                          label: context.tr('my_reports.severity_chip', {
-                            'level': context.p04SeverityLabel(report.severity),
-                          }),
-                          color: context.p04SeverityColor(report.severity),
-                          filled: false,
-                          padding: EdgeInsets.zero,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        if (report.status == ReportStatus.completed &&
-                            report.hasCompletionProof)
-                          _CompletionProofMarker(),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Icon(
-                    Icons.chevron_right,
-                    size: 20,
-                    color: AppColors.inactiveTab,
-                  ),
-                ],
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -199,21 +229,33 @@ class _LeadingVisual extends StatelessWidget {
 }
 
 class _CompletionProofMarker extends StatelessWidget {
-  const _CompletionProofMarker();
+  const _CompletionProofMarker({required this.onTap});
+
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final label = context.tr('my_reports.completion_proof_available');
     return Semantics(
-      container: true,
+      button: true,
       label: label,
+      onTap: onTap,
       child: ExcludeSemantics(
-        child: ReportMetadataChip(
-          icon: Icons.fact_check_outlined,
-          label: label,
-          color: AppColors.success,
-          iconSize: 13,
-          fontSize: 11,
+        child: InkWell(
+          key: const ValueKey('my-report-proof-marker'),
+          borderRadius: BorderRadius.circular(999),
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            child: Center(
+              child: ReportMetadataChip(
+                icon: Icons.fact_check_outlined,
+                label: label,
+                color: AppColors.success,
+                fontSize: 12,
+              ),
+            ),
+          ),
         ),
       ),
     );

@@ -13,6 +13,7 @@ import '../../../shared/widgets/skeleton.dart';
 import '../../project/data/project_data_repositories.dart';
 import '../../project/data/report_repository.dart';
 import '../../project/domain/report.dart';
+import '../../project/presentation/p04_format.dart';
 import '../../project/presentation/p04_report_visuals.dart';
 import '../data/my_reports_config.dart';
 import '../data/my_reports_store.dart';
@@ -68,7 +69,11 @@ class _MyReportsPageState extends State<MyReportsPage> {
     super.initState();
     AuthController.instance.addListener(_onAuthChanged);
     _store.addListener(_onStoreChanged);
-    if (AuthController.instance.signedIn) _load();
+    if (AuthController.instance.signedIn) {
+      final cachedReports = _reportsForUser();
+      if (cachedReports.isNotEmpty) _reports = cachedReports;
+      _load();
+    }
   }
 
   @override
@@ -90,7 +95,13 @@ class _MyReportsPageState extends State<MyReportsPage> {
       });
       return;
     }
-    if (_reports == null && !_loading) _load();
+    if (_reports == null && !_loading) {
+      final cachedReports = _reportsForUser();
+      if (cachedReports.isNotEmpty) {
+        setState(() => _reports = cachedReports);
+      }
+      _load();
+    }
   }
 
   void _onStoreChanged() {
@@ -113,10 +124,10 @@ class _MyReportsPageState extends State<MyReportsPage> {
     return reports;
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool showSkeleton = true}) async {
     final requestId = ++_requestId;
     setState(() {
-      _loading = true;
+      _loading = showSkeleton && _reports == null;
       _error = false;
     });
 
@@ -132,7 +143,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
       if (!mounted || requestId != _requestId) return;
       final cachedReports = _reportsForUser();
       setState(() {
-        _reports = cachedReports;
+        _reports = cachedReports.isEmpty ? null : cachedReports;
         _loading = false;
         _error = cachedReports.isEmpty;
       });
@@ -146,9 +157,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
   }
 
   Future<void> _openReportForm() async {
-    await context.push(Routes.report);
-    if (!mounted) return;
-    _load();
+    await context.push<void>(Routes.report);
   }
 
   List<Report> _visibleReports(List<Report> reports) {
@@ -164,7 +173,6 @@ class _MyReportsPageState extends State<MyReportsPage> {
       for (final status in ReportStatus.values)
         status.id: reports.where((report) => report.status == status).length,
     };
-
     final id = await showMyReportsFilterSheet(
       context,
       selectedId: _selectedStatus?.id ?? 'all',
@@ -174,12 +182,25 @@ class _MyReportsPageState extends State<MyReportsPage> {
     _selectFilter(id);
   }
 
+  Widget _refreshableState(BuildContext context, Widget state) {
+    return RefreshIndicator(
+      onRefresh: () => _load(showSkeleton: false),
+      child: LayoutBuilder(
+        builder: (context, constraints) => ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [SizedBox(height: constraints.maxHeight, child: state)],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: AuthController.instance,
       builder: (context, _) {
         final signedIn = AuthController.instance.signedIn;
+        final textTheme = Theme.of(context).textTheme;
         final reports = signedIn ? _reports : null;
         final selected = _selectedStatus;
         final visible = reports == null ? null : _visibleReports(reports);
@@ -207,7 +228,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
               children: [
                 Text(
                   context.tr('detail.myReports'),
-                  style: const TextStyle(
+                  style: textTheme.titleLarge?.copyWith(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
@@ -219,8 +240,8 @@ class _MyReportsPageState extends State<MyReportsPage> {
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 11,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textSecondary,
                     ),
@@ -228,28 +249,29 @@ class _MyReportsPageState extends State<MyReportsPage> {
                 ],
               ],
             ),
-            actions: [
-              if (reports != null && reports.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: Badge(
-                    isLabelVisible: selected != null,
-                    smallSize: 8,
-                    backgroundColor: AppColors.coral,
-                    child: IconButton(
-                      key: const ValueKey('my-reports-filter-button'),
-                      tooltip: context.tr('my_reports.filter_title'),
-                      onPressed: _openFilter,
-                      icon: Icon(
-                        Icons.tune,
-                        color: selected == null
-                            ? AppColors.textPrimary
-                            : AppColors.ocean,
+            actions: signedIn
+                ? [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Badge(
+                        isLabelVisible: selected != null,
+                        smallSize: 8,
+                        backgroundColor: AppColors.coral,
+                        child: IconButton(
+                          key: const ValueKey('my-reports-filter-button'),
+                          tooltip: context.tr('my_reports.filter_title'),
+                          onPressed: _openFilter,
+                          icon: Icon(
+                            Icons.tune,
+                            color: selected == null
+                                ? AppColors.textPrimary
+                                : AppColors.ocean,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-            ],
+                  ]
+                : null,
           ),
           floatingActionButton: showCreateAction
               ? FloatingActionButton.extended(
@@ -284,11 +306,15 @@ class _MyReportsPageState extends State<MyReportsPage> {
 
     final all = reports ?? const <Report>[];
     if (all.isEmpty) {
-      return EmptyState(
-        icon: Icons.description_outlined,
-        message: context.tr('my_reports.empty'),
-        actionLabel: context.tr('my_reports.create'),
-        onAction: _openReportForm,
+      return _refreshableState(
+        context,
+        EmptyState(
+          icon: Icons.waves,
+          title: context.tr('my_reports.empty_title'),
+          message: context.tr('my_reports.empty'),
+          actionLabel: context.tr('my_reports.create'),
+          onAction: _openReportForm,
+        ),
       );
     }
 
@@ -298,42 +324,59 @@ class _MyReportsPageState extends State<MyReportsPage> {
     // Reports exist but none match the active status: the user can clear the
     // filter, but nothing here invites another report.
     if (visible.isEmpty && selected != null) {
-      return EmptyState(
-        icon: Icons.filter_alt_off_outlined,
-        message: context.tr('my_reports.empty_filter', {
-          'status': context.p04StatusLabel(selected),
-        }),
-        actionLabel: context.tr('my_reports.show_all'),
-        onAction: () => _selectFilter('all'),
+      return _refreshableState(
+        context,
+        EmptyState(
+          icon: Icons.filter_alt_off_outlined,
+          message: context.tr('my_reports.empty_filter', {
+            'status': context.p04StatusLabel(selected),
+          }),
+          actionLabel: context.tr('my_reports.show_all'),
+          onAction: () => _selectFilter('all'),
+        ),
       );
     }
 
-    return ListView.separated(
-      key: const ValueKey('my-reports-list'),
-      padding: const EdgeInsets.fromLTRB(
-        AppDimens.padding,
-        12,
-        AppDimens.padding,
-        96,
-      ),
-      itemCount: visible.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        final report = visible[index];
-        return MyReportCard(
-          report: report,
-          onTap: () => showMyReportDetailSheet(
-            context,
+    return RefreshIndicator(
+      onRefresh: () => _load(showSkeleton: false),
+      child: ListView.separated(
+        key: const ValueKey('my-reports-list'),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(
+          AppDimens.padding,
+          12,
+          AppDimens.padding,
+          96,
+        ),
+        itemCount: visible.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
+        itemBuilder: (context, index) {
+          final report = visible[index];
+          return MyReportCard(
             report: report,
-            mapTileProvider: widget.mapTileProvider,
-          ),
-        );
-      },
+            onTap: () => showMyReportDetailSheet(
+              context,
+              report: report,
+              mapTileProvider: widget.mapTileProvider,
+            ),
+            onCompletionProofTap:
+                report.status == ReportStatus.completed &&
+                    report.hasCompletionProof
+                ? () => showMyReportDetailSheet(
+                    context,
+                    report: report,
+                    mapTileProvider: widget.mapTileProvider,
+                    openCompletionProof: true,
+                  )
+                : null,
+          );
+        },
+      ),
     );
   }
 }
 
-/// Filter and card placeholders that mirror the populated page's rhythm.
+/// Card-shaped placeholders that mirror the populated report list.
 class _MyReportsSkeleton extends StatelessWidget {
   const _MyReportsSkeleton();
 
@@ -351,10 +394,186 @@ class _MyReportsSkeleton extends StatelessWidget {
         ),
         children: [
           for (var i = 0; i < 4; i++) ...[
-            const Skeleton(height: 116, radius: AppDimens.cardRadius),
+            const _MyReportCardSkeleton(),
             if (i < 3) const SizedBox(height: 10),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _MyReportCardSkeleton extends StatelessWidget {
+  const _MyReportCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDimens.cardRadius),
+        side: const BorderSide(color: AppColors.border),
+      ),
+      child: Stack(
+        children: [
+          const Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 4,
+            child: DecoratedBox(
+              decoration: BoxDecoration(color: AppColors.border),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Skeleton(width: 64, height: 64, radius: 14),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Skeleton(width: 96, height: 12, radius: 6),
+                          const SizedBox(height: 8),
+                          const Skeleton(height: 16, radius: 6),
+                          const SizedBox(height: 5),
+                          const Skeleton(width: 170, height: 16, radius: 6),
+                          const SizedBox(height: 8),
+                          const Skeleton(width: 132, height: 12, radius: 6),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Divider(height: 1, color: AppColors.border),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Skeleton(width: 86, height: 24, radius: 999),
+                    const SizedBox(width: 10),
+                    const Skeleton(width: 96, height: 14, radius: 7),
+                    const Spacer(),
+                    const Skeleton(width: 20, height: 20, radius: 10),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MyReportsFilterOption {
+  const _MyReportsFilterOption({
+    required this.id,
+    required this.label,
+    required this.count,
+    required this.icon,
+    required this.color,
+  });
+
+  final String id;
+  final String label;
+  final int count;
+  final IconData icon;
+  final Color color;
+}
+
+class _MyReportsFilterChip extends StatelessWidget {
+  const _MyReportsFilterChip({
+    required this.option,
+    required this.selected,
+    required this.languageCode,
+    required this.onTap,
+  });
+
+  final _MyReportsFilterOption option;
+  final bool selected;
+  final String languageCode;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = selected ? AppColors.surface : option.color;
+    final countBackground = selected
+        ? AppColors.surface.withValues(alpha: 0.18)
+        : option.color.withValues(alpha: 0.1);
+
+    return Semantics(
+      key: ValueKey('my-reports-filter-${option.id}'),
+      button: true,
+      selected: selected,
+      label: context.tr('my_reports.filter_count', {
+        'label': option.label,
+        'count': P04Format.integer(option.count, languageCode),
+      }),
+      onTap: onTap,
+      child: ExcludeSemantics(
+        child: Material(
+          color: selected ? AppColors.ocean : AppColors.surface,
+          shape: StadiumBorder(
+            side: BorderSide(
+              color: selected ? AppColors.ocean : AppColors.border,
+            ),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(999),
+            onTap: onTap,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(option.icon, size: 16, color: foreground),
+                    const SizedBox(width: 7),
+                    Text(
+                      option.label,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                        color: selected
+                            ? AppColors.surface
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: countBackground,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        P04Format.integer(option.count, languageCode),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: selected
+                              ? AppColors.surface
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

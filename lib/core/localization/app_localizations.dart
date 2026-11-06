@@ -351,13 +351,21 @@ class AppLocalizations {
       'my_reports.loading': 'Memuat laporan...',
       'my_reports.load_error':
           'Gagal memuat laporan. Periksa koneksi lalu coba lagi.',
-      'my_reports.empty': 'Kamu belum punya laporan. Laporkan temuan di sekitarmu untuk membantu menjaga laut tetap lestari.',
+      'my_reports.empty_title': 'Belum ada laporan',
+      'my_reports.empty':
+          'Laporkan temuan di sekitarmu untuk membantu menjaga laut tetap lestari.',
       'my_reports.create': 'Buat laporan',
       'my_reports.empty_filter': 'Tidak ada laporan berstatus {status}.',
+      'my_reports.filter_count': '{label} ({count})',
+      'my_reports.filter_title': 'Filter status laporan',
+      'my_reports.filter_hint':
+          'Pilih status laporan yang ingin ditampilkan.',
       'my_reports.tracker': 'Pelacak status',
       'my_reports.report_date': 'Tanggal laporan',
       'my_reports.waiting_verification': 'Menunggu verifikasi',
+      'my_reports.no_verifier_note': 'Tidak ada catatan dari verifikator.',
       'my_reports.severity_chip': 'Tingkat: {level}',
+      'my_reports.completed_step_date': 'Selesai pada {date}',
       'my_reports.completion_proof': 'Bukti penyelesaian',
       'my_reports.completion_proof_missing': 'Bukti belum diunggah.',
       'my_reports.completion_photo_missing': 'Foto bukti belum tersedia.',
@@ -371,7 +379,6 @@ class AppLocalizations {
           'Jelajahi agenda kegiatan konservasi yang tersedia.',
       'my_reports.count': '{n} laporan',
       'my_reports.filtered_count': '{status} · {n} laporan',
-      'my_reports.filter_title': 'Filter status',
       'my_reports.show_all': 'Tampilkan semua',
       'my_reports.current_status': 'Status saat ini',
       'p04_photo_error': 'Foto tidak dapat dimuat.',
@@ -764,6 +771,7 @@ class AppLocalizations {
       'report_submit_missing_location': 'Tandai lokasi temuan terlebih dahulu.',
       'report_submit_missing_type':
           'Pilih jenis dan tingkat temuan terlebih dahulu.',
+      'report_submit.generated_title': 'Laporan {category} · {date} · {id}',
       'report_success_title': 'Laporan terkirim',
       'report_success_body':
           'Terima kasih. Laporanmu akan diverifikasi sebelum tayang ke publik.',
@@ -1109,13 +1117,20 @@ class AppLocalizations {
       'my_reports.loading': 'Loading reports...',
       'my_reports.load_error':
           'Could not load reports. Check your connection and try again.',
-      'my_reports.empty': 'You have no reports yet. Report what you find around you to help keep the sea healthy.',
+      'my_reports.empty_title': 'No reports yet',
+      'my_reports.empty':
+          'Report what you find around you to help keep the sea healthy.',
       'my_reports.create': 'Create report',
       'my_reports.empty_filter': 'No reports with status {status}.',
+      'my_reports.filter_count': '{label} ({count})',
+      'my_reports.filter_title': 'Filter report status',
+      'my_reports.filter_hint': 'Choose which report statuses to display.',
       'my_reports.tracker': 'Status tracker',
       'my_reports.report_date': 'Report date',
       'my_reports.waiting_verification': 'Waiting for verification',
+      'my_reports.no_verifier_note': 'No note from the verifier.',
       'my_reports.severity_chip': 'Severity: {level}',
+      'my_reports.completed_step_date': 'Completed on {date}',
       'my_reports.completion_proof': 'Completion proof',
       'my_reports.completion_proof_missing':
           'Completion proof has not been uploaded yet.',
@@ -1131,7 +1146,6 @@ class AppLocalizations {
           'Browse available conservation activities.',
       'my_reports.count': '{n} reports',
       'my_reports.filtered_count': '{status} · {n} reports',
-      'my_reports.filter_title': 'Filter status',
       'my_reports.show_all': 'Show all',
       'my_reports.current_status': 'Current status',
       'p04_photo_error': 'Photo could not be loaded.',
@@ -1526,6 +1540,7 @@ class AppLocalizations {
       'report_submit_missing_location': 'Mark the finding location first.',
       'report_submit_missing_type':
           'Choose the finding type and severity first.',
+      'report_submit.generated_title': '{category} report · {date} · {id}',
       'report_success_title': 'Report sent',
       'report_success_body':
           'Thank you. Your report will be verified before it is published.',

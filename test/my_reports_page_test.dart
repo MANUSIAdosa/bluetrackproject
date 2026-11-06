@@ -182,13 +182,9 @@ Future<void> _pumpRouter(
   await tester.pumpAndSettle();
 }
 
-Future<void> _openFilters(WidgetTester tester) async {
+Future<void> _filterBy(WidgetTester tester, String statusId) async {
   await tester.tap(find.byKey(const ValueKey('my-reports-filter-button')));
   await tester.pumpAndSettle();
-}
-
-Future<void> _filterBy(WidgetTester tester, String statusId) async {
-  await _openFilters(tester);
   await tester.tap(
     find.byKey(ValueKey('my-reports-filter-option-$statusId')),
   );
@@ -254,12 +250,13 @@ void main() {
 
     expect(find.text('Laporan Saya'), findsOneWidget);
     expect(find.text('5 laporan'), findsOneWidget);
-    expect(
-      find.byKey(const ValueKey('my-reports-filter-button')),
-      findsOneWidget,
+    final filterButton = find.byKey(
+      const ValueKey('my-reports-filter-button'),
     );
+    expect(filterButton, findsOneWidget);
+    await tester.tap(filterButton);
+    await tester.pumpAndSettle();
 
-    await _openFilters(tester);
     for (final entry in {
       'all': 'Semua',
       'terkirim': 'Terkirim',
@@ -272,10 +269,14 @@ void main() {
       );
       expect(option, findsOneWidget);
       expect(
-        find.descendant(of: option, matching: find.text(entry.value)),
+        find.descendant(
+          of: option,
+          matching: find.textContaining(entry.value),
+        ),
         findsOneWidget,
       );
     }
+    expect(find.text('Selesai (2)'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('my-reports-filter-close')));
     await tester.pumpAndSettle();
 
@@ -359,7 +360,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('the filter button narrows the list by status', (tester) async {
+  testWidgets('the filter menu narrows the list by status', (tester) async {
     await _signIn();
     await _pumpPage(tester, repository: InMemoryReportRepository());
 
@@ -453,15 +454,17 @@ void main() {
       repository: InMemoryReportRepository(reports: const []),
     );
 
-    expect(find.textContaining('Kamu belum punya laporan'), findsOneWidget);
+    expect(find.text('Belum ada laporan'), findsOneWidget);
+    expect(find.textContaining('Laporkan temuan di sekitarmu'), findsOneWidget);
     expect(find.text('Buat laporan'), findsOneWidget);
-    // The empty state button is the only create affordance; no duplicate FAB,
-    // and no filter button when there is nothing to filter.
+    // The empty state button is the only create affordance. The filter menu
+    // remains available with zero counts, without a duplicate FAB.
     expect(find.byKey(const ValueKey('my-reports-create')), findsNothing);
-    expect(
-      find.byKey(const ValueKey('my-reports-filter-button')),
-      findsNothing,
-    );
+    await tester.tap(find.byKey(const ValueKey('my-reports-filter-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('Selesai (0)'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('my-reports-filter-close')));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('the create-report action opens the report form', (tester) async {
@@ -491,7 +494,7 @@ void main() {
     expect(find.text('report-form'), findsOneWidget);
   });
 
-  testWidgets('returning from the report form reloads the reports', (
+  testWidgets('returning from the report form uses the session store', (
     tester,
   ) async {
     await _signIn();
@@ -517,11 +520,13 @@ void main() {
     await tester.tap(find.text('Buat laporan'));
     await tester.pumpAndSettle();
 
+    MyReportsStore.instance.add(_report('r006'));
     router.pop();
     await tester.pumpAndSettle();
 
-    expect(repository.calls, 2);
+    expect(repository.calls, 1);
     expect(find.byKey(const ValueKey('my-report-r006')), findsOneWidget);
+    expect(find.byKey(const ValueKey('my-reports-skeleton')), findsNothing);
   });
 
   testWidgets('shows a skeleton while the reports load', (tester) async {
@@ -708,6 +713,40 @@ void main() {
 
     expect(find.text('actions-page'), findsOneWidget);
     expect(find.text('Detail laporan'), findsNothing);
+  });
+
+  testWidgets('the proof marker opens the detail at its proof section', (
+    tester,
+  ) async {
+    await _signIn();
+    await _pumpPage(
+      tester,
+      repository: InMemoryReportRepository(),
+      size: const Size(390, 1600),
+      tileProvider: _FakeTileProvider(),
+    );
+
+    final marker = find.byKey(const ValueKey('my-report-proof-marker'));
+    await tester.ensureVisible(marker);
+    await tester.tap(marker);
+    await tester.pumpAndSettle();
+
+    final proof = find.byKey(
+      const ValueKey('my-report-completion-proof-section'),
+    );
+    expect(proof, findsOneWidget);
+    expect(
+      find.text(
+        'Dua tukik pulih setelah observasi dan dilepas kembali ke habitatnya.',
+      ),
+      findsOneWidget,
+    );
+    final proofRect = tester.getRect(proof);
+    final sheetRect = tester.getRect(
+      find.byKey(const ValueKey('my-report-sheet-scroll')),
+    );
+    expect(proofRect.top, greaterThanOrEqualTo(sheetRect.top));
+    expect(proofRect.top, lessThan(sheetRect.bottom));
   });
 
   testWidgets('a completed report shows the same related-action row', (

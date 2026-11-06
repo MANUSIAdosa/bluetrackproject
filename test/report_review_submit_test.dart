@@ -57,7 +57,10 @@ class _ControllableService implements ReportSubmissionService {
   int calls = 0;
 
   @override
-  Future<Report> submit(ReportWizardDraft draft) {
+  Future<Report> submit(
+    ReportWizardDraft draft, {
+    String languageCode = 'en',
+  }) {
     calls++;
     return _completer.future;
   }
@@ -75,7 +78,10 @@ class _FlakyService implements ReportSubmissionService {
   int attempts = 0;
 
   @override
-  Future<Report> submit(ReportWizardDraft draft) async {
+  Future<Report> submit(
+    ReportWizardDraft draft, {
+    String languageCode = 'en',
+  }) async {
     attempts++;
     await Future<void>.delayed(Duration.zero);
     if (attempts == 1) throw const ReportSubmissionException();
@@ -485,7 +491,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Laporan Saya'), findsOneWidget);
-    expect(find.textContaining('Kamu belum punya laporan'), findsOneWidget);
+    expect(find.text('Belum ada laporan'), findsOneWidget);
+    expect(find.textContaining('Laporkan temuan di sekitarmu'), findsOneWidget);
     expect(find.text('Buat laporan'), findsOneWidget);
   });
 
