@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:blue_track/core/config/app_config.dart';
+import 'package:blue_track/core/theme/app_colors.dart';
 import 'package:blue_track/core/state/app_state.dart';
 import 'package:blue_track/features/explore/data/explore_map_repository.dart';
 import 'package:blue_track/features/explore/data/saved_project_store.dart';
@@ -237,6 +239,45 @@ void main() {
     );
   });
 
+  testWidgets('conservation switch keeps 3:1 tracks on the white card', (
+    tester,
+  ) async {
+    await pumpExplore(tester, projects: FakeProjectRepository(_twoProjects()));
+    await tapKey(tester, 'explore.view.map');
+
+    final toggle = tester.widget<Switch>(
+      find.byKey(const ValueKey('explore.conservationSwitch')),
+    );
+    final active = toggle.activeTrackColor!;
+    final inactive = toggle.inactiveTrackColor!;
+    expect(_contrast(active, AppColors.surface), greaterThanOrEqualTo(3));
+    expect(_contrast(inactive, AppColors.surface), greaterThanOrEqualTo(3));
+    expect(active, isNot(inactive));
+  });
+
+  testWidgets('stacked markers keep separate tap targets', (tester) async {
+    // Same coordinates: without spreading, the second pin would cover the
+    // first and only one of them could be tapped.
+    final stacked = FakeProjectRepository([
+      _project(id: 'p01', title: 'Marker Satu', category: 'penyu'),
+      _project(id: 'p02', title: 'Marker Dua', category: 'karang'),
+    ]);
+    await pumpExplore(tester, projects: stacked);
+    await tapKey(tester, 'explore.view.map');
+
+    final first = tester.getRect(
+      find.byKey(const ValueKey('explore.marker.p01')),
+    );
+    final second = tester.getRect(
+      find.byKey(const ValueKey('explore.marker.p02')),
+    );
+    expect(first.overlaps(second), isFalse);
+
+    await tester.tap(find.byKey(const ValueKey('explore.marker.p01')));
+    await tester.pumpAndSettle();
+    expect(find.text('Marker Satu'), findsWidgets);
+  });
+
   testWidgets('filter button badges how many groups are active', (
     tester,
   ) async {
@@ -305,6 +346,15 @@ void main() {
 
     expect(find.textContaining('Jakarta'), findsOneWidget);
   });
+}
+
+/// WCAG contrast ratio between two opaque colours.
+double _contrast(Color a, Color b) {
+  final la = a.computeLuminance();
+  final lb = b.computeLuminance();
+  final hi = math.max(la, lb);
+  final lo = math.min(la, lb);
+  return (hi + 0.05) / (lo + 0.05);
 }
 
 /// Map repository whose read the test completes by hand.

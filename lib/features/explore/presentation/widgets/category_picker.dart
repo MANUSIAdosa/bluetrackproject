@@ -126,7 +126,8 @@ class _CategoryTile extends StatelessWidget {
                   child: ExcludeSemantics(
                     child: CategoryIcon(
                       category: categoryId,
-                      size: 32,
+                      // "Semua" has no artwork; keep its old glyph size.
+                      size: categoryId == 'semua' ? 20 : 32,
                       color: color,
                     ),
                   ),

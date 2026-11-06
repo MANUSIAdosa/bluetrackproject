@@ -204,9 +204,8 @@ class _ExploreFilterSheetState extends State<_ExploreFilterSheet> {
                     flex: 3,
                     child: OutlinedButton(
                       key: const ValueKey('explore.filter.reset'),
-                      onPressed: () => setState(
-                        () => _draft = _draft.withoutRefinements,
-                      ),
+                      onPressed: () =>
+                          setState(() => _draft = _draft.withoutRefinements),
                       child: Text(context.tr('p03_filter_reset')),
                     ),
                   ),

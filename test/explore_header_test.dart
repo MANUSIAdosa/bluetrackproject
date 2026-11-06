@@ -2,6 +2,7 @@ import 'package:blue_track/core/theme/app_colors.dart';
 import 'package:blue_track/features/explore/domain/explore_map_data.dart';
 import 'package:blue_track/features/explore/presentation/widgets/explore_header.dart';
 import 'package:blue_track/features/explore/presentation/widgets/filter_sheet.dart';
+import 'package:blue_track/shared/widgets/category_icon.dart';
 import 'package:blue_track/shared/widgets/notification_bell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -513,6 +514,37 @@ void main() {
       );
       final view = tester.getRect(find.byType(ExploreViewSwitch));
       expect(chip.right, lessThanOrEqualTo(view.left));
+    });
+
+    testWidgets('map category chip reads as a picker with a 48dp target', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrapPage(
+          ExploreResultsBar(
+            count: 3,
+            mapMode: true,
+            onViewChanged: (_) {},
+            categoryId: 'penyu',
+            onCategoryPressed: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final chip = find.byKey(const ValueKey('explore.mapCategoryChip'));
+      expect(
+        find.descendant(of: chip, matching: find.byType(CategoryIcon)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: chip, matching: find.byIcon(Icons.arrow_drop_down)),
+        findsOneWidget,
+      );
+
+      final size = tester.getSize(chip);
+      expect(size.height, greaterThanOrEqualTo(48));
+      expect(size.width, greaterThanOrEqualTo(48));
     });
   });
 }

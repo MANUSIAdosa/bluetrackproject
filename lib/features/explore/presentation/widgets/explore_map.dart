@@ -98,21 +98,7 @@ class _ExploreMapState extends State<ExploreMap> {
                     ),
                 ],
               ),
-            MarkerLayer(
-              markers: [
-                for (final project in widget.projects)
-                  Marker(
-                    point: LatLng(project.latitude, project.longitude),
-                    width: 40,
-                    height: 40,
-                    child: _ProjectMarker(
-                      key: ValueKey('explore.marker.${project.id}'),
-                      project: project,
-                      onTap: () => _openProjectSheet(project),
-                    ),
-                  ),
-              ],
-            ),
+            MarkerLayer(markers: _markers()),
             // OpenStreetMap asks for attribution whenever its tiles are shown.
             if (!widget.offline) const _Attribution(),
           ],
@@ -152,6 +138,59 @@ class _ExploreMapState extends State<ExploreMap> {
       ],
     );
   }
+
+  /// Same-coordinate projects would draw on top of each other, leaving only
+  /// the top one tappable. Each group is spread over the marker's quadrants by
+  /// moving the pin, not the coordinate, so every marker keeps its own target.
+  List<Marker> _markers() {
+    // ~1 km buckets: only markers that visually collide share a bucket.
+    final groups = <String, List<int>>{};
+    for (var i = 0; i < widget.projects.length; i++) {
+      final project = widget.projects[i];
+      final bucket =
+          '${project.latitude.toStringAsFixed(2)},'
+          '${project.longitude.toStringAsFixed(2)}';
+      groups.putIfAbsent(bucket, () => []).add(i);
+    }
+
+    final alignments = <int, Alignment>{};
+    for (final group in groups.values) {
+      if (group.length < 2) continue;
+      for (var slot = 0; slot < group.length; slot++) {
+        alignments[group[slot]] = _spread[slot % _spread.length];
+      }
+    }
+
+    return [
+      for (var i = 0; i < widget.projects.length; i++)
+        Marker(
+          point: LatLng(
+            widget.projects[i].latitude,
+            widget.projects[i].longitude,
+          ),
+          width: 40,
+          height: 40,
+          alignment: alignments[i],
+          child: _ProjectMarker(
+            key: ValueKey('explore.marker.${widget.projects[i].id}'),
+            project: widget.projects[i],
+            onTap: () => _openProjectSheet(widget.projects[i]),
+          ),
+        ),
+    ];
+  }
+
+  /// Quadrant order for overlapping pins: corners first, then edges.
+  static const List<Alignment> _spread = [
+    Alignment.topLeft,
+    Alignment.bottomRight,
+    Alignment.topRight,
+    Alignment.bottomLeft,
+    Alignment.topCenter,
+    Alignment.bottomCenter,
+    Alignment.centerLeft,
+    Alignment.centerRight,
+  ];
 
   /// Midpoint of the filtered projects, so filtering cannot strand the user on
   /// the other side of the country.
@@ -414,6 +453,18 @@ class _ConservationLayerCard extends StatelessWidget {
                     key: const ValueKey('explore.conservationSwitch'),
                     value: enabled,
                     onChanged: onChanged,
+                    // Both tracks clear 3:1 against the white card: ocean
+                    // (4.1:1) when on, slate (4.8:1) when off, so the state
+                    // reads without relying on colour alone.
+                    activeTrackColor: AppColors.ocean,
+                    inactiveTrackColor: AppColors.textSecondary,
+                    activeThumbColor: Colors.white,
+                    inactiveThumbColor: Colors.white,
+                    trackOutlineColor: WidgetStateProperty.resolveWith(
+                      (states) => states.contains(WidgetState.selected)
+                          ? AppColors.oceanDeep
+                          : AppColors.textSecondary,
+                    ),
                   ),
                 ),
               ],
@@ -501,7 +552,11 @@ class _ZoomButton extends StatelessWidget {
       color: AppColors.surface,
       shape: const CircleBorder(),
       elevation: 2,
-      child: IconButton(icon: Icon(icon), tooltip: tooltip, onPressed: onPressed),
+      child: IconButton(
+        icon: Icon(icon),
+        tooltip: tooltip,
+        onPressed: onPressed,
+      ),
     );
   }
 }

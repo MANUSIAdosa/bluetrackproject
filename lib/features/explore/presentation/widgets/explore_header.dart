@@ -257,14 +257,33 @@ class CategorySelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // The label line grows with the accessibility text scale. Keep the rail at
-    // its 80dp design height at normal sizes, but never let the fixed height
-    // clip a scaled label.
-    final labelLine = MediaQuery.textScalerOf(context).scale(11 * 1.2);
+    // Labels wrap to two lines ("Marine mammals" in English), so reserve two
+    // label lines. The rail keeps its 80dp design height at normal sizes and
+    // grows with the accessibility text scale instead of clipping.
+    final labelLine = MediaQuery.textScalerOf(context).scale(11 * 1.2) * 2;
     final railHeight = math.max(80.0, 48 + 5 + labelLine + 2);
-    // A scaled label needs a wider slot too, otherwise long categories like
-    // "Mamalia laut" ellipsize before the user can read them.
-    final itemWidth = 72 * MediaQuery.textScalerOf(context).scale(11) / 11;
+    // The slot must fit the longest single word, otherwise a two-line label
+    // like "Marine mammals" still ellipsizes. Measure with the bold weight,
+    // which is the widest state, at the current text scale.
+    var itemWidth = 72.0;
+    for (final id in categoryIds) {
+      for (final word in context.tr('cat.$id').split(' ')) {
+        final painter = TextPainter(
+          text: TextSpan(
+            text: word,
+            style: const TextStyle(
+              fontSize: 11,
+              height: 1.2,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+        )..layout();
+        itemWidth = math.max(itemWidth, painter.width + 4);
+        painter.dispose();
+      }
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -365,9 +384,9 @@ class _CategoryOption extends StatelessWidget {
                 child: ExcludeSemantics(
                   child: CategoryIcon(
                     category: categoryId,
-                    // Artwork is a full circular badge: fill the 48dp ring and
-                    // leave only the selected-state border showing.
-                    size: 42,
+                    // Artwork fills the 48dp ring; "Semua" keeps the smaller
+                    // glyph it had before there was any artwork.
+                    size: categoryId == 'semua' ? 22 : 42,
                     color: selected ? Colors.white : color,
                   ),
                 ),
@@ -375,7 +394,7 @@ class _CategoryOption extends StatelessWidget {
               const SizedBox(height: 5),
               Text(
                 label,
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -759,28 +778,47 @@ class _MapCategoryChip extends StatelessWidget {
 
     return Tooltip(
       message: context.tr('p03_category_label'),
-      child: ActionChip(
-        key: const ValueKey('explore.mapCategoryChip'),
-        avatar: all
-            ? null
-            : Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: CategoryIcons.colorFor(categoryId),
-                  shape: BoxShape.circle,
-                ),
-              ),
-        label: Text(label),
-        labelStyle: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: AppColors.ocean,
+      child: Material(
+        color: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: AppColors.border),
         ),
-        materialTapTargetSize: MaterialTapTargetSize.padded,
-        side: const BorderSide(color: AppColors.border),
-        backgroundColor: AppColors.surface,
-        onPressed: onPressed,
+        child: InkWell(
+          key: const ValueKey('explore.mapCategoryChip'),
+          borderRadius: BorderRadius.circular(14),
+          onTap: onPressed,
+          child: SizedBox(
+            height: 48,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // The artwork shows the current value; the arrow marks the
+                  // chip as a picker, not a passive label.
+                  ExcludeSemantics(
+                    child: CategoryIcon(category: categoryId, size: 20),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ocean,
+                    ),
+                  ),
+                  const Icon(
+                    Icons.arrow_drop_down,
+                    size: 20,
+                    color: AppColors.ocean,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

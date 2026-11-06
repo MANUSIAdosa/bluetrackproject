@@ -222,10 +222,7 @@ class ProjectCard extends StatelessWidget {
         const SizedBox(height: _gap4),
         SizedBox(
           width: double.infinity,
-          child: ProgressBar(
-            value: project.progress,
-            height: _progressHeight,
-          ),
+          child: ProgressBar(value: project.progress, height: _progressHeight),
         ),
         const SizedBox(height: _gap12),
         Text(
@@ -245,8 +242,9 @@ class ProjectCard extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           height: _donateHeight,
-          child: OutlinedButton(
-            style: OutlinedButton.styleFrom(
+          child: FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.ocean,
               minimumSize: const Size.fromHeight(_donateHeight),
               padding: const EdgeInsets.symmetric(horizontal: _padding),
             ),

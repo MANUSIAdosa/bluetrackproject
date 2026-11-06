@@ -11,6 +11,7 @@ import 'package:blue_track/shared/widgets/error_state.dart';
 import 'package:blue_track/shared/widgets/project_card.dart';
 import 'package:blue_track/shared/widgets/skeleton.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -30,6 +31,7 @@ Future<void> pumpExplore(
   required FakeProjectRepository projects,
   FakeFilterRepository? filters,
   double textScale = 1,
+  Locale locale = const Locale('id'),
 }) async {
   // Phone-sized surface: the fixed header + controls leave the body a
   // realistic amount of height, and card layout only reproduces real overflow
@@ -46,6 +48,7 @@ Future<void> pumpExplore(
           filterRepository: filters ?? FakeFilterRepository(),
         ),
       ),
+      locale: locale,
     ),
   );
   await pumpFrames(tester);
@@ -382,6 +385,54 @@ void main() {
     );
   });
 
+  for (final locale in const [Locale('id'), Locale('en')]) {
+    for (final scale in const [1.0, 1.5]) {
+      testWidgets(
+        'the category rail keeps labels readable (${locale.languageCode}, '
+        'text scale $scale)',
+        (tester) async {
+          const fullRail = [
+            'semua',
+            'penyu',
+            'karang',
+            'mangrove',
+            'mamalia_laut',
+            'lamun',
+          ];
+          await pumpExplore(
+            tester,
+            projects: FakeProjectRepository([buildProject()]),
+            filters: FakeFilterRepository(fullRail),
+            textScale: scale,
+            locale: locale,
+          );
+          expect(categorySelector(tester).categoryIds, fullRail);
+          // The rail is horizontal and lazy: drag it to the end so the longest
+          // label is built before measuring it.
+          await tester.drag(
+            find.byKey(const ValueKey('explore.category.semua')),
+            const Offset(-800, 0),
+          );
+          await tester.pumpAndSettle();
+
+          final label = locale.languageCode == 'en'
+              ? 'Marine mammals'
+              : 'Mamalia laut';
+          final text = tester.widget<Text>(find.text(label));
+          expect(text.maxLines, 2);
+          expect(text.textAlign, TextAlign.center);
+          expect(
+            tester
+                .renderObject<RenderParagraph>(find.text(label))
+                .didExceedMaxLines,
+            isFalse,
+          );
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+  }
+
   testWidgets('selecting a category updates the results without adding a '
       'filter token', (tester) async {
     await pumpExplore(tester, projects: FakeProjectRepository(twoCategories()));
@@ -690,11 +741,13 @@ void main() {
         AppConfig.interestsKey: ['penyu'],
       });
       final projects = FakeProjectRepository([
-        buildProject(id: 'p01', title: 'Penyu Hijau'),
+        // Long title first: it is the only card laid out at rest, since the
+        // rail shows exactly one card between the page margins.
         buildProject(
-          id: 'p02',
+          id: 'p01',
           title: 'Pemulihan Populasi Penyu Hijau dan Bertelur di Pantai Timur',
         ),
+        buildProject(id: 'p02', title: 'Penyu Hijau'),
         buildProject(id: 'p03', title: 'Penyu Belimbing'),
         buildProject(id: 'p04', title: 'Monitoring Sarana Turtle Beach'),
       ]);
@@ -707,7 +760,7 @@ void main() {
         of: rail,
         matching: find.byType(ProjectCard),
       );
-      expect(railCards, findsAtLeastNWidgets(2));
+      expect(railCards, findsOneWidget);
       var tallest = 0.0;
       for (var i = 0; i < railCards.evaluate().length; i++) {
         final height = tester.getSize(railCards.at(i)).height;
@@ -716,4 +769,34 @@ void main() {
       expect(tester.getSize(rail).height, greaterThanOrEqualTo(tallest));
     });
   }
+
+  testWidgets('the "Untuk minatmu" rail shows one full card, no edge sliver', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      AppConfig.interestsKey: ['penyu'],
+    });
+    await pumpExplore(
+      tester,
+      projects: FakeProjectRepository([
+        buildProject(id: 'p01', title: 'Penyu Hijau'),
+        buildProject(id: 'p02', title: 'Penyu Belimbing'),
+        buildProject(id: 'p03', title: 'Penyu Sisik'),
+      ]),
+    );
+
+    final cards = find.descendant(
+      of: find.byKey(const ValueKey('explore.forYouRail')),
+      matching: find.byType(ProjectCard),
+    );
+    // The first card keeps its original 340dp width at the 16dp page margin...
+    final first = tester.getRect(cards.at(0));
+    expect(first.left, 16);
+    expect(first.right, 16 + 340);
+    // ...and any card laid out after it starts past the screen edge, so
+    // nothing peeks in as a strip that could be mistaken for a scrollbar.
+    for (var i = 1; i < cards.evaluate().length; i++) {
+      expect(tester.getRect(cards.at(i)).left, greaterThanOrEqualTo(390));
+    }
+  });
 }

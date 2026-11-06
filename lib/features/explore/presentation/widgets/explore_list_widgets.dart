@@ -25,10 +25,12 @@ Widget exploreSectionHeader(BuildContext context, String text) => Text(
 
 /// Horizontal "Untuk minatmu" rail.
 ///
-/// It bleeds to the screen edges and snaps one card at a time: after a swipe
-/// the active card's left edge rests on the page's 16dp margin, while the next
-/// card peeks 16dp. Every card has the same height, so the rail takes the
-/// card's own height instead of stretching children.
+/// Snaps one card at a time: after a swipe the active card rests on the page's
+/// 16dp left margin, keeping the original 340dp card width. The rail is sized
+/// so the next card starts just past its right edge: no sliver of the next
+/// card stays on screen, where it would read as a scrollbar. Every card has
+/// the same height, so the rail takes the card's own height instead of
+/// stretching children.
 class ForYouRail extends StatelessWidget {
   const ForYouRail({
     super.key,
@@ -43,21 +45,15 @@ class ForYouRail extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // One card + one peek: 340 card + 16 left margin + 12 gap + 16 peek
-        // = 384. Wider screens keep that width so the peek can never exceed
-        // the card's own 16dp inner padding; otherwise the next card's text
-        // would start showing at the edge.
-        final viewport = math.min(
-          constraints.maxWidth,
-          340.0 + ExploreSpacing.x16 + ExploreSpacing.x12 + ExploreSpacing.x16,
+        // Original 340dp card; narrow screens shrink it to fit the margins.
+        final cardWidth = math.min(
+          constraints.maxWidth - ExploreSpacing.x16 * 2,
+          340.0,
         );
-        // peek = viewport - (margin 16 + card + gap 12) = 16 = inner padding.
-        final cardWidth =
-            viewport -
-            ExploreSpacing.x16 -
-            ExploreSpacing.x12 -
-            ExploreSpacing.x16;
-        final itemExtent = cardWidth + ExploreSpacing.x12;
+        // Rail = margin + card + margin. The next card starts exactly at the
+        // rail's right edge, outside the viewport, so it never peeks.
+        final viewport = cardWidth + ExploreSpacing.x16 * 2;
+        final itemExtent = cardWidth + ExploreSpacing.x16;
 
         return Align(
           alignment: Alignment.centerLeft,
@@ -67,15 +63,12 @@ class ForYouRail extends StatelessWidget {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               physics: _SnapToItemPhysics(itemExtent: itemExtent),
-              // The extra 12dp on the right lets the last card reach the 16dp
-              // margin when it snaps, instead of stopping short.
-              padding: const EdgeInsets.only(
-                left: ExploreSpacing.x16,
-                right: ExploreSpacing.x16 + ExploreSpacing.x12,
+              padding: const EdgeInsets.symmetric(
+                horizontal: ExploreSpacing.x16,
               ),
               itemCount: projects.length,
               separatorBuilder: (_, _) =>
-                  const SizedBox(width: ExploreSpacing.x12),
+                  const SizedBox(width: ExploreSpacing.x16),
               itemBuilder: (context, index) => SizedBox(
                 width: cardWidth,
                 child: ProjectCard(
