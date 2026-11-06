@@ -153,13 +153,43 @@ Future<void> pumpMap(
         showConservationLayer: showConservationLayer,
         offline: offline,
         tileProvider: _FakeTileProvider(),
-        initialZoom: 8,
         onOpenProject: onOpenProject,
         onConservationLayerChanged: onConservationLayerChanged,
       ),
     ),
   );
   await tester.pumpAndSettle();
+}
+
+Future<void> _pumpProjects(WidgetTester tester, List<Project> projects) async {
+  await tester.pumpWidget(
+    wrapPage(
+      ExploreMap(
+        projects: projects,
+        mapData: _mapData,
+        userLocationLabel: 'Jakarta',
+        tileProvider: _FakeTileProvider(),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+void _expectOnScreen(WidgetTester tester, String projectId) {
+  final map = tester.getRect(find.byType(ExploreMap));
+  final marker = tester.getRect(
+    find.byKey(ValueKey('explore.marker.$projectId')),
+  );
+  expect(
+    marker.center.dx,
+    inInclusiveRange(map.left, map.right),
+    reason: '$projectId is outside the viewport horizontally',
+  );
+  expect(
+    marker.center.dy,
+    inInclusiveRange(map.top, map.bottom),
+    reason: '$projectId is outside the viewport vertically',
+  );
 }
 
 void main() {
@@ -200,7 +230,6 @@ void main() {
           mapData: _mapData,
           userLocationLabel: 'Jakarta',
           tileProvider: _FakeTileProvider(),
-          initialZoom: 8,
         ),
       ),
     );
@@ -216,6 +245,43 @@ void main() {
     expect(find.byKey(const ValueKey('explore.marker.p01')), findsOneWidget);
     expect(find.byKey(const ValueKey('explore.marker.p02')), findsOneWidget);
     expect(find.byKey(const ValueKey('explore.cluster')), findsNothing);
+  });
+
+  testWidgets('the first frame fits every project into the viewport', (
+    tester,
+  ) async {
+    // Jakarta and Manado are ~1,900 km apart: only a bounds fit shows both.
+    await _pumpProjects(tester, [
+      _project(id: 'p01', title: 'Peneluruhan Penyu', latitude: -6.2),
+      _project(
+        id: 'p02',
+        title: 'Pemulihan Karang',
+        latitude: 1.5,
+        longitude: 124.8,
+      ),
+    ]);
+
+    _expectOnScreen(tester, 'p01');
+    _expectOnScreen(tester, 'p02');
+  });
+
+  testWidgets('a new result set moves the camera to its projects', (
+    tester,
+  ) async {
+    await _pumpProjects(tester, [
+      _project(id: 'p01', title: 'Peneluruhan Penyu', latitude: -6.2),
+    ]);
+    await _pumpProjects(tester, [
+      _project(
+        id: 'p03',
+        title: 'Mangrove Manado',
+        latitude: 1.5,
+        longitude: 124.8,
+      ),
+    ]);
+
+    // Without a refit the old camera still centres Jakarta, ~3,300 px away.
+    _expectOnScreen(tester, 'p03');
   });
 
   testWidgets('the conservation layer only draws when it is switched on', (

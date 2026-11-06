@@ -27,7 +27,6 @@ class ExploreMap extends StatefulWidget {
     this.onConservationLayerChanged,
     this.offline = false,
     this.tileProvider,
-    this.initialZoom = 4,
     this.onOpenProject,
   });
 
@@ -50,8 +49,6 @@ class ExploreMap extends StatefulWidget {
   /// Test seam: replaces the network tile provider.
   final TileProvider? tileProvider;
 
-  final double initialZoom;
-
   final ValueChanged<String>? onOpenProject;
 
   @override
@@ -69,13 +66,33 @@ class _ExploreMapState extends State<ExploreMap> {
   /// Tap target of a pin or cluster; the visual circle stays 40dp.
   static const double _tapSize = 48;
 
+  /// Camera fit around the filtered projects: enough margin for the tap
+  /// targets on the outermost pins, but never so tight that the map looks
+  /// zoomed past a useful street level.
+  static const double _fitPadding = 48;
+  static const double _fitMaxZoom = 9;
+
+  /// A lone project (or none at all) has no bounds to fit, so the camera
+  /// centres on it instead.
+  static const double _singleProjectZoom = 8;
+
   final _controller = MapController();
-  late double _zoom = widget.initialZoom;
+  bool _ready = false;
 
   /// Camera of the last zoom level, used to measure marker distances in
   /// screen pixels. Panning does not change relative distances, so only a zoom
   /// change rebuilds the clusters.
   MapCamera? _camera;
+
+  @override
+  void didUpdateWidget(ExploreMap oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A new result set (category, filter, search) must not leave the camera
+    // over an area the remaining projects are not in.
+    if (_ready && !_sameProjects(oldWidget.projects, widget.projects)) {
+      _fitToProjects();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,12 +101,18 @@ class _ExploreMapState extends State<ExploreMap> {
         FlutterMap(
           mapController: _controller,
           options: MapOptions(
-            initialCenter: _center,
-            initialZoom: _zoom,
+            // The fit takes precedence on the first frame; the centre and zoom
+            // below are the fallback when there is no bounds to fit.
+            initialCenter: _initialCenter,
+            initialZoom: _singleProjectZoom,
+            initialCameraFit: _boundsFit,
             minZoom: _minZoom,
             maxZoom: _maxZoom,
             backgroundColor: AppColors.ocean.withValues(alpha: 0.08),
-            onMapReady: () => setState(() => _camera = _controller.camera),
+            onMapReady: () {
+              _ready = true;
+              setState(() => _camera = _controller.camera);
+            },
             onPositionChanged: (camera, _) {
               if (_camera?.zoom != camera.zoom) {
                 setState(() => _camera = camera);
@@ -236,23 +259,55 @@ class _ExploreMapState extends State<ExploreMap> {
     );
   }
 
-  /// Midpoint of the filtered projects, so filtering cannot strand the user on
-  /// the other side of the country.
-  LatLng get _center {
-    if (widget.projects.isEmpty) return widget.mapData.userLocation;
-    var lat = 0.0;
-    var lng = 0.0;
-    for (final project in widget.projects) {
-      lat += project.latitude;
-      lng += project.longitude;
+  /// Coordinates of the filtered projects, in list order.
+  List<LatLng> get _points => [
+    for (final project in widget.projects)
+      LatLng(project.latitude, project.longitude),
+  ];
+
+  /// Fit around the projects, or null when there is no area to fit.
+  CameraFit? get _boundsFit {
+    final points = _points;
+    if (points.length < 2) return null;
+    return CameraFit.bounds(
+      bounds: LatLngBounds.fromPoints(points),
+      padding: const EdgeInsets.all(_fitPadding),
+      maxZoom: _fitMaxZoom,
+    );
+  }
+
+  /// Centre for zero or one project, where a bounds fit makes no sense.
+  LatLng get _initialCenter =>
+      _points.length == 1 ? _points.single : widget.mapData.userLocation;
+
+  /// Brings a changed result set into view. The first frame uses
+  /// `initialCameraFit` instead, so the map never paints at a default location
+  /// and then jumps.
+  void _fitToProjects() {
+    final fit = _boundsFit;
+    if (fit != null) {
+      _controller.fitCamera(fit);
+    } else {
+      _controller.move(_initialCenter, _singleProjectZoom);
     }
-    return LatLng(lat / widget.projects.length, lng / widget.projects.length);
+  }
+
+  /// Same ids in the same order: a rebuilt list with equal contents must not
+  /// move the camera.
+  static bool _sameProjects(List<Project> a, List<Project> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].id != b[i].id) return false;
+    }
+    return true;
   }
 
   void _zoomBy(double step) {
     final camera = _controller.camera;
-    _zoom = (camera.zoom + step).clamp(_minZoom, _maxZoom);
-    _controller.move(camera.center, _zoom);
+    _controller.move(
+      camera.center,
+      (camera.zoom + step).clamp(_minZoom, _maxZoom),
+    );
   }
 
   void _openProjectSheet(Project project) {
