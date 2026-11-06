@@ -26,7 +26,7 @@ class _BlueTrackAppState extends State<BlueTrackApp> {
       title: 'BlueTrack',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
-      locale: const Locale('id'),
+      locale: const Locale('en'),
       routerConfig: _router,
       localizationsDelegates: const [
         AppLocalizations.delegate,
