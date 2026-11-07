@@ -1,8 +1,4 @@
-import 'package:flutter/widgets.dart' show Locale;
-
 import '../../../core/config/app_config.dart';
-import '../../../core/localization/app_localizations.dart';
-import '../../../core/utils/formatters.dart';
 import '../../my_reports/data/my_reports_store.dart';
 import '../../project/domain/report.dart';
 import '../domain/report_draft.dart';
@@ -69,18 +65,14 @@ class MockReportSubmissionService implements ReportSubmissionService {
         latitude == null ||
         longitude == null ||
         draft.photoPaths.isEmpty ||
+        !draft.hasTitle ||
         !draft.hasDescription) {
       throw const ReportSubmissionException('Draft is incomplete');
     }
 
     final reportedAt = DateTime.now().toUtc();
     final reportId = _store.nextReportNumber();
-    final localizations = AppLocalizations(Locale(languageCode));
-    final title = localizations.text('report_submit.generated_title', {
-      'category': localizations.text(_categoryLabelKey(category)),
-      'date': Formatters.dateTime(reportedAt, languageCode),
-      'id': reportId,
-    });
+    final title = draft.title.trim();
 
     final report = Report(
       id: reportId,
@@ -108,13 +100,4 @@ class MockReportSubmissionService implements ReportSubmissionService {
     _store.add(report);
     return report;
   }
-
-  static String _categoryLabelKey(ReportCategory category) =>
-      switch (category) {
-        ReportCategory.marineDebris => 'p04_category_marine_debris',
-        ReportCategory.damagedReef => 'p04_category_damaged_reef',
-        ReportCategory.deforestedMangrove => 'p04_category_deforested_mangrove',
-        ReportCategory.destructiveFishing => 'p04_category_destructive_fishing',
-        ReportCategory.affectedWildlife => 'p04_category_affected_wildlife',
-      };
 }

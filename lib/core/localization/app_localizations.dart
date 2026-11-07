@@ -662,6 +662,10 @@ class AppLocalizations {
       'report_step_review': 'Tinjau',
       'report_photos_title': 'Foto temuan',
       'report_photos_body': 'Tambahkan 1–3 foto temuanmu.',
+      'report_title_field': 'Judul laporan *',
+      'report_review_title_label': 'Judul laporan',
+      'report_title_hint': 'Contoh: Penyu terlilit jaring di Pantai Sukamade',
+      'report_title_error': 'Judul laporan wajib diisi.',
       'report_description_title': 'Deskripsi temuan',
       'report_description_hint':
           'Ceritakan kondisi yang terlihat dan konteks foto.',
@@ -809,6 +813,7 @@ class AppLocalizations {
       'report_submit_offline_body':
           'Sambungkan perangkat ke internet untuk mengirim laporan.',
       'report_submit_missing_photos': 'Lengkapi foto temuan terlebih dahulu.',
+      'report_submit_missing_title': 'Lengkapi judul laporan terlebih dahulu.',
       'report_submit_missing_description':
           'Lengkapi deskripsi temuan terlebih dahulu.',
       'report_submit_missing_location': 'Tandai lokasi temuan terlebih dahulu.',
@@ -1474,6 +1479,11 @@ class AppLocalizations {
       'report_step_review': 'Review',
       'report_photos_title': 'Photos of the finding',
       'report_photos_body': 'Add 1–3 photos of your finding.',
+      'report_title_field': 'Report title *',
+      'report_review_title_label': 'Report title',
+      'report_title_hint':
+          'For example: Turtle entangled in netting at Sukamade',
+      'report_title_error': 'Add a report title.',
       'report_description_title': 'Finding description',
       'report_description_hint':
           'Describe what you observed and the context shown in the photos.',
@@ -1623,6 +1633,7 @@ class AppLocalizations {
       'report_submit_offline_body':
           'Connect the device to the internet to send the report.',
       'report_submit_missing_photos': 'Add the finding photo first.',
+      'report_submit_missing_title': 'Add a report title first.',
       'report_submit_missing_description':
           'Add a description before sending the report.',
       'report_submit_missing_location': 'Mark the finding location first.',

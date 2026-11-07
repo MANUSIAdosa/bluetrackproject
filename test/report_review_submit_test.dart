@@ -98,7 +98,7 @@ Report _buildReport(ReportWizardDraft draft, {String id = 'RPT-0001'}) {
     severity: draft.severity ?? ReportSeverity.high,
     status: ReportStatus.submitted,
     reportedAt: DateTime.utc(2026, 10, 31, 10),
-    title: 'Laporan temuan lapangan',
+    title: draft.title,
     description: draft.description,
     locationDetail: draft.locationDetail.trim().isEmpty
         ? null
@@ -148,6 +148,7 @@ void main() {
       longitude: 114.6131,
       category: category,
       severity: severity,
+      title: 'Penyu terjerat jaring',
       description: 'Penyu terlihat terjerat jaring plastik.',
       locationDetail: locationDetail ?? '',
       areaName: areaName ?? '',
@@ -248,6 +249,7 @@ void main() {
       find.text('Penyu terlihat terjerat jaring plastik.'),
       findsOneWidget,
     );
+    expect(find.text('Penyu terjerat jaring'), findsOneWidget);
     expect(find.text('Pantai Sukamade, Banyuwangi'), findsOneWidget);
     expect(find.text('Sekitar 2 mil laut dari pulau.'), findsNothing);
 
@@ -284,7 +286,7 @@ void main() {
       find.text('Laporan akan diverifikasi sebelum tayang ke publik.'),
       findsOneWidget,
     );
-    expect(find.widgetWithText(TextButton, 'Ubah'), findsNWidgets(5));
+    expect(find.widgetWithText(TextButton, 'Ubah'), findsNWidgets(6));
 
     // Photos open the full-screen viewer.
     final photo = find.byKey(const ValueKey('report_review_photo_0'));
@@ -296,6 +298,17 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('report_photo_viewer_close')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('report_photo_viewer')), findsNothing);
+
+    final editTitle = find.byKey(const ValueKey('report_review_edit_title'));
+    await tester.ensureVisible(editTitle);
+    await tester.tap(editTitle);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('report_title_field')), findsOneWidget);
+    for (var step = 0; step < 3; step++) {
+      await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
+      await tester.pumpAndSettle();
+    }
+    expect(find.text('Tinjau laporan'), findsOneWidget);
 
     final editDescription = find.byKey(
       const ValueKey('report_review_edit_description'),

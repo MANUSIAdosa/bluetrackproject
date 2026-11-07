@@ -20,6 +20,7 @@ class ReportReviewStep extends StatelessWidget {
   const ReportReviewStep({
     super.key,
     required this.photoPaths,
+    required this.title,
     required this.description,
     this.areaName = '',
     this.locationDetail = '',
@@ -29,6 +30,7 @@ class ReportReviewStep extends StatelessWidget {
     required this.severity,
     required this.reportedAt,
     required this.onEditPhotos,
+    required this.onEditTitle,
     required this.onEditDescription,
     required this.onEditLocation,
     required this.onEditType,
@@ -39,6 +41,7 @@ class ReportReviewStep extends StatelessWidget {
   });
 
   final List<String> photoPaths;
+  final String title;
   final String description;
   final String areaName;
   final String locationDetail;
@@ -51,6 +54,7 @@ class ReportReviewStep extends StatelessWidget {
   final DateTime reportedAt;
 
   final VoidCallback onEditPhotos;
+  final VoidCallback onEditTitle;
   final VoidCallback onEditDescription;
   final VoidCallback onEditLocation;
   final VoidCallback onEditType;
@@ -96,6 +100,26 @@ class ReportReviewStep extends StatelessWidget {
                   onEdit: onEditPhotos,
                 ),
                 _PhotoSection(photoPaths: photoPaths),
+                const Divider(height: 24),
+                _SectionHeader(
+                  title: context.tr('report_review_title_label'),
+                  editKey: const ValueKey('report_review_edit_title'),
+                  onEdit: onEditTitle,
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    title.trim().isEmpty
+                        ? context.tr('report_review_empty_value')
+                        : title.trim(),
+                    key: const ValueKey('report_review_title_value'),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      height: 1.35,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
                 const Divider(height: 24),
                 _SectionHeader(
                   title: context.tr('report_review_description'),

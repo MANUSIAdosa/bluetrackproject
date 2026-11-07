@@ -21,11 +21,13 @@ void main() {
           longitude: 114.6131,
           category: ReportCategory.affectedWildlife,
           severity: ReportSeverity.high,
+          title: 'Turtle entangled in netting',
           description: 'A turtle is entangled in plastic netting.',
           locationDetail: 'About 2 nautical miles north of the island.',
         ),
       );
 
+      expect(report.title, 'Turtle entangled in netting');
       expect(report.description, 'A turtle is entangled in plastic netting.');
       expect(
         report.locationDetail,
@@ -45,7 +47,7 @@ void main() {
       severity: ReportSeverity.high,
       status: ReportStatus.submitted,
       reportedAt: DateTime.utc(2026, 11, 6),
-      title: 'Laporan temuan lapangan',
+      title: 'Turtle entangled in netting',
       description: 'A turtle is entangled in plastic netting.',
       locationDetail: 'About 2 nautical miles north of the island.',
       latitude: -8.5236,
