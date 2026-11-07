@@ -365,6 +365,12 @@ class AppLocalizations {
       'my_reports.no_verifier_note': 'Tidak ada catatan dari verifikator.',
       'my_reports.severity_chip': 'Tingkat: {level}',
       'my_reports.completed_step_date': 'Selesai pada {date}',
+      'my_reports.tracker_step_current':
+          'Langkah {step} dari {total}: {status}, status saat ini',
+      'my_reports.tracker_step_reached':
+          'Langkah {step} dari {total}: {status}, sudah dilalui',
+      'my_reports.tracker_step_pending':
+          'Langkah {step} dari {total}: {status}, belum dicapai',
       'my_reports.completion_proof': 'Bukti penyelesaian',
       'my_reports.completion_proof_missing': 'Bukti belum diunggah.',
       'my_reports.completion_photo_missing': 'Foto bukti belum tersedia.',
@@ -1133,6 +1139,12 @@ class AppLocalizations {
       'my_reports.no_verifier_note': 'No note from the verifier.',
       'my_reports.severity_chip': 'Severity: {level}',
       'my_reports.completed_step_date': 'Completed on {date}',
+      'my_reports.tracker_step_current':
+          'Step {step} of {total}: {status}, current status',
+      'my_reports.tracker_step_reached':
+          'Step {step} of {total}: {status}, reached',
+      'my_reports.tracker_step_pending':
+          'Step {step} of {total}: {status}, not reached yet',
       'my_reports.completion_proof': 'Completion proof',
       'my_reports.completion_proof_missing':
           'Completion proof has not been uploaded yet.',

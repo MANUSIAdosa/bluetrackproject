@@ -58,6 +58,7 @@ class _MyReportsFilterSheet extends StatelessWidget {
           label: context.p04StatusLabel(status),
           icon: context.p04StatusIcon(status),
           color: context.p04StatusColor(status),
+          iconColor: context.p04StatusForeground(status),
         ),
     ];
 
@@ -159,12 +160,16 @@ class _FilterOption {
     required this.label,
     required this.icon,
     required this.color,
+    this.iconColor,
   });
 
   final String id;
   final String label;
   final IconData icon;
   final Color color;
+
+  /// Icon colour when [color] is too light to read as an icon on its tint.
+  final Color? iconColor;
 }
 
 class _FilterOptionTile extends StatelessWidget {
@@ -226,7 +231,11 @@ class _FilterOptionTile extends StatelessWidget {
                       color: option.color.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(option.icon, size: 20, color: option.color),
+                    child: Icon(
+                      option.icon,
+                      size: 20,
+                      color: option.iconColor ?? option.color,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(

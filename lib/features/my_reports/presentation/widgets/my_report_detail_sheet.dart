@@ -417,6 +417,8 @@ class _StatusTracker extends StatelessWidget {
         for (var i = 0; i < steps.length; i++)
           _TrackerRow(
             status: steps[i],
+            index: i,
+            total: steps.length,
             reached: i <= currentIndex,
             current: i == currentIndex,
             isLast: i == steps.length - 1,
@@ -432,6 +434,8 @@ class _StatusTracker extends StatelessWidget {
 class _TrackerRow extends StatelessWidget {
   const _TrackerRow({
     required this.status,
+    required this.index,
+    required this.total,
     required this.reached,
     required this.current,
     required this.isLast,
@@ -441,6 +445,11 @@ class _TrackerRow extends StatelessWidget {
   });
 
   final ReportStatus status;
+
+  /// Zero-based position of this step and the number of steps, announced to
+  /// screen readers as "step N of TOTAL".
+  final int index;
+  final int total;
   final bool reached;
   final bool current;
   final bool isLast;
@@ -448,9 +457,40 @@ class _TrackerRow extends StatelessWidget {
   final DateTime? completedAt;
   final String languageCode;
 
+  /// One spoken sentence per step: position, status and whether it is the
+  /// current step, already reached or not reached yet. Reached, current and
+  /// pending otherwise differ only by colour and icon, which a screen reader
+  /// cannot convey, so the visual row is excluded and this label replaces it.
   @override
   Widget build(BuildContext context) {
+    final stateKey = current
+        ? 'my_reports.tracker_step_current'
+        : reached
+        ? 'my_reports.tracker_step_reached'
+        : 'my_reports.tracker_step_pending';
+    var semanticsLabel = context.tr(stateKey, {
+      'step': '${index + 1}',
+      'total': '$total',
+      'status': context.p04StatusLabel(status),
+    });
+    if (isLast && reached && completedAt != null) {
+      final completedLabel = context.tr('my_reports.completed_step_date', {
+        'date': P04Format.dateTime(completedAt!.toLocal(), languageCode),
+      });
+      semanticsLabel = '$semanticsLabel. $completedLabel';
+    }
+
+    return Semantics(
+      container: true,
+      selected: current,
+      label: semanticsLabel,
+      child: ExcludeSemantics(child: _buildVisual(context)),
+    );
+  }
+
+  Widget _buildVisual(BuildContext context) {
     final color = context.p04StatusColor(status);
+    final foreground = context.p04StatusForeground(status);
     final textTheme = Theme.of(context).textTheme;
 
     // The row grows with its content (larger text, the completion date line)
@@ -469,10 +509,10 @@ class _TrackerRow extends StatelessWidget {
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: reached ? color : AppColors.surface,
+                    color: reached ? foreground : AppColors.surface,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: reached ? color : AppColors.inactiveTab,
+                      color: reached ? foreground : AppColors.textSecondary,
                       width: 1.5,
                     ),
                     // A soft ring marks the step the report is at right now.
@@ -551,7 +591,7 @@ class _TrackerRow extends StatelessWidget {
                               style: textTheme.labelSmall?.copyWith(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
-                                color: color,
+                                color: foreground,
                               ),
                             ),
                           ),
@@ -581,7 +621,9 @@ class _TrackerRow extends StatelessWidget {
                         style: textTheme.bodySmall?.copyWith(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.success,
+                          color: context.p04StatusForeground(
+                            ReportStatus.completed,
+                          ),
                         ),
                       ),
                     ],

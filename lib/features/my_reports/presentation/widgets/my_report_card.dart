@@ -136,6 +136,9 @@ class MyReportCard extends StatelessWidget {
                               icon: context.p04StatusIcon(report.status),
                               label: context.p04StatusLabel(report.status),
                               color: statusColor,
+                              foregroundColor: context.p04StatusForeground(
+                                report.status,
+                              ),
                               iconSize: 14,
                               fontSize: 12,
                             ),

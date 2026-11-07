@@ -7,6 +7,7 @@ class ReportMetadataChip extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.color,
+    this.foregroundColor,
     this.filled = true,
     this.backgroundOpacity = 0.1,
     this.padding = const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -20,6 +21,10 @@ class ReportMetadataChip extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
+
+  /// Colour of the icon and label. Defaults to [color]; pass a darker shade
+  /// when [color] is too light to read as text on its own tint.
+  final Color? foregroundColor;
   final bool filled;
   final double backgroundOpacity;
   final EdgeInsetsGeometry padding;
@@ -31,6 +36,8 @@ class ReportMetadataChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final contentColor = foregroundColor ?? color;
+
     return Container(
       padding: padding,
       decoration: filled
@@ -42,7 +49,7 @@ class ReportMetadataChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: iconSize, color: color),
+          Icon(icon, size: iconSize, color: contentColor),
           const SizedBox(width: 4),
           Flexible(
             child: Text(
@@ -54,7 +61,7 @@ class ReportMetadataChip extends StatelessWidget {
               style: TextStyle(
                 fontSize: fontSize,
                 fontWeight: fontWeight,
-                color: color,
+                color: contentColor,
               ),
             ),
           ),
