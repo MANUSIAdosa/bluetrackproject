@@ -648,7 +648,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       },
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  // Large text needs this space for the header; the gallery
+                  // still scrolls inside its own area.
+                  if (MediaQuery.textScalerOf(context).scale(1) < 1.5)
+                    const SizedBox(height: 16),
                   if (!canStart) ...[
                     Center(
                       child: Padding(
