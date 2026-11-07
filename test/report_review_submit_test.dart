@@ -141,6 +141,7 @@ void main() {
     List<String>? photoPaths,
     String? areaName = 'Pantai Sukamade, Banyuwangi',
     String? locationDetail = 'Sekitar 2 mil laut dari pulau.',
+    String description = 'Penyu terlihat terjerat jaring plastik.',
   }) {
     return ReportWizardDraft(
       photoPaths: photoPaths ?? [photoPath],
@@ -149,7 +150,7 @@ void main() {
       category: category,
       severity: severity,
       title: 'Penyu terjerat jaring',
-      description: 'Penyu terlihat terjerat jaring plastik.',
+      description: description,
       locationDetail: locationDetail ?? '',
       areaName: areaName ?? '',
       currentStep: ReportWizardDraft.lastStep,
@@ -553,6 +554,49 @@ void main() {
     // Centred within the padding, so the two gaps are close to equal.
     expect((gapAbove - gapBelow).abs(), lessThan(24));
     expect(gapAbove, greaterThan(60));
+  });
+
+  testWidgets('long descriptions collapse to a preview that can expand', (
+    tester,
+  ) async {
+    final longText = List.filled(
+      6,
+      'Seekor penyu ditemukan terlilit jaring plastik di perairan dekat '
+      'dermaga dan masih dapat bergerak.',
+    ).join(' ');
+    final store = _RecordingStore(reviewDraft(description: longText));
+    final service = _ControllableService(reports);
+    await openReview(tester, store: store, service: service);
+
+    final value = find.byKey(const ValueKey('report_review_description_value'));
+    expect(tester.widget<Text>(value).maxLines, 3);
+
+    final toggle = find.byKey(
+      const ValueKey('report_review_description_toggle'),
+    );
+    expect(toggle, findsOneWidget);
+
+    await tester.ensureVisible(toggle);
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<Text>(value).maxLines, isNull);
+    expect(find.text('Sembunyikan'), findsOneWidget);
+
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect(tester.widget<Text>(value).maxLines, 3);
+  });
+
+  testWidgets('short descriptions show no extra toggle', (tester) async {
+    final store = _RecordingStore(reviewDraft());
+    final service = _ControllableService(reports);
+    await openReview(tester, store: store, service: service);
+
+    expect(
+      find.byKey(const ValueKey('report_review_description_toggle')),
+      findsNothing,
+    );
   });
 
   testWidgets('success keeps coordinates when no area name exists', (

@@ -128,12 +128,10 @@ class ReportReviewStep extends StatelessWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    description.trim().isEmpty
+                  child: _DescriptionPreview(
+                    text: description.trim().isEmpty
                         ? context.tr('report_review_empty_value')
                         : description.trim(),
-                    key: const ValueKey('report_review_description_value'),
-                    style: const TextStyle(fontSize: 14, height: 1.45),
                   ),
                 ),
                 const Divider(height: 24),
@@ -649,6 +647,73 @@ class _LandmarkDetailsState extends State<_LandmarkDetails> {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// Description preview: three lines, with a "Show more" control only when the
+/// text actually overflows. The description is required, so at least a preview
+/// stays visible; the toggle keeps long reports scannable.
+class _DescriptionPreview extends StatefulWidget {
+  const _DescriptionPreview({required this.text});
+
+  final String text;
+
+  @override
+  State<_DescriptionPreview> createState() => _DescriptionPreviewState();
+}
+
+class _DescriptionPreviewState extends State<_DescriptionPreview> {
+  static const int _maxLines = 3;
+  static const TextStyle _style = TextStyle(fontSize: 14, height: 1.45);
+
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final painter = TextPainter(
+          text: TextSpan(text: widget.text, style: _style),
+          maxLines: _maxLines,
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+        )..layout(maxWidth: constraints.maxWidth);
+        final overflows = painter.didExceedMaxLines;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.text,
+              key: const ValueKey('report_review_description_value'),
+              maxLines: _expanded ? null : _maxLines,
+              overflow: _expanded
+                  ? TextOverflow.visible
+                  : TextOverflow.ellipsis,
+              style: _style,
+            ),
+            if (overflows)
+              TextButton.icon(
+                key: const ValueKey('report_review_description_toggle'),
+                onPressed: () => setState(() => _expanded = !_expanded),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(48, 40),
+                ),
+                icon: Icon(
+                  _expanded ? Icons.expand_less : Icons.expand_more,
+                  size: 18,
+                ),
+                label: Text(
+                  context.tr(
+                    _expanded ? 'report_review_less' : 'report_review_more',
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
