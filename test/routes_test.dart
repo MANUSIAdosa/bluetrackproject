@@ -100,7 +100,12 @@ void main() {
       await navigation(tester, routerContextOf(tester, NavigationBar),
           '/actions/aksi-001');
       expect(find.byType(ActionDetailPage), findsOneWidget);
-      expect(find.text('id: aksi-001'), findsOneWidget);
+      // The real detail page resolves the id; an unknown mock id shows the
+      // not-found state instead of the old placeholder echo.
+      expect(
+        find.byKey(const ValueKey('action.detail.notFound')),
+        findsOneWidget,
+      );
 
       // Next route from scratch — parameter must not leak from the previous.
       // The shell is gone on a detail page, so resolve the context from the

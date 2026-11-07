@@ -344,10 +344,7 @@ void main() {
     ) async {
       await pumpInterests(tester);
 
-      expect(
-        find.text('Kami akan mengurutkan proyek sesuai minatmu.'),
-        findsOneWidget,
-      );
+      expect(find.text('Pilih satu'), findsOneWidget);
       expect(
         tester
             .widget<FilledButton>(find.widgetWithText(FilledButton, 'Mulai'))
@@ -357,9 +354,169 @@ void main() {
 
       await tester.tap(find.text('Terumbu Karang'));
       await tester.pumpAndSettle();
+      expect(find.text('Pilih satu'), findsNothing);
+    });
+
+    testWidgets('explains what the choice does before anything is selected', (
+      tester,
+    ) async {
+      await pumpInterests(tester);
+
       expect(
-        find.text('Kami akan mengurutkan proyek sesuai minatmu.'),
+        find.text(
+          'Pilih topik lautmu agar proyek terkait muncul lebih dulu di '
+          'Jelajahi. Ubah di Profil.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the info icon keeps the title block height unchanged', (
+      tester,
+    ) async {
+      await pumpInterests(tester);
+
+      final title = tester.getRect(find.text('Pilih Minatmu'));
+      final header = tester.getRect(
+        find.byKey(const ValueKey('p01.interests.titleHeader')),
+      );
+      final icon = tester.getRect(
+        find.byKey(const ValueKey('p01.interests.infoButton')),
+      );
+
+      expect(header.height, closeTo(title.height, 0.1));
+      expect(icon.center.dy, inInclusiveRange(title.top, title.bottom));
+    });
+
+    testWidgets('the info sheet lists all five interests with draft copy', (
+      tester,
+    ) async {
+      await pumpInterests(tester);
+
+      await tester.tap(find.byKey(const ValueKey('p01.interests.infoButton')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tentang Minat'), findsOneWidget);
+      for (final id in AppConfig.interestIds) {
+        expect(
+          find.byKey(ValueKey('interestInfo.row.$id')),
+          findsOneWidget,
+          reason: 'missing info row for $id',
+        );
+        expect(
+          find.byKey(ValueKey('interestInfo.image.$id')),
+          findsOneWidget,
+          reason: 'missing thumbnail for $id',
+        );
+      }
+      expect(
+        find.text(
+          'Belum ada proyek sampah laut di Jelajahi, jadi minat ini belum '
+          'mengubah urutan proyek.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'Proyek pemulihan terumbu karang di Pramuka, Bunaken, dan '
+          'Karimunjawa akan muncul lebih dulu.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'Proyek konservasi mangrove di Muara Angke, Makassar, dan Delta '
+          'Mahakam akan muncul lebih dulu.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'Saat ini minat ini menampilkan proyek restorasi lamun; proyek '
+          'khusus perikanan belum tersedia di Jelajahi.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'Proyek penyu dan mamalia laut, dari peneluruhan hingga '
+          'penyelamatan paus dan lumba-lumba, akan muncul lebih dulu.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the info sheet has an accessible close control', (
+      tester,
+    ) async {
+      await pumpInterests(tester);
+
+      await tester.tap(find.byKey(const ValueKey('p01.interests.infoButton')));
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('Tutup'), findsOneWidget);
+      await tester.tap(find.byTooltip('Tutup'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('interestInfo.row.mangrove')),
         findsNothing,
+      );
+    });
+
+    testWidgets('the info sheet uses the English draft copy', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      await tester.pumpWidget(
+        wrapPage(const OnboardingPage(), locale: const Locale('en')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Skip'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('p01.interests.infoButton')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('About Interests'), findsOneWidget);
+      expect(find.byTooltip('Close'), findsOneWidget);
+      expect(
+        find.text(
+          'No marine debris projects are in Explore yet, so this interest '
+          'does not change the project order for now.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'This interest currently shows seagrass restoration projects; '
+          'fishery-specific projects are not in Explore yet.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the info sheet scrolls on a narrow screen with large text', (
+      tester,
+    ) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(320, 640);
+      tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+      await pumpInterests(tester);
+      await tester.tap(find.byKey(const ValueKey('p01.interests.infoButton')));
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('Tutup'), findsOneWidget);
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('interestInfo.row.satwa_laut')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(
+        find.byKey(const ValueKey('interestInfo.row.satwa_laut')),
+        findsOneWidget,
       );
     });
 
@@ -389,10 +546,7 @@ void main() {
       await tester.tap(find.text('Mangrove'));
       await tester.pumpAndSettle();
 
-      expect(
-        find.text('Kami akan mengurutkan proyek sesuai minatmu.'),
-        findsOneWidget,
-      );
+      expect(find.text('Pilih satu'), findsOneWidget);
       expect(
         tester
             .widget<FilledButton>(find.widgetWithText(FilledButton, 'Mulai'))
@@ -500,10 +654,7 @@ void main() {
       await tester.tap(find.widgetWithText(TextButton, 'Lewati'));
       await tester.pumpAndSettle();
 
-      expect(
-        find.text('Kami akan mengurutkan proyek sesuai minatmu.'),
-        findsOneWidget,
-      );
+      expect(find.text('Pilih satu'), findsOneWidget);
       final start = tester.widget<FilledButton>(
         find.widgetWithText(FilledButton, 'Mulai'),
       );
@@ -528,7 +679,7 @@ void main() {
       expect(find.widgetWithText(FilledButton, 'Pilih Minat'), findsOneWidget);
     });
 
-    testWidgets('the back arrow is not a second primary button', (
+    testWidgets('back and info controls are not primary buttons', (
       tester,
     ) async {
       await pumpOnboarding(tester);
@@ -536,7 +687,8 @@ void main() {
       await tapPrimary(tester);
       await tapPrimary(tester);
 
-      expect(find.byType(IconButton), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+      expect(find.byIcon(Icons.info_outline), findsOneWidget);
       expect(find.byType(FilledButton), findsOneWidget);
       expect(find.widgetWithText(TextButton, 'Lewati'), findsOneWidget);
     });

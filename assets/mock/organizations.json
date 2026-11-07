@@ -102,5 +102,62 @@
       {"key": "field", "done": false},
       {"key": "finance", "done": false}
     ]
+  },
+  {
+    "id": "o03",
+    "name": "Komunitas Laut Bersih",
+    "verified": true,
+    "location": "Badung, Bali",
+    "establishedYear": 2019,
+    "totalProjects": 4,
+    "totalDisbursed": 120000000,
+    "communitiesServed": 3,
+    "color": "#0EA5E9",
+    "email": "halo@lautbersih.id",
+    "phone": "+62 812-4000-5000",
+    "checklist": [
+      {"key": "legal", "done": true},
+      {"key": "audit", "done": true},
+      {"key": "field", "done": true},
+      {"key": "finance", "done": false}
+    ]
+  },
+  {
+    "id": "o04",
+    "name": "Pendidikan Bahari Nusantara",
+    "verified": false,
+    "location": "Kepulauan Seribu, DKI Jakarta",
+    "establishedYear": 2021,
+    "totalProjects": 2,
+    "totalDisbursed": 35000000,
+    "communitiesServed": 2,
+    "color": "#F59E0B",
+    "email": "halo@bahari-nusantara.id",
+    "phone": "+62 813-4000-6000",
+    "checklist": [
+      {"key": "legal", "done": true},
+      {"key": "audit", "done": false},
+      {"key": "field", "done": true},
+      {"key": "finance", "done": false}
+    ]
+  },
+  {
+    "id": "o05",
+    "name": "Jaringan Relawan Pesisir",
+    "verified": false,
+    "location": "Jakarta, DKI Jakarta",
+    "establishedYear": 2020,
+    "totalProjects": 3,
+    "totalDisbursed": 60000000,
+    "communitiesServed": 4,
+    "color": "#14B8A6",
+    "email": "relawan@jrp.id",
+    "phone": "+62 812-5000-7000",
+    "checklist": [
+      {"key": "legal", "done": true},
+      {"key": "audit", "done": true},
+      {"key": "field", "done": true},
+      {"key": "finance", "done": false}
+    ]
   }
 ]

@@ -8,6 +8,7 @@ import 'package:hive/hive.dart';
 import 'package:blue_track/app/app.dart';
 import 'package:blue_track/core/config/app_config.dart';
 import 'package:blue_track/core/state/app_state.dart';
+import 'package:blue_track/features/actions/presentation/actions_page.dart';
 
 /// P00 shell smoke test (Periode 2 part 2).
 ///
@@ -64,8 +65,10 @@ void main() {
         1,
         reason: 'Aksi is the second configured tab',
       );
-      // Selected nav icon + placeholder icon circle (title + page code).
-      expect(find.byIcon(Icons.task_alt), findsNWidgets(2));
+      // The Aksi branch now renders the real Action Agenda; only the selected
+      // nav destination still uses the filled task_alt glyph.
+      expect(find.byType(ActionsPage), findsOneWidget);
+      expect(find.byIcon(Icons.task_alt), findsOneWidget);
       expect(find.text('Transparansi'), findsNothing);
       expect(find.text('Transparency'), findsNothing);
 
