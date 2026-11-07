@@ -74,6 +74,36 @@ void main() {
       expect(ended.canRegisterAt(now), isFalse);
     });
 
+    test('is ongoing between the start and the end', () {
+      final item = buildAction(
+        startsAt: DateTime(2026, 11, 3, 8),
+        endsAt: DateTime(2026, 11, 3, 12),
+      );
+
+      expect(item.statusAt(DateTime(2026, 11, 3, 7, 59)), ActionStatus.open);
+      expect(
+        item.statusAt(DateTime(2026, 11, 3, 8)),
+        ActionStatus.ongoing,
+      );
+      expect(
+        item.statusAt(DateTime(2026, 11, 3, 11, 59)),
+        ActionStatus.ongoing,
+      );
+      expect(item.statusAt(DateTime(2026, 11, 3, 12)), ActionStatus.ended);
+      expect(item.canRegisterAt(DateTime(2026, 11, 3, 8)), isFalse);
+    });
+
+    test('keeps the full status while an activity is running', () {
+      final full = buildAction(
+        startsAt: DateTime(2026, 11, 3, 8),
+        endsAt: DateTime(2026, 11, 3, 12),
+        quota: 10,
+        registered: 10,
+      );
+
+      expect(full.statusAt(DateTime(2026, 11, 3, 9)), ActionStatus.full);
+    });
+
     test('registration closes exactly when the action starts', () {
       final item = buildAction(
         startsAt: DateTime(2026, 11, 8, 7),

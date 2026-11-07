@@ -54,8 +54,10 @@ class FakeActionRepository implements ActionRepository {
   int callCount = 0;
   int detailCallCount = 0;
   final List<String> registerCalls = [];
+  final List<String> cancelCalls = [];
   bool shouldFailDetail = false;
   bool shouldFailRegistration = false;
+  bool shouldFailCancellation = false;
 
   @override
   Future<List<ActionItem>> getActions() async {
@@ -79,6 +81,14 @@ class FakeActionRepository implements ActionRepository {
       throw StateError('simulated registration failure');
     }
     registerCalls.add(id);
+  }
+
+  @override
+  Future<void> cancelRegistration(String id) async {
+    if (shouldFailCancellation) {
+      throw StateError('simulated cancellation failure');
+    }
+    cancelCalls.add(id);
   }
 }
 
@@ -113,6 +123,9 @@ class FlakyActionRepository implements ActionRepository {
 
   @override
   Future<void> registerAction(String id) async {}
+
+  @override
+  Future<void> cancelRegistration(String id) async {}
 }
 
 /// Keeps the loading state pending until the test completes [completer].
@@ -128,6 +141,9 @@ class ControlledActionRepository implements ActionRepository {
 
   @override
   Future<void> registerAction(String id) async {}
+
+  @override
+  Future<void> cancelRegistration(String id) async {}
 }
 
 /// In-memory participation store so widget tests never touch

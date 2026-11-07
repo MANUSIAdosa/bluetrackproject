@@ -13,6 +13,37 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'support/action_fixtures.dart';
 import 'support/test_harness.dart';
 
+/// Three actions with different content lengths, used by the responsive
+/// layout tests: identical cards would hide a wrong column count.
+List<ActionItem> _responsiveItems() => [
+  buildAction(
+    id: 'a01',
+    title: 'Restorasi Terumbu Karang di Kepulauan Seribu untuk Pemulihan '
+        'Ekosistem Pesisir Berkelanjutan',
+    type: ActionType.coralRestoration,
+    locationName: 'Pulau Pramuka, Kepulauan Seribu, DKI Jakarta',
+    organizerName: 'Yayasan Konservasi Laut Nusantara Indonesia Timur',
+    quota: 20,
+    registered: 20,
+  ),
+  buildAction(
+    id: 'a02',
+    title: 'Pemantauan Penyu di Pantai Sukamade',
+    type: ActionType.wildlifeMonitoring,
+    locationName: 'Pantai Sukamade, Banyuwangi',
+    organizerName: 'Komunitas Laut Bersih',
+    quota: 15,
+    registered: 9,
+  ),
+  buildAction(
+    id: 'a03',
+    title: 'Sekolah Laut untuk Anak Pesisir',
+    type: ActionType.education,
+    locationName: 'Pulau Tidung, Kepulauan Seribu',
+    organizerName: 'Pendidikan Bahari Nusantara',
+  ),
+];
+
 void main() {
   setUp(() {
     // The page reads the participation store on load; keep it off the
@@ -119,10 +150,10 @@ void main() {
     expect(find.text('Action'), findsOneWidget);
     expect(find.text('Beach Cleanup'), findsOneWidget);
     expect(find.textContaining('7:00'), findsOneWidget);
-    expect(find.text('28/40 participants'), findsOneWidget);
+    expect(find.text('28 of 40 · 12 left'), findsOneWidget);
   });
 
-  testWidgets('lays out two equal columns without overflow at 320dp', (
+  testWidgets('renders long cards on one column at 320dp without overflow', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(320, 900);
@@ -132,40 +163,43 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
 
-    final items = [
-      buildAction(
-        id: 'a01',
-        title: 'Restorasi Terumbu Karang di Kepulauan Seribu',
-        type: ActionType.coralRestoration,
-        locationName: 'Pulau Pramuka, Kepulauan Seribu',
-        organizerName: 'Yayasan Konservasi Laut Nusantara',
-        quota: 20,
-        registered: 20,
-      ),
-      buildAction(
-        id: 'a02',
-        title: 'Pemantauan Penyu di Pantai Sukamade',
-        type: ActionType.wildlifeMonitoring,
-        locationName: 'Pantai Sukamade, Banyuwangi',
-        organizerName: 'Komunitas Laut Bersih',
-        quota: 15,
-        registered: 9,
-      ),
-      buildAction(
-        id: 'a03',
-        title: 'Sekolah Laut untuk Anak Pesisir',
-        type: ActionType.education,
-        locationName: 'Pulau Tidung, Kepulauan Seribu',
-        organizerName: 'Pendidikan Bahari Nusantara',
-      ),
-    ];
-
     await tester.pumpWidget(
-      wrapPage(ActionsPage(repository: FakeActionRepository(items))),
+      wrapPage(
+        ActionsPage(repository: FakeActionRepository(_responsiveItems())),
+      ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(GridView), findsOneWidget);
+    final first = find.byKey(const ValueKey('actionCard.a01'));
+    final second = find.byKey(const ValueKey('actionCard.a02'));
+
+    // One column: the second card sits below the first and shares its width.
+    expect(
+      tester.getTopLeft(second).dy,
+      greaterThan(tester.getTopLeft(first).dy),
+    );
+    expect(tester.getTopLeft(second).dx, tester.getTopLeft(first).dx);
+
+    // Content height: no two cards in the column share a forced extent.
+    expect(
+      tester.getSize(first).height,
+      isNot(closeTo(tester.getSize(second).height, 0.1)),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('uses two columns from 600dp', (tester) async {
+    tester.view.physicalSize = const Size(900, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      wrapPage(
+        ActionsPage(repository: FakeActionRepository(_responsiveItems())),
+      ),
+    );
+    await tester.pumpAndSettle();
 
     final first = find.byKey(const ValueKey('actionCard.a01'));
     final second = find.byKey(const ValueKey('actionCard.a02'));
@@ -177,14 +211,74 @@ void main() {
       greaterThan(tester.getTopLeft(first).dx),
     );
     expect(
-      tester.getTopLeft(third).dy,
-      greaterThan(tester.getTopLeft(first).dy),
-    );
-    expect(
       tester.getSize(first).width,
       closeTo(tester.getSize(second).width, 0.1),
     );
+    // Equal heights keep the row tidy even though the cards hold different
+    // amounts of text.
+    expect(
+      tester.getSize(first).height,
+      closeTo(tester.getSize(second).height, 0.1),
+    );
+    // Both action hints sit on the same baseline, so the row reads as a unit.
+    expect(
+      tester
+          .getBottomLeft(
+            find.descendant(of: first, matching: find.textContaining('Lihat')),
+          )
+          .dy,
+      closeTo(
+        tester
+            .getBottomLeft(
+              find.descendant(
+                of: second,
+                matching: find.textContaining('Lihat'),
+              ),
+            )
+            .dy,
+        0.1,
+      ),
+    );
+    expect(
+      tester.getTopLeft(third).dy,
+      greaterThan(tester.getTopLeft(first).dy),
+    );
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('marks registered actions from the participation store', (
+    tester,
+  ) async {
+    final store = InMemoryActionParticipationStore();
+    await store.setRegistered('a01', true);
+
+    await tester.pumpWidget(
+      wrapPage(
+        ActionsPage(
+          repository: FakeActionRepository([
+            buildAction(id: 'a01'),
+            buildAction(id: 'a02'),
+          ]),
+          participationStore: store,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('actionCard.a01')),
+        matching: find.text('Terdaftar'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('actionCard.a02')),
+        matching: find.text('Terdaftar'),
+      ),
+      findsNothing,
+    );
   });
 
   testWidgets('Participate Action tab lists only joined actions', (

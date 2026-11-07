@@ -27,6 +27,9 @@ abstract final class Routes {
   // not remove the routes themselves.
   static const actionAgenda = '/actions';
   static const actionDetail = '/actions/:id';
+
+  /// Full-page registration wizard for one action (P04 family).
+  static const actionRegister = '/actions/:id/register';
   static const report = '/report';
   static const reportSuccess = '/report/success/:id';
   static const myReports = '/my-reports';
@@ -53,6 +56,9 @@ abstract final class Routes {
       '/support/trace/$donationId';
 
   static String actionDetailUrl(String actionId) => '/actions/$actionId';
+
+  static String actionRegisterUrl(String actionId) =>
+      '/actions/$actionId/register';
 
   static String reportSuccessUrl(String reportId) =>
       '/report/success/$reportId';
@@ -94,6 +100,7 @@ abstract final class Routes {
     donationStatus,
     actionAgenda,
     actionDetail,
+    actionRegister,
     report,
     reportSuccess,
     myReports,

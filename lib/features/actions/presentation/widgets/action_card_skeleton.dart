@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/skeleton.dart';
 
-/// Loading placeholder shaped like the compact two-column [ActionCard].
+/// Loading placeholder shaped like the content-sized [ActionCard]: 16:9 cover,
+/// a readable body block, and the action hint at the bottom.
 class ActionCardSkeleton extends StatelessWidget {
   const ActionCardSkeleton({super.key});
 
@@ -21,35 +22,49 @@ class ActionCardSkeleton extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const AspectRatio(
-            aspectRatio: 4 / 3,
+            aspectRatio: 16 / 9,
             child: Skeleton(radius: 0),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(9, 8, 9, 10),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: const [
-                Skeleton(height: 14),
-                SizedBox(height: 4),
+                Skeleton(height: 16),
+                SizedBox(height: 6),
                 FractionallySizedBox(
-                  widthFactor: 0.62,
+                  widthFactor: 0.7,
                   alignment: Alignment.centerLeft,
-                  child: Skeleton(height: 14),
+                  child: Skeleton(height: 16),
                 ),
-                SizedBox(height: 7),
-                Skeleton(height: 10),
-                SizedBox(height: 4),
-                Skeleton(height: 10),
-                SizedBox(height: 4),
-                Skeleton(height: 10),
-                SizedBox(height: 4),
+                SizedBox(height: 12),
+                Skeleton(height: 11),
+                SizedBox(height: 5),
+                Skeleton(height: 11),
+                SizedBox(height: 5),
                 FractionallySizedBox(
-                  widthFactor: 0.72,
+                  widthFactor: 0.8,
                   alignment: Alignment.centerLeft,
-                  child: Skeleton(height: 10),
+                  child: Skeleton(height: 11),
                 ),
-                SizedBox(height: 8),
-                Skeleton(height: 10),
+                SizedBox(height: 5),
+                FractionallySizedBox(
+                  widthFactor: 0.6,
+                  alignment: Alignment.centerLeft,
+                  child: Skeleton(height: 11),
+                ),
+                SizedBox(height: 5),
+                FractionallySizedBox(
+                  widthFactor: 0.5,
+                  alignment: Alignment.centerLeft,
+                  child: Skeleton(height: 11),
+                ),
+                SizedBox(height: 12),
+                FractionallySizedBox(
+                  widthFactor: 0.45,
+                  alignment: Alignment.centerLeft,
+                  child: Skeleton(height: 12),
+                ),
               ],
             ),
           ),

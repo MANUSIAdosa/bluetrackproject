@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/router/routes.dart';
-import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -16,7 +15,9 @@ import '../data/action_participation_store.dart';
 import '../data/action_repository.dart';
 import '../domain/action_item.dart';
 import 'widgets/action_cover_image.dart';
+import 'widgets/action_equipment_list.dart';
 import 'widgets/action_mini_map.dart';
+import 'widgets/action_status_chip.dart';
 
 const _registerButtonKey = ValueKey('action.detail.registerButton');
 const _reminderSwitchKey = ValueKey('action.detail.reminderSwitch');
@@ -65,7 +66,7 @@ class _ActionDetailPageState extends State<ActionDetailPage> {
   bool _reminder = false;
   bool _loading = true;
   bool _error = false;
-  bool _registering = false;
+  bool _cancelling = false;
 
   DateTime get _now => (widget.now ?? DateTime.now)();
 
@@ -143,12 +144,12 @@ class _ActionDetailPageState extends State<ActionDetailPage> {
       bottomNavigationBar: item == null
           ? null
           : _RegisterBar(
-              label: _ctaLabel(context, item),
               registered: _registered,
-              loading: _registering,
-              onPressed: _registered || !item.canRegisterAt(_now)
-                  ? null
-                  : _handleRegister,
+              busy: _cancelling,
+              registerLabel: _ctaLabel(context, item),
+              registerEnabled: item.canRegisterAt(_now),
+              onRegister: _openRegistration,
+              onCancel: _confirmCancel,
             ),
     );
   }
@@ -190,8 +191,6 @@ class _ActionDetailPageState extends State<ActionDetailPage> {
   }
 
   String _ctaLabel(BuildContext context, ActionItem item) {
-    if (_registered) return context.tr('action.detail.registered');
-
     final status = item.statusAt(_now);
     if (status == ActionStatus.ended) {
       return context.tr('action.status.ended');
@@ -205,122 +204,70 @@ class _ActionDetailPageState extends State<ActionDetailPage> {
     return context.tr('action.detail.register');
   }
 
-  Future<void> _handleRegister() async {
+  /// Opens the four-step registration wizard, then refreshes so the card state
+  /// and the participant count reflect what was stored.
+  Future<void> _openRegistration() async {
     final item = _item;
-    if (item == null || _registering || _registered) return;
+    if (item == null || _registered) return;
+    if (!item.canRegisterAt(_now)) return;
 
-    if (!AuthController.instance.signedIn) {
-      final redirect = Uri.encodeComponent(Routes.actionDetailUrl(item.id));
-      await context.push('${Routes.auth}?redirect=$redirect');
+    await context.push(Routes.actionRegisterUrl(item.id));
+    if (!mounted) return;
+    await _load();
+  }
+
+  /// Cancels the registration after an explicit confirmation, then refreshes
+  /// the participant count from the data source.
+  Future<void> _confirmCancel() async {
+    final item = _item;
+    if (item == null || _cancelling) return;
+
+    final colors = Theme.of(context).colorScheme;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        key: const ValueKey('action.detail.cancelDialog'),
+        title: Text(context.tr('action.detail.cancelTitle')),
+        content: Text(context.tr('action.detail.cancelBody')),
+        actions: [
+          TextButton(
+            style: TextButton.styleFrom(
+              minimumSize: AppDimens.dialogActionMinSize,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(context.tr('action.detail.cancelKeep')),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              minimumSize: AppDimens.dialogActionMinSize,
+              backgroundColor: colors.error,
+              foregroundColor: colors.onError,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(context.tr('action.detail.cancelConfirm')),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
+
+    setState(() => _cancelling = true);
+    try {
+      await _repository.cancelRegistration(item.id);
+      await _participationStore.setRegistered(item.id, false);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _cancelling = false);
+      _showSnack(context.tr('action.detail.cancelFailed'), error: true);
       return;
     }
 
-    if (!item.canRegisterAt(_now)) return;
-
-    final confirmed = await _showConfirmation(item);
-    if (!mounted || !confirmed) return;
-
-    // Re-check after the sheet closes: the date can change while the sheet is
-    // open and the button must never allow a duplicate registration.
-    if (_registering || _registered || !item.canRegisterAt(_now)) return;
-
-    setState(() => _registering = true);
-    try {
-      await _repository.registerAction(item.id);
-      await _participationStore.setRegistered(item.id, true);
-      if (!mounted) return;
-      setState(() {
-        _registered = true;
-        _registering = false;
-      });
-      _showSnack(context.tr('action.detail.registerSuccess'));
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _registering = false);
-      _showSnack(context.tr('action.detail.registerFailed'), error: true);
-    }
-  }
-
-  Future<bool> _showConfirmation(ActionItem item) async {
-    final result = await showModalBottomSheet<bool>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        final lang = Localizations.localeOf(sheetContext).languageCode;
-        return SafeArea(
-          top: false,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.tr('action.detail.confirmTitle'),
-                  style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  context.tr('action.detail.confirmBody'),
-                  style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  item.title,
-                  style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                _SheetInfo(
-                  icon: Icons.calendar_today_outlined,
-                  text: Formatters.date(item.startsAt, lang),
-                ),
-                const SizedBox(height: 6),
-                _SheetInfo(
-                  icon: Icons.schedule_outlined,
-                  text:
-                      '${Formatters.time(item.startsAt, lang)} – '
-                      '${Formatters.time(item.endsAt, lang)}',
-                ),
-                const SizedBox(height: 6),
-                _SheetInfo(
-                  icon: Icons.place_outlined,
-                  text: item.locationName,
-                ),
-                const SizedBox(height: 6),
-                _SheetInfo(
-                  icon: Icons.groups_outlined,
-                  text: context.tr('action.quota', {
-                    'joined': '${item.registered}',
-                    'total': '${item.quota}',
-                  }),
-                ),
-                const SizedBox(height: 20),
-                PrimaryButton(
-                  label: context.tr('action.detail.confirm'),
-                  onPressed: () => Navigator.of(sheetContext).pop(true),
-                ),
-                const SizedBox(height: 6),
-                Center(
-                  child: TextButton(
-                    onPressed: () => Navigator.of(sheetContext).pop(false),
-                    child: Text(context.tr('common.cancel')),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-    return result ?? false;
+    if (!mounted) return;
+    setState(() => _cancelling = false);
+    // The refreshed item carries the released seat; the status banner follows.
+    await _load();
+    if (!mounted) return;
+    _showSnack(context.tr('action.detail.cancelSuccess'));
   }
 
   Future<void> _setReminder(bool enabled) async {
@@ -370,18 +317,26 @@ class _ActionDetailPageState extends State<ActionDetailPage> {
 }
 
 /// Pinned registration CTA above the phone safe area.
+///
+/// While registered the bar offers cancellation instead of a disabled
+/// "Terdaftar" button: the status itself is displayed in the page content, so
+/// the bar keeps a single, honest action.
 class _RegisterBar extends StatelessWidget {
   const _RegisterBar({
-    required this.label,
     required this.registered,
-    required this.loading,
-    required this.onPressed,
+    required this.busy,
+    required this.registerLabel,
+    required this.registerEnabled,
+    required this.onRegister,
+    required this.onCancel,
   });
 
-  final String label;
   final bool registered;
-  final bool loading;
-  final VoidCallback? onPressed;
+  final bool busy;
+  final String registerLabel;
+  final bool registerEnabled;
+  final VoidCallback onRegister;
+  final VoidCallback onCancel;
 
   @override
   Widget build(BuildContext context) {
@@ -394,13 +349,34 @@ class _RegisterBar extends StatelessWidget {
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-          child: PrimaryButton(
-            key: _registerButtonKey,
-            label: label,
-            icon: registered ? Icons.check_circle_outline : null,
-            loading: loading,
-            onPressed: onPressed,
-          ),
+          child: registered
+              ? SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    key: _registerButtonKey,
+                    onPressed: busy ? null : onCancel,
+                    icon: const Icon(Icons.cancel_outlined),
+                    label: busy
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(context.tr('action.detail.cancel')),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: colors.error,
+                      side: BorderSide(color: colors.error),
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                  ),
+                )
+              : PrimaryButton(
+                  key: _registerButtonKey,
+                  label: registerLabel,
+                  icon: null,
+                  loading: busy,
+                  onPressed: registerEnabled ? onRegister : null,
+                ),
         ),
       ),
     );
@@ -431,10 +407,17 @@ class _ActionDetailContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lang = Localizations.localeOf(context).languageCode;
-    final quota = context.tr('action.quota', {
-      'joined': '${item.registered}',
-      'total': '${item.quota}',
-    });
+    final remaining = (item.quota - item.registered).clamp(0, item.quota);
+    final quota = remaining > 0
+        ? context.tr('action.detail.quotaRemaining', {
+            'joined': '${item.registered}',
+            'total': '${item.quota}',
+            'remaining': '$remaining',
+          })
+        : context.tr('action.detail.quotaFull', {
+            'joined': '${item.registered}',
+            'total': '${item.quota}',
+          });
 
     return Column(
       children: [
@@ -444,12 +427,15 @@ class _ActionDetailContent extends StatelessWidget {
             key: const ValueKey('action.detail.content'),
             padding: EdgeInsets.zero,
             children: [
+              // 1. Photo.
               _ActionCover(item: item),
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // 2. Title, activity status, the user's own registration
+                    //    status, and the remaining quota.
                     Text(
                       item.title,
                       style: Theme.of(context).textTheme.headlineSmall
@@ -464,7 +450,14 @@ class _ActionDetailContent extends StatelessWidget {
                       runSpacing: 8,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        _StatusChip(status: item.statusAt(now)),
+                        ActionStatusChip(
+                          key: const ValueKey('action.detail.status'),
+                          status: item.statusAt(now),
+                        ),
+                        if (registered)
+                          _RegisteredChip(
+                            key: const ValueKey('action.detail.registeredChip'),
+                          ),
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -474,20 +467,44 @@ class _ActionDetailContent extends StatelessWidget {
                               color: Theme.of(context).colorScheme.primary,
                             ),
                             const SizedBox(width: 6),
-                            Text(
-                              quota,
-                              style: Theme.of(context).textTheme.titleSmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  ),
+                            Flexible(
+                              child: Text(
+                                quota,
+                                key: const ValueKey('action.detail.quota'),
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
                             ),
                           ],
                         ),
                       ],
                     ),
+                    // 3. Date, time, location and meeting point.
+                    const SizedBox(height: 20),
+                    _InfoCard(item: item, lang: lang),
+                    // 4. Needed equipment — promoted above the description so
+                    //    it is found before registering, not after the map.
+                    const SizedBox(height: 20),
+                    _SectionTitle(
+                      icon: Icons.backpack_outlined,
+                      text: context.tr('action.detail.equipment'),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      context.tr('action.detail.equipmentIntro'),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ActionEquipmentList(items: item.equipment),
+                    // 5. Description.
                     if (item.description.isNotEmpty) ...[
                       const SizedBox(height: 20),
                       _SectionTitle(
@@ -506,8 +523,7 @@ class _ActionDetailContent extends StatelessWidget {
                             ),
                       ),
                     ],
-                    const SizedBox(height: 20),
-                    _InfoCard(item: item, lang: lang),
+                    // 6. Map.
                     const SizedBox(height: 20),
                     _SectionTitle(
                       icon: Icons.map_outlined,
@@ -519,22 +535,7 @@ class _ActionDetailContent extends StatelessWidget {
                       longitude: item.longitude,
                       tileProvider: tileProvider,
                     ),
-                    if (item.equipment.isNotEmpty) ...[
-                      const SizedBox(height: 20),
-                      _SectionTitle(
-                        icon: Icons.backpack_outlined,
-                        text: context.tr('action.detail.equipment'),
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final equipment in item.equipment)
-                            _EquipmentChip(label: equipment),
-                        ],
-                      ),
-                    ],
+                    // 7. Organizer.
                     const SizedBox(height: 20),
                     _SectionTitle(
                       icon: Icons.account_balance_outlined,
@@ -548,6 +549,7 @@ class _ActionDetailContent extends StatelessWidget {
                           ? null
                           : onOpenOrganizer,
                     ),
+                    // 8. Reminder for registered participants.
                     if (registered) ...[
                       const SizedBox(height: 16),
                       _ReminderCard(
@@ -644,52 +646,6 @@ class _TypeChip extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.status});
-
-  final ActionStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final (key, background, foreground) = switch (status) {
-      ActionStatus.open => (
-        'action.status.open',
-        colors.primary,
-        colors.onPrimary,
-      ),
-      ActionStatus.full => (
-        'action.status.full',
-        colors.tertiary,
-        colors.onTertiary,
-      ),
-      ActionStatus.ended => (
-        'action.status.ended',
-        colors.surfaceContainerHighest,
-        colors.onSurfaceVariant,
-      ),
-    };
-
-    return Container(
-      key: const ValueKey('action.detail.status'),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        context.tr(key),
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          height: 1.2,
-          color: foreground,
-        ),
       ),
     );
   }
@@ -831,38 +787,39 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-class _EquipmentChip extends StatelessWidget {
-  const _EquipmentChip({required this.label});
-
-  final String label;
+/// The user's own registration status. Shown next to the activity status so the
+/// two read together instead of contradicting each other.
+class _RegisteredChip extends StatelessWidget {
+  const _RegisteredChip({super.key});
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: colors.surface,
+        color: colors.primaryContainer,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: colors.outline),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.check_circle_outline, size: 14, color: colors.primary),
-          const SizedBox(width: 5),
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.sizeOf(context).width - 96,
-            ),
+          Icon(
+            Icons.check_circle_outline,
+            size: 13,
+            color: colors.onPrimaryContainer,
+          ),
+          const SizedBox(width: 4),
+          Flexible(
             child: Text(
-              label,
+              context.tr('action.status.registered'),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: colors.onSurface,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                height: 1.15,
+                color: colors.onPrimaryContainer,
               ),
             ),
           ),
@@ -1000,34 +957,6 @@ class _ReminderCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _SheetInfo extends StatelessWidget {
-  const _SheetInfo({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 18, color: colors.primary),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: colors.onSurfaceVariant,
-              height: 1.35,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

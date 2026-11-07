@@ -872,7 +872,13 @@ class AppLocalizations {
       'action.quota.full': '{joined}/{total} peserta · Kuota penuh',
       'action.status.open': 'Terbuka',
       'action.status.full': 'Penuh',
+      'action.status.ongoing': 'Berlangsung',
       'action.status.ended': 'Selesai',
+      'action.status.registered': 'Terdaftar',
+      'action.card.quota': '{joined} dari {total} · sisa {remaining}',
+      'action.card.quotaFull': '{joined} dari {total} · kuota penuh',
+      'action.card.viewDetail': 'Lihat detail',
+      'action.card.viewAndRegister': 'Lihat & daftar',
       'action.empty': 'Belum ada aksi yang tersedia saat ini.',
       'action.unavailable': 'Aksi tidak dapat dimuat.',
       'action.tab.agenda': 'Agenda',
@@ -890,7 +896,12 @@ class AppLocalizations {
       'action.detail.location': 'Lokasi',
       'action.detail.meetingPoint': 'Titik kumpul',
       'action.detail.map': 'Peta Lokasi',
-      'action.detail.equipment': 'Perlengkapan',
+      'action.detail.equipment': 'Perlengkapan yang perlu dibawa',
+      'action.detail.equipmentIntro':
+          'Bawa semua perlengkapan ini saat kegiatan berlangsung.',
+      'action.detail.equipmentNone': 'Tidak ada perlengkapan khusus.',
+      'action.detail.quotaRemaining': '{joined} dari {total} · sisa {remaining}',
+      'action.detail.quotaFull': '{joined} dari {total} · kuota penuh',
       'action.detail.organizer': 'Penyelenggara',
       'action.detail.viewOrganizer': 'Lihat profil penyelenggara',
       'action.detail.reminder': 'Pengingat',
@@ -906,6 +917,55 @@ class AppLocalizations {
           'Pendaftaran berhasil. Sampai jumpa di lokasi!',
       'action.detail.registerFailed':
           'Pendaftaran gagal. Silakan coba lagi.',
+      'action.detail.cancel': 'Batalkan pendaftaran',
+      'action.detail.cancelTitle': 'Batalkan pendaftaran?',
+      'action.detail.cancelBody':
+          'Kursimu akan dilepas dan bisa diambil peserta lain.',
+      'action.detail.cancelConfirm': 'Ya, batalkan',
+      'action.detail.cancelKeep': 'Tetap terdaftar',
+      'action.detail.cancelSuccess': 'Pendaftaran dibatalkan.',
+      'action.detail.cancelFailed': 'Pembatalan gagal. Silakan coba lagi.',
+
+      // --- Registration wizard (Aksi) ---
+      'action.register.title': 'Daftar Aksi',
+      'action.register.step.equipment': 'Perlengkapan',
+      'action.register.step.participant': 'Peserta',
+      'action.register.step.review': 'Tinjau',
+      'action.register.step.success': 'Berhasil',
+      'action.register.summary': 'Ringkasan kegiatan',
+      'action.register.equipmentIntro':
+          'Pastikan kamu bisa membawa perlengkapan berikut.',
+      'action.register.equipmentReady': 'Saya siap membawanya',
+      'action.register.equipmentRequired':
+          'Centang pernyataan perlengkapan untuk melanjutkan.',
+      'action.register.participantTitle': 'Data peserta',
+      'action.register.participantName': 'Nama',
+      'action.register.participantNote':
+          'Pendaftaran dikirim dengan akun yang sedang masuk.',
+      'action.register.reviewTitle': 'Tinjau pendaftaran',
+      'action.register.change': 'Ubah',
+      'action.register.confirm': 'Konfirmasi pendaftaran',
+      'action.register.next': 'Lanjut',
+      'action.register.back': 'Kembali',
+      'action.register.equipmentAcked': 'Perlengkapan disanggupi',
+      'action.register.equipmentNotAcked': 'Perlengkapan belum disanggupi',
+      'action.register.successTitle': 'Pendaftaran berhasil',
+      'action.register.successBody':
+          'Kamu terdaftar di kegiatan ini. Detail kegiatan dan pengingat ada di '
+          'Aksi Saya.',
+      'action.register.goToMyActions': 'Ke Aksi Saya',
+      'action.register.backToDetail': 'Kembali ke detail',
+      'action.register.blockedFullTitle': 'Kuota sudah penuh',
+      'action.register.blockedFullBody':
+          'Pendaftaran tidak dikirim karena kuota kegiatan ini sudah penuh.',
+      'action.register.blockedClosedTitle': 'Pendaftaran ditutup',
+      'action.register.blockedClosedBody':
+          'Kegiatan ini sudah dimulai atau selesai, jadi pendaftaran tidak '
+          'dibuka.',
+      'action.register.failedTitle': 'Pendaftaran gagal',
+      'action.register.failedBody':
+          'Pendaftaran belum tersimpan. Periksa kuota lalu coba lagi.',
+      'action.register.loadFailed': 'Pendaftaran tidak dapat dimuat.',
       'action.detail.loadFailed': 'Detail aksi gagal dimuat.',
       'action.detail.notFound': 'Aksi tidak ditemukan.',
 
@@ -1771,7 +1831,13 @@ class AppLocalizations {
       'action.quota.full': '{joined}/{total} participants · Fully booked',
       'action.status.open': 'Open',
       'action.status.full': 'Full',
+      'action.status.ongoing': 'Ongoing',
       'action.status.ended': 'Ended',
+      'action.status.registered': 'Registered',
+      'action.card.quota': '{joined} of {total} · {remaining} left',
+      'action.card.quotaFull': '{joined} of {total} · fully booked',
+      'action.card.viewDetail': 'View details',
+      'action.card.viewAndRegister': 'View & register',
       'action.empty': 'No actions available right now.',
       'action.unavailable': 'Actions could not be loaded.',
       'action.tab.agenda': 'Agenda',
@@ -1789,7 +1855,12 @@ class AppLocalizations {
       'action.detail.location': 'Location',
       'action.detail.meetingPoint': 'Meeting point',
       'action.detail.map': 'Location Map',
-      'action.detail.equipment': 'Equipment',
+      'action.detail.equipment': 'Needed equipment',
+      'action.detail.equipmentIntro':
+          'Bring every item below on the day of the activity.',
+      'action.detail.equipmentNone': 'No special equipment needed.',
+      'action.detail.quotaRemaining': '{joined} of {total} · {remaining} left',
+      'action.detail.quotaFull': '{joined} of {total} · fully booked',
       'action.detail.organizer': 'Organizer',
       'action.detail.viewOrganizer': 'View organizer profile',
       'action.detail.reminder': 'Reminder',
@@ -1804,6 +1875,54 @@ class AppLocalizations {
       'action.detail.registerSuccess':
           'Registration successful. See you at the location!',
       'action.detail.registerFailed': 'Registration failed. Please try again.',
+      'action.detail.cancel': 'Cancel registration',
+      'action.detail.cancelTitle': 'Cancel this registration?',
+      'action.detail.cancelBody':
+          'Your seat will be released and can be taken by someone else.',
+      'action.detail.cancelConfirm': 'Yes, cancel it',
+      'action.detail.cancelKeep': 'Keep my registration',
+      'action.detail.cancelSuccess': 'Registration cancelled.',
+      'action.detail.cancelFailed': 'Cancellation failed. Please try again.',
+
+      // --- Registration wizard (Actions) ---
+      'action.register.title': 'Register for Action',
+      'action.register.step.equipment': 'Equipment',
+      'action.register.step.participant': 'Participant',
+      'action.register.step.review': 'Review',
+      'action.register.step.success': 'Done',
+      'action.register.summary': 'Activity summary',
+      'action.register.equipmentIntro':
+          'Make sure you can bring the following items.',
+      'action.register.equipmentReady': 'I am ready to bring them',
+      'action.register.equipmentRequired':
+          'Tick the equipment statement to continue.',
+      'action.register.participantTitle': 'Participant details',
+      'action.register.participantName': 'Name',
+      'action.register.participantNote':
+          'This registration uses the account that is signed in.',
+      'action.register.reviewTitle': 'Review registration',
+      'action.register.change': 'Change',
+      'action.register.confirm': 'Confirm registration',
+      'action.register.next': 'Continue',
+      'action.register.back': 'Back',
+      'action.register.equipmentAcked': 'Equipment acknowledged',
+      'action.register.equipmentNotAcked': 'Equipment not acknowledged',
+      'action.register.successTitle': 'Registration complete',
+      'action.register.successBody':
+          'You are registered for this activity. The details and reminder live '
+          'in My Actions.',
+      'action.register.goToMyActions': 'Go to My Actions',
+      'action.register.backToDetail': 'Back to details',
+      'action.register.blockedFullTitle': 'This action is full',
+      'action.register.blockedFullBody':
+          'Nothing was sent because this activity has reached its quota.',
+      'action.register.blockedClosedTitle': 'Registration closed',
+      'action.register.blockedClosedBody':
+          'This activity has started or finished, so registration is closed.',
+      'action.register.failedTitle': 'Registration failed',
+      'action.register.failedBody':
+          'The registration was not saved. Check the quota and try again.',
+      'action.register.loadFailed': 'Registration could not be loaded.',
       'action.detail.loadFailed': 'Action detail failed to load.',
       'action.detail.notFound': 'Action not found.',
 

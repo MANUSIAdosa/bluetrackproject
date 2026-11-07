@@ -17,13 +17,21 @@ import 'widgets/action_card_skeleton.dart';
 /// actions the user has registered for. Search, filters and map view still
 /// belong to later parts.
 class ActionsPage extends StatefulWidget {
-  const ActionsPage({super.key, this.repository, this.participationStore});
+  const ActionsPage({
+    super.key,
+    this.repository,
+    this.participationStore,
+    this.now,
+  });
 
   /// Test/demo override; the router keeps constructing `const ActionsPage()`.
   final ActionRepository? repository;
 
   /// Test/demo override for joined-action state.
   final ActionParticipationStore? participationStore;
+
+  /// Test/clock seam for activity status; defaults to [DateTime.now].
+  final DateTime Function()? now;
 
   @override
   State<ActionsPage> createState() => _ActionsPageState();
@@ -36,6 +44,8 @@ class _ActionsPageState extends State<ActionsPage>
   late final ActionParticipationStore _participationStore =
       widget.participationStore ?? const PrefsActionParticipationStore();
   late final TabController _tabController;
+
+  DateTime get _now => (widget.now ?? DateTime.now)();
 
   List<ActionItem>? _items;
   Set<String> _joinedIds = const {};
@@ -138,7 +148,7 @@ class _ActionsPageState extends State<ActionsPage>
 
   Widget _buildBody(BuildContext context) {
     if (_loading) {
-      return _grid(
+      return _list(
         key: const ValueKey('actions.loading'),
         itemCount: 6,
         itemBuilder: (_, _) => const ActionCardSkeleton(),
@@ -169,7 +179,7 @@ class _ActionsPageState extends State<ActionsPage>
         message: context.tr('action.empty'),
       );
     }
-    return _grid(
+    return _list(
       key: const ValueKey('actions.list'),
       itemCount: items.length,
       itemBuilder: (context, index) => _card(items[index]),
@@ -191,7 +201,7 @@ class _ActionsPageState extends State<ActionsPage>
       );
     }
 
-    return _grid(
+    return _list(
       key: const ValueKey('actions.joinedList'),
       itemCount: joined.length,
       itemBuilder: (context, index) => _card(joined[index]),
@@ -202,6 +212,8 @@ class _ActionsPageState extends State<ActionsPage>
     return ActionCard(
       key: ValueKey('actionCard.${item.id}'),
       item: item,
+      registered: _joinedIds.contains(item.id),
+      now: _now,
       onTap: () async {
         await context.push(Routes.actionDetailUrl(item.id));
         if (!mounted) return;
@@ -210,35 +222,47 @@ class _ActionsPageState extends State<ActionsPage>
     );
   }
 
-  /// Two equal columns with one shared gap. The cell extent is derived from
-  /// the card's own line heights so compact cards stay aligned at every text
-  /// scale instead of relying on a brittle fixed aspect ratio.
-  Widget _grid({
+  /// Responsive list: one column on phones, two from 600dp — the same
+  /// breakpoint Explore uses. Rows hold two [Expanded] cards inside an
+  /// [IntrinsicHeight] so both cards in a row share the taller content height
+  /// and their action hints line up. No cell extent is computed by hand.
+  Widget _list({
     required Key key,
     required int itemCount,
     required Widget Function(BuildContext, int) itemBuilder,
   }) {
+    final twoColumns = MediaQuery.sizeOf(context).width >= 600;
+    const padding = 12.0;
+    const gap = 12.0;
+    final rowCount = twoColumns ? (itemCount + 1) ~/ 2 : itemCount;
+
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 720),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            const padding = 12.0;
-            const gap = 12.0;
-            final cardWidth =
-                (constraints.maxWidth - padding * 2 - gap) / 2;
+        child: ListView.separated(
+          key: key,
+          padding: const EdgeInsets.all(padding),
+          itemCount: rowCount,
+          separatorBuilder: (_, _) => const SizedBox(height: gap),
+          itemBuilder: (context, row) {
+            if (!twoColumns) {
+              return IntrinsicHeight(child: itemBuilder(context, row));
+            }
 
-            return GridView.builder(
-              key: key,
-              padding: const EdgeInsets.all(padding),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: gap,
-                mainAxisSpacing: gap,
-                mainAxisExtent: ActionCard.gridExtentFor(context, cardWidth),
+            final first = row * 2;
+            return IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(child: itemBuilder(context, first)),
+                  const SizedBox(width: gap),
+                  Expanded(
+                    child: first + 1 < itemCount
+                        ? itemBuilder(context, first + 1)
+                        : const SizedBox.shrink(),
+                  ),
+                ],
               ),
-              itemCount: itemCount,
-              itemBuilder: itemBuilder,
             );
           },
         ),

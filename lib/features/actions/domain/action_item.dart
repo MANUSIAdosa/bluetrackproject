@@ -62,11 +62,45 @@ class ActionItem {
   bool canRegisterAt(DateTime now) =>
       !isFull && now.isBefore(startsAt) && now.isBefore(endsAt);
 
-  /// The status shown on the detail page.
+  /// The status shown on the detail page and on the agenda card.
+  ///
+  /// Order matters: a finished activity is [ActionStatus.ended] even when its
+  /// quota is also full, and a full quota keeps [ActionStatus.full] while the
+  /// activity runs (it is the reason registration is closed). [ActionStatus
+  /// .ongoing] only covers the window where registration used to report a
+  /// misleading "open" state.
   ActionStatus statusAt(DateTime now) {
     if (hasEndedAt(now)) return ActionStatus.ended;
     if (isFull) return ActionStatus.full;
+    if (!now.isBefore(startsAt)) return ActionStatus.ongoing;
     return ActionStatus.open;
+  }
+
+  /// Copy with a different live participant count.
+  ///
+  /// Used by the mock repository, which reflects this session's registrations
+  /// in the returned count the way a real API would. Nothing else needs to
+  /// mutate an action.
+  ActionItem copyWith({int? registered}) {
+    return ActionItem(
+      id: id,
+      title: title,
+      type: type,
+      startsAt: startsAt,
+      endsAt: endsAt,
+      locationName: locationName,
+      latitude: latitude,
+      longitude: longitude,
+      quota: quota,
+      registered: registered ?? this.registered,
+      organizerName: organizerName,
+      organizerVerified: organizerVerified,
+      imageAsset: imageAsset,
+      organizerId: organizerId,
+      description: description,
+      meetingPoint: meetingPoint,
+      equipment: equipment,
+    );
   }
 
   factory ActionItem.fromJson(Map<String, dynamic> json) {
@@ -95,7 +129,10 @@ class ActionItem {
 }
 
 /// Registration/display status of an action.
-enum ActionStatus { open, full, ended }
+///
+/// [ongoing] is derived from the existing start/end times: the activity has
+/// started but not finished, so registration is already closed.
+enum ActionStatus { open, full, ongoing, ended }
 
 /// Kinds of action shown on the agenda.
 ///

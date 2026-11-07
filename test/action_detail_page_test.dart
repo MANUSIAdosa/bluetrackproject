@@ -42,7 +42,7 @@ void main() {
     expect(find.text(item.title), findsOneWidget);
     expect(find.text('Bersih Pantai'), findsOneWidget);
     expect(find.text('Terbuka'), findsOneWidget);
-    expect(find.text('28/40 peserta'), findsOneWidget);
+    expect(find.text('28 dari 40 · sisa 12'), findsOneWidget);
     expect(find.text(item.description), findsOneWidget);
     expect(find.text(Formatters.date(item.startsAt, 'id')), findsOneWidget);
     expect(
@@ -55,6 +55,12 @@ void main() {
     expect(find.text(item.locationName), findsOneWidget);
     expect(find.text(item.meetingPoint), findsOneWidget);
     expect(find.text('Sarung tangan'), findsOneWidget);
+    // The equipment block is a vertical checklist, not chips.
+    expect(find.byKey(const ValueKey('action.equipment.list')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('action.equipment.item.1')),
+      findsOneWidget,
+    );
     expect(find.text('Kantong sampah'), findsOneWidget);
     expect(find.text(item.organizerName), findsOneWidget);
     expect(find.byType(VerifiedBadge), findsWidgets);
@@ -101,7 +107,7 @@ void main() {
     expect(_registerButton(tester).onPressed, isNull);
   });
 
-  testWidgets('closes registration once the activity has started', (
+  testWidgets('shows Berlangsung once the activity has started', (
     tester,
   ) async {
     final item = buildAction(
@@ -111,7 +117,7 @@ void main() {
 
     await _pumpDetail(tester, item: item);
 
-    expect(_statusText('Terbuka'), findsOneWidget);
+    expect(_statusText('Berlangsung'), findsOneWidget);
     expect(
       find.descendant(
         of: find.byKey(_registerButtonKey),
@@ -186,114 +192,22 @@ void main() {
     expect(find.text('Bersih Pantai Kuta'), findsOneWidget);
   });
 
-  testWidgets('sends a logged-out user to Login with a detail redirect', (
+  testWidgets('opens the four-step registration wizard instead of a sheet', (
     tester,
   ) async {
     final item = buildAction();
     final repository = FakeActionRepository([item]);
-    await _pumpRouted(
-      tester,
-      item: item,
-      repository: repository,
-      signedIn: false,
-    );
+    await _pumpRouted(tester, item: item, repository: repository);
 
     await tester.tap(find.byKey(_registerButtonKey));
     await tester.pumpAndSettle();
 
-    expect(find.text('LOGIN:/actions/a01'), findsOneWidget);
+    expect(find.text('REGISTER:a01'), findsOneWidget);
+    // Nothing is written from the detail page any more; the wizard confirms.
     expect(repository.registerCalls, isEmpty);
   });
 
-  testWidgets('registers after confirmation and shows the joined state', (
-    tester,
-  ) async {
-    final item = buildAction();
-    final repository = FakeActionRepository([item]);
-    final store = InMemoryActionParticipationStore();
-    await _pumpRouted(
-      tester,
-      item: item,
-      repository: repository,
-      store: store,
-    );
-
-    await tester.tap(find.byKey(_registerButtonKey));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Konfirmasi Pendaftaran'), findsOneWidget);
-    expect(find.text(item.title), findsWidgets);
-    expect(find.text('Konfirmasi'), findsOneWidget);
-    expect(find.text('Batal'), findsOneWidget);
-
-    await tester.tap(find.text('Konfirmasi'));
-    await tester.pumpAndSettle();
-
-    expect(repository.registerCalls, ['a01']);
-    expect(store.isRegistered('a01'), isTrue);
-    expect(find.text('Terdaftar'), findsOneWidget);
-    expect(
-      find.text('Pendaftaran berhasil. Sampai jumpa di lokasi!'),
-      findsOneWidget,
-    );
-    expect(_registerButton(tester).onPressed, isNull);
-    expect(find.byKey(_reminderSwitchKey), findsOneWidget);
-  });
-
-  testWidgets('cancelling the confirmation leaves the user unregistered', (
-    tester,
-  ) async {
-    final item = buildAction();
-    final repository = FakeActionRepository([item]);
-    final store = InMemoryActionParticipationStore();
-    await _pumpRouted(
-      tester,
-      item: item,
-      repository: repository,
-      store: store,
-    );
-
-    await tester.tap(find.byKey(_registerButtonKey));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Batal'));
-    await tester.pumpAndSettle();
-
-    expect(repository.registerCalls, isEmpty);
-    expect(store.isRegistered('a01'), isFalse);
-    expect(find.text('Daftar'), findsOneWidget);
-    expect(_registerButton(tester).onPressed, isNotNull);
-  });
-
-  testWidgets('keeps the register button and reports a failed registration', (
-    tester,
-  ) async {
-    final item = buildAction();
-    final repository = FakeActionRepository([item])
-      ..shouldFailRegistration = true;
-    final store = InMemoryActionParticipationStore();
-    await _pumpRouted(
-      tester,
-      item: item,
-      repository: repository,
-      store: store,
-    );
-
-    await tester.tap(find.byKey(_registerButtonKey));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Konfirmasi'));
-    await tester.pumpAndSettle();
-
-    expect(repository.registerCalls, isEmpty);
-    expect(store.isRegistered('a01'), isFalse);
-    expect(
-      find.text('Pendaftaran gagal. Silakan coba lagi.'),
-      findsOneWidget,
-    );
-    expect(find.text('Daftar'), findsOneWidget);
-    expect(_registerButton(tester).onPressed, isNotNull);
-  });
-
-  testWidgets('does not open registration when the user is already registered', (
+  testWidgets('shows the registered status and offers cancellation', (
     tester,
   ) async {
     final item = buildAction();
@@ -308,14 +222,105 @@ void main() {
       store: store,
     );
 
-    expect(find.text('Terdaftar'), findsOneWidget);
-    expect(_registerButton(tester).onPressed, isNull);
+    // Activity status and the user's own registration status are both shown.
+    expect(find.text('Terbuka'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('action.detail.registeredChip')),
+      findsOneWidget,
+    );
+    expect(find.text('Batalkan pendaftaran'), findsOneWidget);
+    expect(_cancelButton(tester).onPressed, isNotNull);
+    expect(find.byKey(_reminderSwitchKey), findsOneWidget);
+  });
 
-    await tester.tap(find.byKey(_registerButtonKey), warnIfMissed: false);
+  testWidgets('keeps the registration when the dialog is dismissed', (
+    tester,
+  ) async {
+    final item = buildAction();
+    final repository = FakeActionRepository([item]);
+    final store = InMemoryActionParticipationStore();
+    await store.setRegistered('a01', true);
+    await _pumpRouted(
+      tester,
+      item: item,
+      repository: repository,
+      store: store,
+    );
+
+    await tester.tap(find.byKey(_registerButtonKey));
     await tester.pumpAndSettle();
 
-    expect(find.text('Konfirmasi Pendaftaran'), findsNothing);
-    expect(repository.registerCalls, isEmpty);
+    expect(find.text('Batalkan pendaftaran?'), findsOneWidget);
+    await tester.tap(find.text('Tetap terdaftar'));
+    await tester.pumpAndSettle();
+
+    expect(repository.cancelCalls, isEmpty);
+    expect(store.isRegistered('a01'), isTrue);
+    expect(
+      find.byKey(const ValueKey('action.detail.registeredChip')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('cancels the registration and releases the seat', (
+    tester,
+  ) async {
+    final item = buildAction();
+    final repository = FakeActionRepository([item]);
+    final store = InMemoryActionParticipationStore();
+    await store.setRegistered('a01', true);
+    await _pumpRouted(
+      tester,
+      item: item,
+      repository: repository,
+      store: store,
+    );
+
+    await tester.tap(find.byKey(_registerButtonKey));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ya, batalkan'));
+    await tester.pumpAndSettle();
+
+    expect(repository.cancelCalls, ['a01']);
+    expect(store.isRegistered('a01'), isFalse);
+    expect(find.text('Pendaftaran dibatalkan.'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('action.detail.registeredChip')),
+      findsNothing,
+    );
+    expect(find.text('Daftar'), findsOneWidget);
+    expect(_registerButton(tester).onPressed, isNotNull);
+  });
+
+  testWidgets('keeps the registration and reports a failed cancellation', (
+    tester,
+  ) async {
+    final item = buildAction();
+    final repository = FakeActionRepository([item])
+      ..shouldFailCancellation = true;
+    final store = InMemoryActionParticipationStore();
+    await store.setRegistered('a01', true);
+    await _pumpRouted(
+      tester,
+      item: item,
+      repository: repository,
+      store: store,
+    );
+
+    await tester.tap(find.byKey(_registerButtonKey));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ya, batalkan'));
+    await tester.pumpAndSettle();
+
+    expect(store.isRegistered('a01'), isTrue);
+    expect(
+      find.text('Pembatalan gagal. Silakan coba lagi.'),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('action.detail.registeredChip')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('shows the reminder switch only for registered users', (
@@ -456,12 +461,6 @@ void main() {
 
     await tester.scrollUntilVisible(find.byKey(_organizerKey), 250);
     expect(tester.takeException(), isNull);
-
-    await tester.tap(find.byKey(_registerButtonKey));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Konfirmasi Pendaftaran'), findsOneWidget);
-    expect(tester.takeException(), isNull);
   });
 
   testWidgets('stays usable offline and skips the map tile layer', (
@@ -553,6 +552,13 @@ Future<void> _pumpRouted(
         ),
       ),
       GoRoute(
+        path: Routes.actionRegister,
+        builder: (context, state) => Scaffold(
+          appBar: AppBar(),
+          body: Text('REGISTER:${state.pathParameters['id'] ?? ''}'),
+        ),
+      ),
+      GoRoute(
         path: Routes.auth,
         builder: (context, state) => Scaffold(
           appBar: AppBar(),
@@ -614,6 +620,10 @@ FilledButton _registerButton(WidgetTester tester) {
   );
 }
 
+OutlinedButton _cancelButton(WidgetTester tester) {
+  // The registered state puts the key directly on the cancel button.
+  return tester.widget<OutlinedButton>(find.byKey(_registerButtonKey));
+}
 Finder _statusText(String text) {
   return find.descendant(
     of: find.byKey(_statusKey),
