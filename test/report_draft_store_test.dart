@@ -29,6 +29,7 @@ void main() {
       longitude: 114.61,
       category: ReportCategory.damagedReef,
       severity: ReportSeverity.high,
+      title: 'Oil sheen near the reef',
       description: 'Oil sheen around the reef.',
       locationDetail: 'About 100 m east of the pier.',
       areaName: 'Pantai Sukamade, Banyuwangi',
@@ -45,6 +46,7 @@ void main() {
     expect(loaded.longitude, closeTo(114.61, 0.0001));
     expect(loaded.category, ReportCategory.damagedReef);
     expect(loaded.severity, ReportSeverity.high);
+    expect(loaded.title, 'Oil sheen near the reef');
     expect(loaded.description, 'Oil sheen around the reef.');
     expect(loaded.locationDetail, 'About 100 m east of the pier.');
     expect(loaded.areaName, 'Pantai Sukamade, Banyuwangi');
@@ -97,7 +99,8 @@ void main() {
     final loaded = await store.load();
 
     expect(loaded, isNotNull);
-    expect(loaded!.description, isEmpty);
+    expect(loaded!.title, isEmpty);
+    expect(loaded.description, isEmpty);
     expect(loaded.locationDetail, isEmpty);
     expect(loaded.areaName, isEmpty);
   });

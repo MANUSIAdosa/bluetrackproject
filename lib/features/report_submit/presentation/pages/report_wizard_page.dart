@@ -88,6 +88,7 @@ class _ReportWizardPageState extends State<ReportWizardPage>
   bool _draftReady = false;
   bool _loading = true;
   bool _picking = false;
+  bool _showTitleValidation = false;
   bool _showDescriptionValidation = false;
   bool _showTypeValidation = false;
   bool _submitting = false;
@@ -101,6 +102,7 @@ class _ReportWizardPageState extends State<ReportWizardPage>
   bool get _canContinue {
     if (_step == ReportWizardDraft.firstStep) {
       return _draft.photoCount >= ReportRules.minPhotos &&
+          _draft.hasTitle &&
           _draft.hasDescription;
     }
     if (_step == ReportWizardDraft.locationStep) return _draft.hasLocation;
@@ -167,10 +169,16 @@ class _ReportWizardPageState extends State<ReportWizardPage>
         content: Text(dialogContext.tr('report_resume_body')),
         actions: [
           TextButton(
+            // Starting over discards the stored draft, so it reads as the
+            // destructive choice instead of a neutral secondary action.
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
             onPressed: () => Navigator.pop(dialogContext, false),
             child: Text(dialogContext.tr('report_resume_new')),
           ),
           FilledButton(
+            style: FilledButton.styleFrom(
+              minimumSize: AppDimens.dialogActionMinSize,
+            ),
             onPressed: () => Navigator.pop(dialogContext, true),
             child: Text(dialogContext.tr('report_resume_continue')),
           ),
@@ -204,10 +212,12 @@ class _ReportWizardPageState extends State<ReportWizardPage>
   void _update(ReportWizardDraft next) {
     setState(() {
       if (next.currentStep != _draft.currentStep) {
+        _showTitleValidation = false;
         _showDescriptionValidation = false;
         _showTypeValidation = false;
         _submitError = false;
       }
+      if (next.hasTitle) _showTitleValidation = false;
       if (next.hasDescription) _showDescriptionValidation = false;
       _draft = next.copyWith(updatedAt: DateTime.now().toUtc());
     });
@@ -252,6 +262,9 @@ class _ReportWizardPageState extends State<ReportWizardPage>
             child: Text(dialogContext.tr('common.cancel')),
           ),
           FilledButton(
+            style: FilledButton.styleFrom(
+              minimumSize: AppDimens.dialogActionMinSize,
+            ),
             onPressed: () => Navigator.pop(dialogContext, true),
             child: Text(dialogContext.tr('report_exit_confirm')),
           ),
@@ -267,10 +280,15 @@ class _ReportWizardPageState extends State<ReportWizardPage>
   void _goNext() {
     if (_step >= ReportWizardDraft.lastStep) return;
     if (_step == ReportWizardDraft.firstStep &&
-        _draft.photoCount >= ReportRules.minPhotos &&
-        !_draft.hasDescription) {
-      _revealDescriptionValidation();
-      return;
+        _draft.photoCount >= ReportRules.minPhotos) {
+      if (!_draft.hasTitle) {
+        _revealTitleValidation();
+        return;
+      }
+      if (!_draft.hasDescription) {
+        _revealDescriptionValidation();
+        return;
+      }
     }
     if (_step == ReportWizardDraft.typeStep && !_draft.hasType) {
       _revealTypeValidation();
@@ -278,6 +296,11 @@ class _ReportWizardPageState extends State<ReportWizardPage>
     }
     if (!_canContinue) return;
     _update(_draft.copyWith(currentStep: _step + 1));
+  }
+
+  void _revealTitleValidation() {
+    if (_draft.hasTitle || _showTitleValidation) return;
+    setState(() => _showTitleValidation = true);
   }
 
   void _revealDescriptionValidation() {
@@ -293,7 +316,9 @@ class _ReportWizardPageState extends State<ReportWizardPage>
   /// First step with a missing requirement, or null when the draft is ready
   /// to send. Sending jumps to this step so the user can complete it.
   int? _firstIncompleteStep() {
-    if (_draft.photoCount < ReportRules.minPhotos || !_draft.hasDescription) {
+    if (_draft.photoCount < ReportRules.minPhotos ||
+        !_draft.hasTitle ||
+        !_draft.hasDescription) {
       return ReportWizardDraft.firstStep;
     }
     if (!_draft.hasLocation) return ReportWizardDraft.locationStep;
@@ -311,6 +336,8 @@ class _ReportWizardPageState extends State<ReportWizardPage>
           ReportWizardDraft.firstStep =>
             _draft.photoCount < ReportRules.minPhotos
                 ? 'report_submit_missing_photos'
+                : !_draft.hasTitle
+                ? 'report_submit_missing_title'
                 : 'report_submit_missing_description',
           ReportWizardDraft.locationStep => 'report_submit_missing_location',
           _ => 'report_submit_missing_type',
@@ -561,6 +588,21 @@ class _ReportWizardPageState extends State<ReportWizardPage>
         ),
         const SizedBox(height: 20),
         TextFormField(
+          key: const ValueKey('report_title_field'),
+          initialValue: _draft.title,
+          textInputAction: TextInputAction.next,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: InputDecoration(
+            labelText: context.tr('report_title_field'),
+            hintText: context.tr('report_title_hint'),
+            errorText: _showTitleValidation && !_draft.hasTitle
+                ? context.tr('report_title_error')
+                : null,
+          ),
+          onChanged: (title) => _update(_draft.copyWith(title: title)),
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
           key: const ValueKey('report_description_field'),
           initialValue: _draft.description,
           minLines: 3,
@@ -628,6 +670,7 @@ class _ReportWizardPageState extends State<ReportWizardPage>
           children: [
             ReportReviewStep(
               photoPaths: _draft.photoPaths,
+              title: _draft.title,
               description: _draft.description,
               areaName: _draft.areaName,
               locationDetail: _draft.locationDetail,
@@ -636,13 +679,11 @@ class _ReportWizardPageState extends State<ReportWizardPage>
               category: _draft.category,
               severity: _draft.severity,
               reportedAt: _draft.updatedAt?.toLocal() ?? DateTime.now(),
-              onEditPhotos: () => _editFromReview(ReportWizardDraft.firstStep),
-              onEditDescription: () =>
-                  _editFromReview(ReportWizardDraft.firstStep),
+              onEditReport: () => _editFromReview(ReportWizardDraft.firstStep),
               onEditLocation: () =>
                   _editFromReview(ReportWizardDraft.locationStep),
-              onEditType: () => _editFromReview(ReportWizardDraft.typeStep),
-              onEditSeverity: () => _editFromReview(ReportWizardDraft.typeStep),
+              onEditClassification: () =>
+                  _editFromReview(ReportWizardDraft.typeStep),
               showSubmitError: _submitError,
               onRetry: _submitting ? null : () => unawaited(_submit()),
               tileProvider: widget.locationTileProvider,
@@ -675,13 +716,21 @@ class _ReportWizardPageState extends State<ReportWizardPage>
     // description or for incomplete type/severity choices.
     if (_canContinue) return button;
     if (_step == ReportWizardDraft.firstStep &&
-        _draft.photoCount >= ReportRules.minPhotos &&
-        !_draft.hasDescription) {
-      return GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: _revealDescriptionValidation,
-        child: button,
-      );
+        _draft.photoCount >= ReportRules.minPhotos) {
+      if (!_draft.hasTitle) {
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _revealTitleValidation,
+          child: button,
+        );
+      }
+      if (!_draft.hasDescription) {
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _revealDescriptionValidation,
+          child: button,
+        );
+      }
     }
     if (_step != ReportWizardDraft.typeStep) return button;
     return GestureDetector(

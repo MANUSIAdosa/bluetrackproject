@@ -98,7 +98,7 @@ Report _buildReport(ReportWizardDraft draft, {String id = 'RPT-0001'}) {
     severity: draft.severity ?? ReportSeverity.high,
     status: ReportStatus.submitted,
     reportedAt: DateTime.utc(2026, 10, 31, 10),
-    title: 'Laporan temuan lapangan',
+    title: draft.title,
     description: draft.description,
     locationDetail: draft.locationDetail.trim().isEmpty
         ? null
@@ -141,6 +141,7 @@ void main() {
     List<String>? photoPaths,
     String? areaName = 'Pantai Sukamade, Banyuwangi',
     String? locationDetail = 'Sekitar 2 mil laut dari pulau.',
+    String description = 'Penyu terlihat terjerat jaring plastik.',
   }) {
     return ReportWizardDraft(
       photoPaths: photoPaths ?? [photoPath],
@@ -148,7 +149,8 @@ void main() {
       longitude: 114.6131,
       category: category,
       severity: severity,
-      description: 'Penyu terlihat terjerat jaring plastik.',
+      title: 'Penyu terjerat jaring',
+      description: description,
       locationDetail: locationDetail ?? '',
       areaName: areaName ?? '',
       currentStep: ReportWizardDraft.lastStep,
@@ -240,14 +242,13 @@ void main() {
     await openReview(tester, store: store, service: service);
 
     expect(find.text('Tinjau laporan'), findsOneWidget);
-    expect(find.text('Jenis temuan'), findsOneWidget);
-    expect(find.text('Tingkat kerusakan'), findsOneWidget);
     expect(find.text('Terumbu rusak'), findsOneWidget);
     expect(find.text('Berat'), findsOneWidget);
     expect(
       find.text('Penyu terlihat terjerat jaring plastik.'),
       findsOneWidget,
     );
+    expect(find.text('Penyu terjerat jaring'), findsOneWidget);
     expect(find.text('Pantai Sukamade, Banyuwangi'), findsOneWidget);
     expect(find.text('Sekitar 2 mil laut dari pulau.'), findsNothing);
 
@@ -284,7 +285,21 @@ void main() {
       find.text('Laporan akan diverifikasi sebelum tayang ke publik.'),
       findsOneWidget,
     );
-    expect(find.widgetWithText(TextButton, 'Ubah'), findsNWidgets(5));
+    // Photos, title and description share the step-1 group and one action.
+    expect(find.widgetWithText(TextButton, 'Ubah'), findsNWidgets(3));
+
+    // The reporter's title must outrank the group labels it sits under.
+    final titleSize = tester
+        .widget<Text>(find.byKey(const ValueKey('report_review_title_value')))
+        .style!
+        .fontSize!;
+    final groupLabelSize = tester
+        .widget<Text>(find.text('Foto dan keterangan'))
+        .style!
+        .fontSize!;
+    expect(titleSize, greaterThan(groupLabelSize + 3));
+    expect(find.text('Foto dan keterangan'), findsOneWidget);
+    expect(find.text('Jenis dan tingkat'), findsOneWidget);
 
     // Photos open the full-screen viewer.
     final photo = find.byKey(const ValueKey('report_review_photo_0'));
@@ -297,16 +312,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('report_photo_viewer')), findsNothing);
 
-    final editDescription = find.byKey(
-      const ValueKey('report_review_edit_description'),
-    );
-    await tester.ensureVisible(editDescription);
-    await tester.tap(editDescription);
+    // One edit action returns to step 1 with both text fields intact.
+    final editReport = find.byKey(const ValueKey('report_review_edit_report'));
+    await tester.ensureVisible(editReport);
+    await tester.tap(editReport);
     await tester.pumpAndSettle();
-    expect(
-      find.byKey(const ValueKey('report_description_field')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('report_title_field')), findsOneWidget);
     expect(
       tester
           .widget<TextFormField>(
@@ -315,16 +326,16 @@ void main() {
           .initialValue,
       'Penyu terlihat terjerat jaring plastik.',
     );
-
-    await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
-    await tester.pumpAndSettle();
+    for (var step = 0; step < 3; step++) {
+      await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
+      await tester.pumpAndSettle();
+    }
+    expect(find.text('Tinjau laporan'), findsOneWidget);
 
     // Editing the type goes back to step 3 without losing anything.
-    final editType = find.byKey(const ValueKey('report_review_edit_type'));
+    final editType = find.byKey(
+      const ValueKey('report_review_edit_classification'),
+    );
     await tester.ensureVisible(editType);
     await tester.tap(editType);
     await tester.pumpAndSettle();
@@ -540,6 +551,49 @@ void main() {
     // Centred within the padding, so the two gaps are close to equal.
     expect((gapAbove - gapBelow).abs(), lessThan(24));
     expect(gapAbove, greaterThan(60));
+  });
+
+  testWidgets('long descriptions collapse to a preview that can expand', (
+    tester,
+  ) async {
+    final longText = List.filled(
+      6,
+      'Seekor penyu ditemukan terlilit jaring plastik di perairan dekat '
+      'dermaga dan masih dapat bergerak.',
+    ).join(' ');
+    final store = _RecordingStore(reviewDraft(description: longText));
+    final service = _ControllableService(reports);
+    await openReview(tester, store: store, service: service);
+
+    final value = find.byKey(const ValueKey('report_review_description_value'));
+    expect(tester.widget<Text>(value).maxLines, 3);
+
+    final toggle = find.byKey(
+      const ValueKey('report_review_description_toggle'),
+    );
+    expect(toggle, findsOneWidget);
+
+    await tester.ensureVisible(toggle);
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<Text>(value).maxLines, isNull);
+    expect(find.text('Sembunyikan'), findsOneWidget);
+
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect(tester.widget<Text>(value).maxLines, 3);
+  });
+
+  testWidgets('short descriptions show no extra toggle', (tester) async {
+    final store = _RecordingStore(reviewDraft());
+    final service = _ControllableService(reports);
+    await openReview(tester, store: store, service: service);
+
+    expect(
+      find.byKey(const ValueKey('report_review_description_toggle')),
+      findsNothing,
+    );
   });
 
   testWidgets('success keeps coordinates when no area name exists', (

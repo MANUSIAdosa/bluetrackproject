@@ -20,6 +20,7 @@ class ReportReviewStep extends StatelessWidget {
   const ReportReviewStep({
     super.key,
     required this.photoPaths,
+    required this.title,
     required this.description,
     this.areaName = '',
     this.locationDetail = '',
@@ -28,17 +29,16 @@ class ReportReviewStep extends StatelessWidget {
     required this.category,
     required this.severity,
     required this.reportedAt,
-    required this.onEditPhotos,
-    required this.onEditDescription,
+    required this.onEditReport,
     required this.onEditLocation,
-    required this.onEditType,
-    required this.onEditSeverity,
+    required this.onEditClassification,
     this.showSubmitError = false,
     this.onRetry,
     this.tileProvider,
   });
 
   final List<String> photoPaths;
+  final String title;
   final String description;
   final String areaName;
   final String locationDetail;
@@ -50,11 +50,9 @@ class ReportReviewStep extends StatelessWidget {
   /// Time shown as the finding time; stamped when the draft was last changed.
   final DateTime reportedAt;
 
-  final VoidCallback onEditPhotos;
-  final VoidCallback onEditDescription;
+  final VoidCallback onEditReport;
   final VoidCallback onEditLocation;
-  final VoidCallback onEditType;
-  final VoidCallback onEditSeverity;
+  final VoidCallback onEditClassification;
 
   /// True after a failed send; shows the error card with [onRetry].
   final bool showSubmitError;
@@ -91,30 +89,36 @@ class ReportReviewStep extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _SectionHeader(
-                  title: context.tr('report_review_photos'),
-                  editKey: const ValueKey('report_review_edit_photos'),
-                  onEdit: onEditPhotos,
+                  title: context.tr('report_review_content_group'),
+                  hint: context.tr('report_review_edit_report_hint'),
+                  editKey: const ValueKey('report_review_edit_report'),
+                  onEdit: onEditReport,
                 ),
                 _PhotoSection(photoPaths: photoPaths),
-                const Divider(height: 24),
-                _SectionHeader(
-                  title: context.tr('report_review_description'),
-                  editKey: const ValueKey('report_review_edit_description'),
-                  onEdit: onEditDescription,
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    description.trim().isEmpty
-                        ? context.tr('report_review_empty_value')
-                        : description.trim(),
-                    key: const ValueKey('report_review_description_value'),
-                    style: const TextStyle(fontSize: 14, height: 1.45),
+                const SizedBox(height: 8),
+                Text(
+                  title.trim().isEmpty
+                      ? context.tr('report_review_empty_value')
+                      : title.trim(),
+                  key: const ValueKey('report_review_title_value'),
+                  style: const TextStyle(
+                    fontSize: 17,
+                    height: 1.3,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
                   ),
+                ),
+                const SizedBox(height: 4),
+                _DescriptionPreview(
+                  key: const ValueKey('report_review_description'),
+                  text: description.trim().isEmpty
+                      ? context.tr('report_review_empty_value')
+                      : description.trim(),
                 ),
                 const Divider(height: 24),
                 _SectionHeader(
                   title: context.tr('report_review_location'),
+                  hint: context.tr('report_review_edit_location_hint'),
                   editKey: const ValueKey('report_review_edit_location'),
                   onEdit: onEditLocation,
                 ),
@@ -127,9 +131,10 @@ class ReportReviewStep extends StatelessWidget {
                 ),
                 const Divider(height: 24),
                 _SectionHeader(
-                  title: context.tr('report_review_type'),
-                  editKey: const ValueKey('report_review_edit_type'),
-                  onEdit: onEditType,
+                  title: context.tr('report_review_classification'),
+                  hint: context.tr('report_review_edit_classification_hint'),
+                  editKey: const ValueKey('report_review_edit_classification'),
+                  onEdit: onEditClassification,
                 ),
                 _DetailRow(
                   icon: category == null
@@ -143,11 +148,6 @@ class ReportReviewStep extends StatelessWidget {
                       : context.p04CategoryLabel(category!),
                 ),
                 const SizedBox(height: 4),
-                _SectionHeader(
-                  title: context.tr('report_review_severity'),
-                  editKey: const ValueKey('report_review_edit_severity'),
-                  onEdit: onEditSeverity,
-                ),
                 _DetailRow(
                   icon: severity == null
                       ? Icons.speed_outlined
@@ -228,9 +228,17 @@ class ReportReviewStep extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, this.editKey, this.onEdit});
+  const _SectionHeader({
+    required this.title,
+    this.hint,
+    this.editKey,
+    this.onEdit,
+  });
 
   final String title;
+
+  /// Tooltip for the shared "Ubah" label, so each edit targets a named group.
+  final String? hint;
   final Key? editKey;
   final VoidCallback? onEdit;
 
@@ -241,18 +249,26 @@ class _SectionHeader extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+            style: const TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
+              color: AppColors.textSecondary,
+            ),
           ),
         ),
         if (onEdit != null)
-          TextButton(
-            key: editKey,
-            onPressed: onEdit,
-            style: TextButton.styleFrom(
-              minimumSize: const Size(48, 48),
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+          Tooltip(
+            message: hint ?? context.tr('report_review_edit'),
+            child: TextButton(
+              key: editKey,
+              onPressed: onEdit,
+              style: TextButton.styleFrom(
+                minimumSize: const Size(48, 48),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+              child: Text(context.tr('report_review_edit')),
             ),
-            child: Text(context.tr('report_review_edit')),
           ),
       ],
     );
@@ -625,6 +641,73 @@ class _LandmarkDetailsState extends State<_LandmarkDetails> {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// Description preview: three lines, with a "Show more" control only when the
+/// text actually overflows. The description is required, so at least a preview
+/// stays visible; the toggle keeps long reports scannable.
+class _DescriptionPreview extends StatefulWidget {
+  const _DescriptionPreview({super.key, required this.text});
+
+  final String text;
+
+  @override
+  State<_DescriptionPreview> createState() => _DescriptionPreviewState();
+}
+
+class _DescriptionPreviewState extends State<_DescriptionPreview> {
+  static const int _maxLines = 3;
+  static const TextStyle _style = TextStyle(fontSize: 14, height: 1.45);
+
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final painter = TextPainter(
+          text: TextSpan(text: widget.text, style: _style),
+          maxLines: _maxLines,
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+        )..layout(maxWidth: constraints.maxWidth);
+        final overflows = painter.didExceedMaxLines;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.text,
+              key: const ValueKey('report_review_description_value'),
+              maxLines: _expanded ? null : _maxLines,
+              overflow: _expanded
+                  ? TextOverflow.visible
+                  : TextOverflow.ellipsis,
+              style: _style,
+            ),
+            if (overflows)
+              TextButton.icon(
+                key: const ValueKey('report_review_description_toggle'),
+                onPressed: () => setState(() => _expanded = !_expanded),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(48, 40),
+                ),
+                icon: Icon(
+                  _expanded ? Icons.expand_less : Icons.expand_more,
+                  size: 18,
+                ),
+                label: Text(
+                  context.tr(
+                    _expanded ? 'report_review_less' : 'report_review_more',
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
