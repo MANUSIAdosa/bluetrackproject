@@ -491,6 +491,7 @@ class _TrackerRow extends StatelessWidget {
   Widget _buildVisual(BuildContext context) {
     final color = context.p04StatusColor(status);
     final foreground = context.p04StatusForeground(status);
+    final progressColor = current ? color : AppColors.inactiveTab;
     final textTheme = Theme.of(context).textTheme;
 
     // The row grows with its content (larger text, the completion date line)
@@ -509,10 +510,14 @@ class _TrackerRow extends StatelessWidget {
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: reached ? foreground : AppColors.surface,
+                    color: reached
+                        ? progressColor.withValues(alpha: 0.42)
+                        : AppColors.surface,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: reached ? foreground : AppColors.textSecondary,
+                      color: reached
+                          ? progressColor.withValues(alpha: 0.75)
+                          : AppColors.textSecondary,
                       width: 1.5,
                     ),
                     // A soft ring marks the step the report is at right now.
@@ -526,10 +531,10 @@ class _TrackerRow extends StatelessWidget {
                         : null,
                   ),
                   child: reached
-                      ? const Icon(
+                      ? Icon(
                           Icons.check,
                           size: 14,
-                          color: AppColors.surface,
+                          color: current ? foreground : AppColors.textSecondary,
                         )
                       : null,
                 ),
@@ -538,7 +543,7 @@ class _TrackerRow extends StatelessWidget {
                     child: Container(
                       width: 2,
                       color: nextReached
-                          ? color.withValues(alpha: 0.45)
+                          ? AppColors.inactiveTab.withValues(alpha: 0.55)
                           : AppColors.border,
                     ),
                   ),
@@ -557,7 +562,7 @@ class _TrackerRow extends StatelessWidget {
                 ),
                 decoration: current
                     ? BoxDecoration(
-                        color: color.withValues(alpha: 0.08),
+                        color: color.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       )
                     : null,
@@ -583,7 +588,7 @@ class _TrackerRow extends StatelessWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.1),
+                              color: color.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Text(
@@ -602,7 +607,7 @@ class _TrackerRow extends StatelessWidget {
                         context.p04StatusLabel(status),
                         style: textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: reached
+                          color: current
                               ? AppColors.textPrimary
                               : AppColors.textSecondary,
                         ),
