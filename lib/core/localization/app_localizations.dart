@@ -175,6 +175,8 @@ class AppLocalizations {
       // `sampah_laut` has no projects and `perikanan` still maps to `lamun`.
       'p01.interests.info.title': 'Tentang Minat',
       'p01.interests.info.button': 'Tentang minat',
+      'p01.interests.info.label': 'Informasi Detail',
+      'p01.interests.info.labelShort': 'Info Detail',
       'p01.interests.info.sampah_laut':
           'Belum ada proyek sampah laut di Jelajahi, jadi minat ini belum '
           'mengubah urutan proyek.',
@@ -1069,6 +1071,8 @@ class AppLocalizations {
       // `sampah_laut` has no projects and `perikanan` still maps to `lamun`.
       'p01.interests.info.title': 'About Interests',
       'p01.interests.info.button': 'About interests',
+      'p01.interests.info.label': 'Detail Information',
+      'p01.interests.info.labelShort': 'Detail Info',
       'p01.interests.info.sampah_laut':
           'No marine debris projects are in Explore yet, so this interest '
           'does not change the project order for now.',
