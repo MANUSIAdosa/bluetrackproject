@@ -11,7 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'support/test_harness.dart';
 
 const _privacyLabel = 'Kebijakan Privasi';
-const _termsLabel = 'Syarat & Ketentuan';
+const _termsLabel = 'Syarat\u00a0&\u00a0Ketentuan';
 const _emailKey = Key('auth_email_field');
 const _phoneKey = Key('auth_phone_field');
 
@@ -82,15 +82,24 @@ Future<void> openOtpWithEmail(
   String email = 'penyayang@contoh.id',
 }) async {
   await tester.enterText(emailField(), email);
+  await tester.tap(find.byKey(const Key('auth_consent_checkbox')));
+  await tester.pump();
   await tester.tap(find.text('Lanjut'));
   await pumpFrames(tester);
 }
 
-/// Types a six-digit code; the sixth digit triggers mock verification.
-Future<void> enterOtp(WidgetTester tester, String code) async {
+/// Enters a code without submitting it.
+Future<void> fillOtp(WidgetTester tester, String code) async {
   for (var i = 0; i < code.length; i++) {
     await tester.enterText(otpField(i), code[i]);
   }
+  await pumpFrames(tester);
+}
+
+/// Enters a code and submits it through the explicit Verify action.
+Future<void> enterOtp(WidgetTester tester, String code) async {
+  await fillOtp(tester, code);
+  await tester.tap(find.text('Verifikasi'));
   await pumpFrames(tester);
 }
 
@@ -137,7 +146,7 @@ void main() {
     expect(find.text('Continue'), findsOneWidget);
   });
 
-  testWidgets('urutannya judul, email, OR, telepon, tombol, lalu privasi', (
+  testWidgets('urutannya judul, email, OR, telepon, persetujuan, lalu tombol', (
     tester,
   ) async {
     await tester.pumpWidget(wrapRouter(buildLoginRouter()));
@@ -146,17 +155,20 @@ void main() {
     double top(Finder finder) => tester.getTopLeft(finder).dy;
     double bottom(Finder finder) => tester.getBottomLeft(finder).dy;
 
+    final orLabel = find.text('ATAU');
+    expect(top(orLabel) - bottom(emailField()), inInclusiveRange(6, 10));
+    expect(top(phoneField()) - bottom(orLabel), inInclusiveRange(6, 10));
     expect(
       top(find.text('Selamat datang kembali')),
       lessThan(top(emailField())),
     );
     expect(top(emailField()), lessThan(top(find.text('ATAU'))));
     expect(top(find.text('ATAU')), lessThan(top(phoneField())));
-    expect(top(phoneField()), lessThan(top(find.byType(FilledButton))));
-    expect(bottom(find.byType(FilledButton)), lessThan(top(legalNotice())));
+    expect(top(phoneField()), lessThan(top(legalNotice())));
+    expect(top(legalNotice()), lessThan(top(find.byType(FilledButton))));
   });
 
-  testWidgets('form di bagian atas, catatan hukum mengikuti form', (
+  testWidgets('form tetap di atas dengan persetujuan tepat sebelum tombol', (
     tester,
   ) async {
     await tester.pumpWidget(wrapRouter(buildLoginRouter()));
@@ -165,16 +177,21 @@ void main() {
     // Dead centring put the field at 261, then 296 — a vertically centred field
     // is what the mobile keyboard covers. Top alignment puts it around 178.
     final fieldTop = tester.getTopLeft(emailField()).dy;
+    final subtitleBottom = tester
+        .getBottomLeft(find.text('Pilih email atau nomor telepon.'))
+        .dy;
     expect(fieldTop, greaterThan(100));
     expect(fieldTop, lessThan(240));
+    expect(fieldTop - subtitleBottom, inInclusiveRange(28, 40));
 
-    // The notice flows after the button instead of being pinned to the bottom
-    // of the viewport, so it never separates from the form it belongs to.
-    final gap =
-        tester.getTopLeft(legalNotice()).dy -
-        tester.getBottomLeft(find.byType(FilledButton)).dy;
-    expect(gap, greaterThanOrEqualTo(20));
-    expect(gap, lessThan(80));
+    final consentTop = tester.getTopLeft(legalNotice()).dy;
+    final consentBottom = tester.getBottomLeft(legalNotice()).dy;
+    final phoneBottom = tester.getBottomLeft(phoneField()).dy;
+    final buttonTop = tester.getTopLeft(find.byType(FilledButton)).dy;
+    expect(consentTop, greaterThan(phoneBottom));
+    expect(buttonTop, greaterThan(consentBottom));
+    expect(consentTop - phoneBottom, lessThan(56));
+    expect(buttonTop - consentBottom, lessThan(48));
   });
 
   testWidgets(
@@ -210,6 +227,28 @@ void main() {
     },
   );
 
+  testWidgets(
+    'OTP dan tombol Verifikasi tetap terlihat saat keyboard terbuka',
+    (tester) async {
+      tester.view.devicePixelRatio = 3;
+      tester.view.physicalSize = const Size(1170, 2532); // 390 x 844
+      tester.view.viewInsets = const FakeViewPadding(bottom: 1020); // 340
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+      await tester.pumpAndSettle();
+      await openOtpWithEmail(tester);
+
+      final viewport = tester.getRect(find.byType(SingleChildScrollView));
+      expect(tester.getBottomLeft(otpField(0)).dy, lessThan(viewport.bottom));
+      expect(
+        tester.getBottomLeft(find.text('Verifikasi')).dy,
+        lessThan(viewport.bottom),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('field punya label yang bertahan setelah diisi', (tester) async {
     await tester.pumpWidget(wrapRouter(buildLoginRouter()));
     await tester.pumpAndSettle();
@@ -238,6 +277,196 @@ void main() {
     expect(find.text('Masukkan email atau nomor telepon.'), findsOneWidget);
     expect(find.byKey(const Key('auth_identifier_error')), findsOneWidget);
     expect(otpField(0), findsNothing);
+  });
+
+  testWidgets('persetujuan belum dicentang mencegah lanjut ke OTP', (
+    tester,
+  ) async {
+    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(emailField(), 'penyayang@contoh.id');
+    await tester.tap(find.text('Lanjut'));
+    await tester.pump();
+
+    expect(find.byKey(const Key('auth_consent_error')), findsOneWidget);
+    expect(otpField(0), findsNothing);
+  });
+
+  testWidgets('mencentang persetujuan menghapus pesan validasi', (
+    tester,
+  ) async {
+    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(emailField(), 'penyayang@contoh.id');
+    await tester.tap(find.text('Lanjut'));
+    await tester.pump();
+    expect(find.byKey(const Key('auth_consent_error')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('auth_consent_checkbox')));
+    await tester.pump();
+    expect(find.byKey(const Key('auth_consent_error')), findsNothing);
+  });
+
+  testWidgets('persetujuan yang dicentang mengizinkan lanjut ke OTP', (
+    tester,
+  ) async {
+    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(emailField(), 'penyayang@contoh.id');
+    await tester.tap(find.byKey(const Key('auth_consent_checkbox')));
+    await tester.pump();
+    await tester.tap(find.text('Lanjut'));
+    await pumpFrames(tester);
+
+    expect(otpField(0), findsOneWidget);
+    expect(find.byKey(const Key('auth_consent_error')), findsNothing);
+  });
+
+  testWidgets('checkbox persetujuan hanya tampil di layar masuk', (
+    tester,
+  ) async {
+    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('auth_consent_checkbox')), findsOneWidget);
+    await openOtpWithEmail(tester);
+
+    expect(find.byKey(const Key('auth_consent_checkbox')), findsNothing);
+    expect(legalNotice(), findsNothing);
+  });
+
+  testWidgets('enam digit tidak terkirim sebelum tombol Verifikasi ditekan', (
+    tester,
+  ) async {
+    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+    await tester.pumpAndSettle();
+
+    await openOtpWithEmail(tester);
+    expect(
+      tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+      isNull,
+    );
+
+    await fillOtp(tester, '123456');
+    expect(
+      List.generate(
+        6,
+        (index) => tester.widget<TextField>(otpField(index)).controller!.text,
+      ).join(),
+      '123456',
+    );
+
+    expect(find.byType(LoginPage), findsOneWidget);
+    expect(AuthController.instance.signedIn, isFalse);
+    expect(find.text('Verifikasi'), findsOneWidget);
+    expect(
+      tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+      isNotNull,
+    );
+
+    await tester.tap(find.text('Verifikasi'));
+    await pumpFrames(tester);
+    expect(AuthController.instance.signedIn, isTrue);
+    expect(find.text('EXPLORE'), findsOneWidget);
+  });
+
+  testWidgets('jarak di OTP mengelompokkan input, tombol, dan resend', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 844);
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+    await tester.pumpAndSettle();
+    await openOtpWithEmail(tester);
+
+    double top(Finder finder) => tester.getTopLeft(finder).dy;
+    double bottom(Finder finder) => tester.getBottomLeft(finder).dy;
+
+    final subtitle = find.text('Kode dikirim ke penyayang@contoh.id');
+    final firstOtp = otpField(0);
+    final verify = find.byType(FilledButton);
+    final resendPrompt = find.text('Belum menerima kode?');
+    final countdown = find.textContaining('Kirim ulang dalam');
+
+    // Previous proportions: 50dp boxes, 8dp gaps, inside the page margin.
+    expect(
+      tester.getSize(find.byKey(const Key('auth_otp_row'))).width,
+      closeTo(340, 0.5),
+    );
+
+    final boxWidth = tester.getSize(otpField(0)).width;
+    expect(boxWidth, closeTo(50, 0.5));
+    for (var index = 0; index < 6; index++) {
+      final size = tester.getSize(otpField(index));
+      expect(size.width, closeTo(boxWidth, 0.01));
+      // Comfortable tap target, height from the text and field padding.
+      expect(size.height, greaterThanOrEqualTo(48));
+    }
+    for (var index = 0; index < 5; index++) {
+      final gap =
+          tester.getTopLeft(otpField(index + 1)).dx -
+          tester.getTopRight(otpField(index)).dx;
+      expect(gap, closeTo(8, 0.5));
+    }
+
+    final headingGap = top(firstOtp) - bottom(subtitle);
+    final actionGap = top(verify) - bottom(firstOtp);
+    final resendGap = top(resendPrompt) - bottom(verify);
+    final countdownGap = top(countdown) - bottom(resendPrompt);
+
+    expect(headingGap, inInclusiveRange(28, 40));
+    expect(actionGap, inInclusiveRange(12, 24));
+    expect(resendGap, inInclusiveRange(20, 32));
+    expect(countdownGap, inInclusiveRange(4, 16));
+  });
+
+  testWidgets('jarak judul ke isian sama di tahap email dan OTP', (
+    tester,
+  ) async {
+    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+    await tester.pumpAndSettle();
+
+    final identifierGap =
+        tester.getTopLeft(emailField()).dy -
+        tester.getBottomLeft(find.text('Pilih email atau nomor telepon.')).dy;
+
+    await openOtpWithEmail(tester);
+
+    final otpGap =
+        tester.getTopLeft(otpField(0)).dy -
+        tester
+            .getBottomLeft(find.text('Kode dikirim ke penyayang@contoh.id'))
+            .dy;
+
+    expect((identifierGap - otpGap).abs(), lessThan(2));
+  });
+
+  testWidgets('resend menampilkan prompt dan countdown dengan jelas', (
+    tester,
+  ) async {
+    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+    await tester.pumpAndSettle();
+
+    await openOtpWithEmail(tester);
+
+    expect(find.text('Belum menerima kode?'), findsOneWidget);
+    expect(find.textContaining('Kirim ulang dalam'), findsOneWidget);
+    expect(find.byIcon(Icons.schedule_rounded), findsOneWidget);
+    expect(find.byKey(const Key('auth_resend_button')), findsNothing);
+
+    await tester.pump(const Duration(seconds: 60));
+    await tester.pump();
+    expect(find.byKey(const Key('auth_resend_button')), findsOneWidget);
+    expect(find.text('Kirim ulang kode'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('auth_resend_button')));
+    await tester.pump();
+    expect(find.textContaining('Kirim ulang dalam'), findsOneWidget);
   });
 
   testWidgets('email tidak valid ditolak dengan pesan inline', (tester) async {
@@ -302,6 +531,8 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(phoneField(), '8123456789');
+    await tester.tap(find.byKey(const Key('auth_consent_checkbox')));
+    await tester.pump();
     await tester.tap(find.text('Lanjut'));
     await pumpFrames(tester);
 
@@ -310,16 +541,36 @@ void main() {
     expect(otpField(0), findsOneWidget);
   });
 
-  testWidgets('bila keduanya diisi, email dipakai lebih dulu', (tester) async {
+  testWidgets('metode masuk saling eksklusif dan dapat diganti', (
+    tester,
+  ) async {
     await tester.pumpWidget(wrapRouter(buildLoginRouter()));
     await tester.pumpAndSettle();
 
-    await tester.enterText(emailField(), 'penyayang@contoh.id');
-    await tester.enterText(phoneField(), '8123456789');
-    await tester.tap(find.text('Lanjut'));
-    await pumpFrames(tester);
+    expect(tester.widget<TextField>(emailField()).enabled, isTrue);
+    expect(tester.widget<TextField>(phoneField()).enabled, isTrue);
 
-    expect(find.text('Kode dikirim ke penyayang@contoh.id'), findsOneWidget);
+    await tester.enterText(emailField(), 'penyayang@contoh.id');
+    await tester.pump();
+    expect(tester.widget<TextField>(emailField()).enabled, isTrue);
+    expect(tester.widget<TextField>(phoneField()).enabled, isFalse);
+    expect(find.byIcon(Icons.clear_rounded), findsNothing);
+
+    await tester.enterText(emailField(), '');
+    await tester.pump();
+    expect(tester.widget<TextField>(emailField()).enabled, isTrue);
+    expect(tester.widget<TextField>(phoneField()).enabled, isTrue);
+
+    await tester.enterText(phoneField(), '8123456789');
+    await tester.pump();
+    expect(tester.widget<TextField>(emailField()).enabled, isFalse);
+    expect(tester.widget<TextField>(phoneField()).enabled, isTrue);
+    expect(find.byIcon(Icons.clear_rounded), findsNothing);
+
+    await tester.enterText(phoneField(), '');
+    await tester.pump();
+    expect(tester.widget<TextField>(emailField()).enabled, isTrue);
+    expect(tester.widget<TextField>(phoneField()).enabled, isTrue);
   });
 
   testWidgets('di layar pendek halaman tetap bisa di-scroll tanpa overflow', (
@@ -449,6 +700,12 @@ void main() {
     expect(phoneField(), findsOneWidget);
     expect(find.text('+62'), findsOneWidget);
     expect(
+      tester
+          .widget<Checkbox>(find.byKey(const Key('auth_consent_checkbox')))
+          .value,
+      isTrue,
+    );
+    expect(
       tester.widget<TextField>(emailField()).controller?.text,
       'penyayang@contoh.id',
     );
@@ -511,6 +768,8 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(phoneField(), '8123456789');
+      await tester.tap(find.byKey(const Key('auth_consent_checkbox')));
+      await tester.pump();
       await tester.tap(find.text('Lanjut'));
       await pumpFrames(tester);
       await enterOtp(tester, '123456');

@@ -324,7 +324,7 @@ void main() {
     );
   });
 
-  testWidgets('opens the project reports tab from the trace page', (
+  testWidgets('shows a receipt download action instead of a report link', (
     tester,
   ) async {
     final router = GoRouter(
@@ -337,25 +337,19 @@ void main() {
             repository: FakeDonationTraceRepository(trace: traceWith(4)),
           ),
         ),
-        GoRoute(
-          path: '/project/:id',
-          builder: (context, state) => Scaffold(
-            body: Text(
-              'project ${state.pathParameters['id']} '
-              'tab=${state.uri.queryParameters['tab']}',
-            ),
-          ),
-        ),
       ],
     );
 
     await tester.pumpWidget(wrapRouter(router));
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.byKey(const ValueKey('p08-view-reports')));
-    await tester.tap(find.byKey(const ValueKey('p08-view-reports')));
-    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('p08-view-reports')), findsNothing);
 
-    expect(find.text('project p01 tab=reports'), findsOneWidget);
+    final action = find.byKey(const ValueKey('p08-download-receipt'));
+    await tester.ensureVisible(action);
+    await tester.tap(action);
+    await tester.pump();
+
+    expect(find.text('Unduh e-receipt akan segera tersedia.'), findsOneWidget);
   });
 }

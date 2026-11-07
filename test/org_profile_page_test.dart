@@ -270,7 +270,7 @@ void main() {
 
     testWidgets('condition info sits outside the card and tapping a location '
         'opens P04 on its default tab', (tester) async {
-      _setScreen(tester, const Size(500, 2000));
+      _setScreen(tester, const Size(500, 3200));
 
       final router = GoRouter(
         initialLocation: '/org/c01',

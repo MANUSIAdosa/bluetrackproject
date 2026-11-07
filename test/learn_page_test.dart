@@ -3,9 +3,10 @@ import 'dart:async';
 import 'package:blue_track/features/learn/data/education_repository.dart';
 import 'package:blue_track/features/learn/domain/education_article.dart';
 import 'package:blue_track/features/learn/presentation/learn_page.dart';
+import 'package:blue_track/features/learn/presentation/widgets/article_card_skeleton.dart';
 import 'package:blue_track/shared/widgets/empty_state.dart';
 import 'package:blue_track/shared/widgets/error_state.dart';
-import 'package:blue_track/shared/widgets/skeleton.dart';
+import 'package:blue_track/shared/widgets/filter_chip_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -84,6 +85,7 @@ EducationArticle _article({
     title: title,
     summary: 'Ringkasan',
     content: 'Konten',
+    author: 'Penulis Uji',
     category: category,
     readingMinutes: 5,
     publishedAt: DateTime(2026, 10, 20),
@@ -96,6 +98,7 @@ Future<void> _pumpLearn(
   _FakeEducationRepository repository, {
   double width = 360,
   double textScale = 1,
+  Locale locale = const Locale('id'),
 }) async {
   tester.view.devicePixelRatio = 3;
   tester.view.physicalSize = Size(width * 3, 800 * 3);
@@ -106,6 +109,7 @@ Future<void> _pumpLearn(
         data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
         child: LearnPage(repository: repository),
       ),
+      locale: locale,
     ),
   );
 }
@@ -150,8 +154,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(repository.savedArticles, hasLength(1));
 
-    await tester.drag(find.byType(Scrollable).first, const Offset(-300, 0));
-    await tester.pump();
+    await tester.scrollUntilVisible(
+      find.text('Tersimpan'),
+      200,
+      scrollable: find.descendant(
+        of: find.byType(FilterChipRow),
+        matching: find.byType(Scrollable),
+      ),
+    );
     await tester.tap(find.text('Tersimpan'));
     await tester.pump();
     expect(find.text('Artikel tersimpan'), findsOneWidget);
@@ -167,7 +177,7 @@ void main() {
     await _pumpLearn(tester, repository);
     await tester.pump();
 
-    expect(find.byType(SkeletonCard), findsNWidgets(2));
+    expect(find.byType(ArticleCardSkeleton), findsNWidgets(2));
   });
 
   testWidgets('an empty category shows EmptyState', (tester) async {
@@ -211,6 +221,76 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('A' * 100), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('card shows summary, reading time, date, author, and read more', (
+    tester,
+  ) async {
+    final article = EducationArticle(
+      id: 'a01',
+      title: 'Artikel ringkas',
+      summary: 'Ringkasan ' * 5,
+      content: 'Konten',
+      author: 'Yayasan Laut',
+      category: 'polusi',
+      readingMinutes: 5,
+      publishedAt: DateTime(2026, 10, 20),
+      imageAsset: 'assets/images/interests/coral_reef.jpg',
+    );
+    final repository = _FakeEducationRepository([article]);
+    await _pumpLearn(tester, repository);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('5 menit baca'), findsOneWidget);
+    expect(find.textContaining('20 Okt 2026'), findsOneWidget);
+    expect(find.textContaining('Yayasan Laut'), findsOneWidget);
+    expect(find.text('Baca selengkapnya'), findsOneWidget);
+    expect(find.byIcon(Icons.arrow_forward), findsOneWidget);
+  });
+
+  testWidgets('English article card localizes date and author label', (
+    tester,
+  ) async {
+    final article = EducationArticle(
+      id: 'a01',
+      title: 'Short article',
+      summary: 'Summary text ' * 6,
+      content: 'Content',
+      author: 'Clean Seas',
+      category: 'polusi',
+      readingMinutes: 5,
+      publishedAt: DateTime(2026, 10, 20),
+      imageAsset: 'assets/images/interests/coral_reef.jpg',
+    );
+    final repository = _FakeEducationRepository([article]);
+    await _pumpLearn(tester, repository, locale: const Locale('en'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('20 Oct 2026'), findsOneWidget);
+    expect(find.textContaining('By Clean Seas'), findsOneWidget);
+    expect(find.text('Read more'), findsOneWidget);
+  });
+
+  testWidgets('long summary and title do not overflow at 320dp scale 1.3', (
+    tester,
+  ) async {
+    final article = EducationArticle(
+      id: 'a01',
+      title: 'A' * 100,
+      summary: 'B' * 200,
+      content: 'Konten',
+      author: 'Penulis Uji',
+      category: 'polusi',
+      readingMinutes: 5,
+      publishedAt: DateTime(2026, 10, 20),
+      imageAsset: 'assets/images/interests/coral_reef.jpg',
+    );
+    final repository = _FakeEducationRepository([article]);
+    await _pumpLearn(tester, repository, width: 320, textScale: 1.3);
+    await tester.pumpAndSettle();
+
+    expect(find.text('B' * 200), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

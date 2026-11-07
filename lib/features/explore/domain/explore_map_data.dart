@@ -30,7 +30,8 @@ class ExploreMapData {
 
   factory ExploreMapData.fromJson(Map<String, dynamic> json) {
     final location = json['userLocation'] as Map<String, dynamic>;
-    final conditions = (json['conditions'] as Map<String, dynamic>?) ?? const {};
+    final conditions =
+        (json['conditions'] as Map<String, dynamic>?) ?? const {};
     final areas = (json['conservationAreas'] as List<dynamic>?) ?? const [];
 
     return ExploreMapData(

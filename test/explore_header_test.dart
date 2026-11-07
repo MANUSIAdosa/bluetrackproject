@@ -2,6 +2,7 @@ import 'package:blue_track/core/theme/app_colors.dart';
 import 'package:blue_track/features/explore/domain/explore_map_data.dart';
 import 'package:blue_track/features/explore/presentation/widgets/explore_header.dart';
 import 'package:blue_track/features/explore/presentation/widgets/filter_sheet.dart';
+import 'package:blue_track/shared/widgets/category_icon.dart';
 import 'package:blue_track/shared/widgets/notification_bell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -37,7 +38,10 @@ void main() {
       expect(find.text('Jelajahi'), findsOneWidget);
       expect(find.byType(TextField), findsOneWidget);
       expect(find.byType(NotificationBell), findsOneWidget);
-      expect(find.byKey(const ValueKey('explore.filterButton')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('explore.filterButton')),
+        findsOneWidget,
+      );
       expect(find.byKey(const ValueKey('explore.scope.saved')), findsOneWidget);
       // The view switch belongs to the results line, not the title row.
       expect(find.byKey(const ValueKey('explore.view.map')), findsNothing);
@@ -207,11 +211,7 @@ void main() {
       Future<Color?> backgroundOf(bool saved) async {
         await tester.pumpWidget(
           wrapPage(
-            SavedScopeButton(
-              saved: saved,
-              savedCount: 2,
-              onChanged: (_) {},
-            ),
+            SavedScopeButton(saved: saved, savedCount: 2, onChanged: (_) {}),
           ),
         );
         await tester.pump();
@@ -271,7 +271,10 @@ void main() {
 
       await tester.pumpWidget(
         wrapPage(
-          ExploreViewSwitch(mapMode: false, onChanged: (value) => picked = value),
+          ExploreViewSwitch(
+            mapMode: false,
+            onChanged: (value) => picked = value,
+          ),
         ),
       );
       await tester.pump();
@@ -282,7 +285,10 @@ void main() {
       picked = null;
       await tester.pumpWidget(
         wrapPage(
-          ExploreViewSwitch(mapMode: true, onChanged: (value) => picked = value),
+          ExploreViewSwitch(
+            mapMode: true,
+            onChanged: (value) => picked = value,
+          ),
         ),
       );
       await tester.pump();
@@ -291,7 +297,7 @@ void main() {
       expect(picked, isFalse);
     });
 
-    testWidgets('keeps each segment at a comfortable touch target', (
+    testWidgets('gives each icon segment a comfortable touch target', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -299,66 +305,18 @@ void main() {
       );
       await tester.pump();
 
-      final list = tester.getSize(
-        find.byKey(const ValueKey('explore.view.list')),
-      );
-      final map = tester.getSize(
-        find.byKey(const ValueKey('explore.view.map')),
-      );
-      expect(list.height, greaterThanOrEqualTo(40));
-      expect(map.height, greaterThanOrEqualTo(40));
-    });
-  });
-
-  group('CategorySelector', () {
-    testWidgets('shows one icon option per project category', (tester) async {
-      await tester.pumpWidget(
-        wrapPage(
-          CategorySelector(
-            categoryIds: const ['semua', 'penyu', 'karang', 'mangrove'],
-            selectedId: 'semua',
-            onSelected: (_) {},
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('Kategori'), findsOneWidget);
-      expect(find.byKey(const ValueKey('explore.category.semua')), findsOneWidget);
-      expect(find.byKey(const ValueKey('explore.category.penyu')), findsOneWidget);
-      expect(find.byKey(const ValueKey('explore.category.karang')), findsOneWidget);
-      expect(
-        find.byKey(const ValueKey('explore.category.mangrove')),
-        findsOneWidget,
-      );
-      // The saved collection is a scope, never a category option.
-      expect(
-        find.byKey(const ValueKey('explore.category.tersimpan')),
-        findsNothing,
-      );
-    });
-
-    testWidgets('reports the selected category', (tester) async {
-      String? picked;
-
-      await tester.pumpWidget(
-        wrapPage(
-          CategorySelector(
-            categoryIds: const ['semua', 'penyu', 'karang'],
-            selectedId: 'semua',
-            onSelected: (id) => picked = id,
-          ),
-        ),
-      );
-      await tester.pump();
-
-      await tester.tap(find.byKey(const ValueKey('explore.category.karang')));
-      expect(picked, 'karang');
+      for (final key in ['explore.view.list', 'explore.view.map']) {
+        final size = tester.getSize(find.byKey(ValueKey(key)));
+        expect(size.width, greaterThanOrEqualTo(48));
+        expect(size.height, greaterThanOrEqualTo(48));
+      }
     });
   });
 
   group('ActiveFilterBar', () {
-    testWidgets('stays out of the way when no filter is active', (tester) async {
+    testWidgets('stays out of the way when no filter is active', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         wrapPage(
           ActiveFilterBar(
@@ -389,14 +347,24 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byKey(const ValueKey('explore.activeFilters')), findsOneWidget);
-      expect(find.text('Kategori: Penyu'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('explore.activeFilters')),
+        findsOneWidget,
+      );
+      // The category is visible as the selected rail chip, so the bar never
+      // repeats it as a token.
+      expect(
+        find.byKey(const ValueKey('explore.activeFilter.category')),
+        findsNothing,
+      );
       expect(find.text('Jarak: <250 km'), findsOneWidget);
       expect(find.text('Kondisi: Kritis'), findsOneWidget);
       expect(find.text('Hapus semua'), findsOneWidget);
     });
 
-    testWidgets('removing one token keeps the other dimensions', (tester) async {
+    testWidgets('removing one token keeps the category and the other filter', (
+      tester,
+    ) async {
       ExploreFilterSelection? changed;
 
       await tester.pumpWidget(
@@ -414,16 +382,17 @@ void main() {
       await tester.pump();
 
       await tester.tap(
-        find.byKey(const ValueKey('explore.activeFilter.category')),
+        find.byKey(const ValueKey('explore.activeFilter.distance')),
       );
 
       expect(changed, isNotNull);
-      expect(changed!.category, 'semua');
-      expect(changed!.distance, DistanceBand.dekat);
+      expect(changed!.category, 'penyu');
+      expect(changed!.distance, DistanceBand.semua);
       expect(changed!.condition, ProjectCondition.kritis);
     });
 
-    testWidgets('"Hapus semua" clears every dimension', (tester) async {
+    testWidgets('"Hapus semua" clears the sheet filters but keeps the rail '
+        'category', (tester) async {
       ExploreFilterSelection? changed;
 
       await tester.pumpWidget(
@@ -442,7 +411,9 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('explore.clearFilters')));
 
-      expect(changed, ExploreFilterSelection.none);
+      expect(changed!.category, 'penyu');
+      expect(changed!.distance, DistanceBand.semua);
+      expect(changed!.condition, isNull);
     });
   });
 
@@ -452,16 +423,12 @@ void main() {
     ) async {
       await tester.pumpWidget(
         wrapPage(
-          ExploreResultsBar(
-            count: 4,
-            mapMode: false,
-            onViewChanged: (_) {},
-          ),
+          ExploreResultsBar(count: 4, mapMode: false, onViewChanged: (_) {}),
         ),
       );
       await tester.pump();
 
-      expect(find.text('Proyek · 4'), findsOneWidget);
+      expect(find.text('4 proyek'), findsOneWidget);
       expect(find.byKey(const ValueKey('explore.view.list')), findsOneWidget);
       expect(find.byKey(const ValueKey('explore.view.map')), findsOneWidget);
 
@@ -547,6 +514,37 @@ void main() {
       );
       final view = tester.getRect(find.byType(ExploreViewSwitch));
       expect(chip.right, lessThanOrEqualTo(view.left));
+    });
+
+    testWidgets('map category chip reads as a picker with a 48dp target', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrapPage(
+          ExploreResultsBar(
+            count: 3,
+            mapMode: true,
+            onViewChanged: (_) {},
+            categoryId: 'penyu',
+            onCategoryPressed: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final chip = find.byKey(const ValueKey('explore.mapCategoryChip'));
+      expect(
+        find.descendant(of: chip, matching: find.byType(CategoryIcon)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: chip, matching: find.byIcon(Icons.arrow_drop_down)),
+        findsOneWidget,
+      );
+
+      final size = tester.getSize(chip);
+      expect(size.height, greaterThanOrEqualTo(48));
+      expect(size.width, greaterThanOrEqualTo(48));
     });
   });
 }

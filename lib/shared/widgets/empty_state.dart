@@ -2,20 +2,29 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 
-/// Shared empty state with icon, message and optional action.
+/// Shared empty state with icon, optional title, message and action.
 class EmptyState extends StatelessWidget {
   const EmptyState({
     super.key,
     this.icon = Icons.inbox_outlined,
     required this.message,
+    this.title,
     this.actionLabel,
     this.onAction,
+    this.secondaryLabel,
+    this.onSecondary,
   });
 
   final IconData icon;
   final String message;
+  final String? title;
   final String? actionLabel;
   final VoidCallback? onAction;
+
+  /// Second, lower-emphasis action. Only screens that offer a recovery choice
+  /// fill it in; without it the state looks exactly as before.
+  final String? secondaryLabel;
+  final VoidCallback? onSecondary;
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +48,17 @@ class EmptyState extends StatelessWidget {
                 child: Icon(icon, size: 36, color: AppColors.ocean),
               ),
               const SizedBox(height: 16),
+              if (title != null) ...[
+                Text(
+                  title!,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
               Text(
                 message,
                 textAlign: TextAlign.center,
@@ -49,7 +69,17 @@ class EmptyState extends StatelessWidget {
               ),
               if (actionLabel != null && onAction != null) ...[
                 const SizedBox(height: 16),
-                TextButton(onPressed: onAction, child: Text(actionLabel!)),
+                // With a second choice the first one carries the emphasis;
+                // alone it stays a text button so other pages keep their look.
+                if (secondaryLabel != null && onSecondary != null)
+                  FilledButton(onPressed: onAction, child: Text(actionLabel!))
+                else
+                  TextButton(onPressed: onAction, child: Text(actionLabel!)),
+                if (secondaryLabel != null && onSecondary != null)
+                  TextButton(
+                    onPressed: onSecondary,
+                    child: Text(secondaryLabel!),
+                  ),
               ],
             ],
           ),

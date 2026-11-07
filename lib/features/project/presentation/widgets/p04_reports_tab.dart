@@ -537,6 +537,25 @@ class _ReportCard extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Text(
+                    context.tr('p04_report_view_detail'),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.ocean,
+                    ),
+                  ),
+                  const Spacer(),
+                  const Icon(
+                    Icons.chevron_right,
+                    size: 20,
+                    color: AppColors.ocean,
+                  ),
+                ],
+              ),
             ],
           ),
         ),

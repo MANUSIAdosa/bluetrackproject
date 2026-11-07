@@ -7,11 +7,11 @@ import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_state.dart';
 import '../../../shared/widgets/filter_chip_row.dart';
-import '../../../shared/widgets/skeleton.dart';
 import '../data/education_repository.dart';
 import '../domain/education_article.dart';
 import 'learn_article_detail_page.dart';
 import 'widgets/article_card.dart';
+import 'widgets/article_card_skeleton.dart';
 
 const _learnCategories = [
   'semua',
@@ -286,9 +286,9 @@ class _ArticlesTabState extends State<_ArticlesTab> {
       return ListView(
         padding: const EdgeInsets.all(AppDimens.padding),
         children: const [
-          SkeletonCard(),
+          ArticleCardSkeleton(),
           SizedBox(height: AppDimens.gap),
-          SkeletonCard(),
+          ArticleCardSkeleton(),
         ],
       );
     }

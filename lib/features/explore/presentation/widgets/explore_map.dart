@@ -27,7 +27,6 @@ class ExploreMap extends StatefulWidget {
     this.onConservationLayerChanged,
     this.offline = false,
     this.tileProvider,
-    this.initialZoom = 4,
     this.onOpenProject,
   });
 
@@ -50,8 +49,6 @@ class ExploreMap extends StatefulWidget {
   /// Test seam: replaces the network tile provider.
   final TileProvider? tileProvider;
 
-  final double initialZoom;
-
   final ValueChanged<String>? onOpenProject;
 
   @override
@@ -62,8 +59,40 @@ class _ExploreMapState extends State<ExploreMap> {
   static const double _minZoom = 3;
   static const double _maxZoom = 12;
 
+  /// Markers closer than this on screen are merged into one cluster. 44px is
+  /// the smallest gap at which two 40dp pins stay separately tappable.
+  static const double _clusterRadius = 44;
+
+  /// Tap target of a pin or cluster; the visual circle stays 40dp.
+  static const double _tapSize = 48;
+
+  /// Camera fit around the filtered projects: enough margin for the tap
+  /// targets on the outermost pins, but never so tight that the map looks
+  /// zoomed past a useful street level.
+  static const double _fitPadding = 48;
+  static const double _fitMaxZoom = 9;
+
+  /// A lone project (or none at all) has no bounds to fit, so the camera
+  /// centres on it instead.
+  static const double _singleProjectZoom = 8;
+
   final _controller = MapController();
-  late double _zoom = widget.initialZoom;
+  bool _ready = false;
+
+  /// Camera of the last zoom level, used to measure marker distances in
+  /// screen pixels. Panning does not change relative distances, so only a zoom
+  /// change rebuilds the clusters.
+  MapCamera? _camera;
+
+  @override
+  void didUpdateWidget(ExploreMap oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A new result set (category, filter, search) must not leave the camera
+    // over an area the remaining projects are not in.
+    if (_ready && !_sameProjects(oldWidget.projects, widget.projects)) {
+      _fitToProjects();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,11 +101,23 @@ class _ExploreMapState extends State<ExploreMap> {
         FlutterMap(
           mapController: _controller,
           options: MapOptions(
-            initialCenter: _center,
-            initialZoom: _zoom,
+            // The fit takes precedence on the first frame; the centre and zoom
+            // below are the fallback when there is no bounds to fit.
+            initialCenter: _initialCenter,
+            initialZoom: _singleProjectZoom,
+            initialCameraFit: _boundsFit,
             minZoom: _minZoom,
             maxZoom: _maxZoom,
             backgroundColor: AppColors.ocean.withValues(alpha: 0.08),
+            onMapReady: () {
+              _ready = true;
+              setState(() => _camera = _controller.camera);
+            },
+            onPositionChanged: (camera, _) {
+              if (_camera?.zoom != camera.zoom) {
+                setState(() => _camera = camera);
+              }
+            },
           ),
           children: [
             if (!widget.offline)
@@ -98,21 +139,7 @@ class _ExploreMapState extends State<ExploreMap> {
                     ),
                 ],
               ),
-            MarkerLayer(
-              markers: [
-                for (final project in widget.projects)
-                  Marker(
-                    point: LatLng(project.latitude, project.longitude),
-                    width: 40,
-                    height: 40,
-                    child: _ProjectMarker(
-                      key: ValueKey('explore.marker.${project.id}'),
-                      project: project,
-                      onTap: () => _openProjectSheet(project),
-                    ),
-                  ),
-              ],
-            ),
+            MarkerLayer(markers: _markers()),
             // OpenStreetMap asks for attribution whenever its tiles are shown.
             if (!widget.offline) const _Attribution(),
           ],
@@ -153,23 +180,134 @@ class _ExploreMapState extends State<ExploreMap> {
     );
   }
 
-  /// Midpoint of the filtered projects, so filtering cannot strand the user on
-  /// the other side of the country.
-  LatLng get _center {
-    if (widget.projects.isEmpty) return widget.mapData.userLocation;
-    var lat = 0.0;
-    var lng = 0.0;
-    for (final project in widget.projects) {
-      lat += project.latitude;
-      lng += project.longitude;
+  /// Projects whose pins land closer than [_clusterRadius] on screen become
+  /// one numbered marker. Pin positions stay on their real coordinates.
+  List<Marker> _markers() {
+    final groups = _clusterGroups();
+    return [
+      for (final group in groups)
+        if (group.length > 1)
+          Marker(
+            point: LatLngBounds.fromPoints([
+              for (final project in group)
+                LatLng(project.latitude, project.longitude),
+            ]).center,
+            width: _tapSize,
+            height: _tapSize,
+            child: _ClusterMarker(
+              key: const ValueKey('explore.cluster'),
+              count: group.length,
+              onTap: () => _openCluster(group),
+            ),
+          )
+        else
+          Marker(
+            point: LatLng(group.single.latitude, group.single.longitude),
+            width: _tapSize,
+            height: _tapSize,
+            child: _ProjectMarker(
+              key: ValueKey('explore.marker.${group.single.id}'),
+              project: group.single,
+              onTap: () => _openProjectSheet(group.single),
+            ),
+          ),
+    ];
+  }
+
+  /// Greedy grouping in screen space: a project joins the first group whose
+  /// first member is within [_clusterRadius] pixels of it.
+  List<List<Project>> _clusterGroups() {
+    final camera = _camera;
+    if (camera == null) {
+      return [
+        for (final project in widget.projects) [project],
+      ];
     }
-    return LatLng(lat / widget.projects.length, lng / widget.projects.length);
+
+    final groups = <List<Project>>[];
+    final anchors = <Offset>[];
+    for (final project in widget.projects) {
+      final offset = camera.latLngToScreenOffset(
+        LatLng(project.latitude, project.longitude),
+      );
+      final index = anchors.indexWhere(
+        (anchor) => (anchor - offset).distance < _clusterRadius,
+      );
+      if (index == -1) {
+        anchors.add(offset);
+        groups.add([project]);
+      } else {
+        groups[index].add(project);
+      }
+    }
+    return groups;
+  }
+
+  /// Zoom into the cluster's members' bounds. The higher max zoom is what
+  /// actually separates the pins; a fit that stays at the current zoom would
+  /// keep them clustered.
+  void _openCluster(List<Project> projects) {
+    _controller.fitCamera(
+      CameraFit.bounds(
+        bounds: LatLngBounds.fromPoints([
+          for (final project in projects)
+            LatLng(project.latitude, project.longitude),
+        ]),
+        padding: const EdgeInsets.all(48),
+        maxZoom: _maxZoom,
+      ),
+    );
+  }
+
+  /// Coordinates of the filtered projects, in list order.
+  List<LatLng> get _points => [
+    for (final project in widget.projects)
+      LatLng(project.latitude, project.longitude),
+  ];
+
+  /// Fit around the projects, or null when there is no area to fit.
+  CameraFit? get _boundsFit {
+    final points = _points;
+    if (points.length < 2) return null;
+    return CameraFit.bounds(
+      bounds: LatLngBounds.fromPoints(points),
+      padding: const EdgeInsets.all(_fitPadding),
+      maxZoom: _fitMaxZoom,
+    );
+  }
+
+  /// Centre for zero or one project, where a bounds fit makes no sense.
+  LatLng get _initialCenter =>
+      _points.length == 1 ? _points.single : widget.mapData.userLocation;
+
+  /// Brings a changed result set into view. The first frame uses
+  /// `initialCameraFit` instead, so the map never paints at a default location
+  /// and then jumps.
+  void _fitToProjects() {
+    final fit = _boundsFit;
+    if (fit != null) {
+      _controller.fitCamera(fit);
+    } else {
+      _controller.move(_initialCenter, _singleProjectZoom);
+    }
+  }
+
+  /// Same ids in the same order: a rebuilt list with equal contents must not
+  /// move the camera.
+  static bool _sameProjects(List<Project> a, List<Project> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].id != b[i].id) return false;
+    }
+    return true;
   }
 
   void _zoomBy(double step) {
     final camera = _controller.camera;
-    _zoom = (camera.zoom + step).clamp(_minZoom, _maxZoom);
-    _controller.move(camera.center, _zoom);
+    _controller.move(
+      camera.center,
+      (camera.zoom + step).clamp(_minZoom, _maxZoom),
+    );
   }
 
   void _openProjectSheet(Project project) {
@@ -201,28 +339,102 @@ class _ProjectMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = CategoryIcons.colorFor(project.category);
-    return Tooltip(
-      message: project.title,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x33000000),
-                blurRadius: 4,
-                offset: Offset(0, 2),
+    return Semantics(
+      button: true,
+      label: project.title,
+      child: Tooltip(
+        message: project.title,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: SizedBox(
+            width: _ExploreMapState._tapSize,
+            height: _ExploreMapState._tapSize,
+            child: Center(
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x33000000),
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: ExcludeSemantics(
+                    child: CategoryIcon(
+                      category: project.category,
+                      // The 40dp pin has a 2dp border on each side; use the
+                      // full 36dp inner circle for the category artwork.
+                      size: 36,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               ),
-            ],
+            ),
           ),
-          child: Center(
-            child: CategoryIcon(
-              category: project.category,
-              size: 20,
-              color: Colors.white,
+        ),
+      ),
+    );
+  }
+}
+
+/// Numbered pin for projects that would overlap at the current zoom. Tapping
+/// it zooms into the group's bounds until the pins separate.
+class _ClusterMarker extends StatelessWidget {
+  const _ClusterMarker({super.key, required this.count, required this.onTap});
+
+  final int count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = context.tr('p03_map_cluster', {'n': '$count'});
+    return Semantics(
+      button: true,
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: SizedBox(
+            width: _ExploreMapState._tapSize,
+            height: _ExploreMapState._tapSize,
+            child: Center(
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.oceanDeep,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x33000000),
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    '$count',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -336,7 +548,13 @@ class _SaveButton extends StatelessWidget {
           tooltip: context.tr(saved ? 'p03_saved' : 'p03_save'),
           icon: Icon(saved ? Icons.bookmark : Icons.bookmark_outline),
           color: saved ? AppColors.ocean : AppColors.textSecondary,
-          onPressed: () => toggleSavedProject(project),
+          onPressed: () async {
+            try {
+              await toggleSavedProject(project);
+            } catch (_) {
+              // Rolls back inside the entry point; the sheet stays open.
+            }
+          },
         );
       },
     );
@@ -414,6 +632,18 @@ class _ConservationLayerCard extends StatelessWidget {
                     key: const ValueKey('explore.conservationSwitch'),
                     value: enabled,
                     onChanged: onChanged,
+                    // Both tracks clear 3:1 against the white card: ocean
+                    // (4.1:1) when on, slate (4.8:1) when off, so the state
+                    // reads without relying on colour alone.
+                    activeTrackColor: AppColors.ocean,
+                    inactiveTrackColor: AppColors.textSecondary,
+                    activeThumbColor: Colors.white,
+                    inactiveThumbColor: Colors.white,
+                    trackOutlineColor: WidgetStateProperty.resolveWith(
+                      (states) => states.contains(WidgetState.selected)
+                          ? AppColors.oceanDeep
+                          : AppColors.textSecondary,
+                    ),
                   ),
                 ),
               ],
@@ -501,7 +731,11 @@ class _ZoomButton extends StatelessWidget {
       color: AppColors.surface,
       shape: const CircleBorder(),
       elevation: 2,
-      child: IconButton(icon: Icon(icon), tooltip: tooltip, onPressed: onPressed),
+      child: IconButton(
+        icon: Icon(icon),
+        tooltip: tooltip,
+        onPressed: onPressed,
+      ),
     );
   }
 }
