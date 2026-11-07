@@ -89,12 +89,19 @@ class ReportReviewStep extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _SectionHeader(
-                  title: context.tr('report_review_report_group'),
+                  title: context.tr('report_review_photos'),
+                  hint: context.tr('report_review_edit_report_hint'),
+                  editKey: const ValueKey('report_review_edit_photos'),
+                  onEdit: onEditReport,
+                ),
+                _PhotoSection(photoPaths: photoPaths),
+                const Divider(height: 24),
+                _SectionHeader(
+                  title: context.tr('report_review_details_group'),
                   hint: context.tr('report_review_edit_report_hint'),
                   editKey: const ValueKey('report_review_edit_report'),
                   onEdit: onEditReport,
                 ),
-                _PhotoSection(photoPaths: photoPaths),
                 Text(
                   title.trim().isEmpty
                       ? context.tr('report_review_empty_value')
@@ -158,14 +165,13 @@ class ReportReviewStep extends StatelessWidget {
                       ? context.tr('report_review_empty_value')
                       : context.p04SeverityLabel(severity!),
                 ),
-                const SizedBox(height: 8),
+                const Divider(height: 24),
+                _SectionHeader(title: context.tr('report_review_time')),
                 _DetailRow(
                   key: const ValueKey('report_review_time_value'),
                   icon: Icons.schedule_outlined,
                   color: AppColors.ocean,
-                  value:
-                      '${context.tr('report_review_time')}: '
-                      '${Formatters.dateTime(reportedAt, locale)}',
+                  value: Formatters.dateTime(reportedAt, locale),
                 ),
                 const SizedBox(height: 8),
               ],

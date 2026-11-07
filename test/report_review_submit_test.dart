@@ -280,13 +280,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Sekitar 2 mil laut dari pulau.'), findsNothing);
 
-    expect(find.textContaining('Waktu: '), findsOneWidget);
+    expect(find.text('Waktu'), findsOneWidget);
     expect(
       find.text('Laporan akan diverifikasi sebelum tayang ke publik.'),
       findsOneWidget,
     );
-    // One "Ubah" per wizard step, not per section.
-    expect(find.widgetWithText(TextButton, 'Ubah'), findsNWidgets(3));
+    // Photos and the narrative each keep their own label and edit action.
+    expect(find.widgetWithText(TextButton, 'Ubah'), findsNWidgets(4));
 
     // The reporter's title must outrank the group labels it sits under.
     final titleSize = tester
@@ -294,11 +294,15 @@ void main() {
         .style!
         .fontSize!;
     final groupLabelSize = tester
-        .widget<Text>(find.text('Laporan'))
+        .widget<Text>(find.text('Keterangan'))
         .style!
         .fontSize!;
     expect(titleSize, greaterThan(groupLabelSize + 3));
-    expect(find.text('Laporan'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('report_review_edit_photos')),
+      findsOneWidget,
+    );
+    expect(find.text('Keterangan'), findsOneWidget);
     expect(find.text('Jenis dan tingkat'), findsOneWidget);
 
     // Photos open the full-screen viewer.
