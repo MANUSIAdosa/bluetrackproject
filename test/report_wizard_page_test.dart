@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:blue_track/core/state/app_state.dart';
+import 'package:blue_track/core/theme/app_colors.dart';
 import 'package:blue_track/features/project/domain/report.dart';
 import 'package:blue_track/features/report_submit/data/geocoding_service.dart';
 import 'package:blue_track/features/report_submit/data/report_draft_store.dart';
@@ -359,6 +360,13 @@ void main() {
     await pumpWizard(tester, store: store);
 
     expect(find.text('Lanjutkan draf?'), findsOneWidget);
+
+    // Starting over discards the draft, so it is styled as destructive.
+    final startNew = tester.widget<TextButton>(
+      find.widgetWithText(TextButton, 'Mulai baru'),
+    );
+    expect(startNew.style?.foregroundColor?.resolve({}), AppColors.danger);
+
     await tester.tap(find.text('Lanjutkan draf'));
     await tester.pumpAndSettle();
 

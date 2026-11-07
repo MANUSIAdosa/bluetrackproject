@@ -169,6 +169,9 @@ class _ReportWizardPageState extends State<ReportWizardPage>
         content: Text(dialogContext.tr('report_resume_body')),
         actions: [
           TextButton(
+            // Starting over discards the stored draft, so it reads as the
+            // destructive choice instead of a neutral secondary action.
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
             onPressed: () => Navigator.pop(dialogContext, false),
             child: Text(dialogContext.tr('report_resume_new')),
           ),
