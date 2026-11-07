@@ -1,7 +1,11 @@
+import 'package:flutter/widgets.dart' show Locale;
+
 import '../../../core/config/app_config.dart';
+import '../../../core/localization/app_localizations.dart';
+import '../../../core/utils/formatters.dart';
+import '../../my_reports/data/my_reports_store.dart';
 import '../../project/domain/report.dart';
 import '../domain/report_draft.dart';
-import 'my_reports_store.dart';
 
 /// Sends a wizard draft to the (simulated) report store.
 ///
@@ -11,7 +15,10 @@ abstract interface class ReportSubmissionService {
   /// Stores the draft and returns the created report.
   ///
   /// Throws when the simulated submission is configured to fail.
-  Future<Report> submit(ReportWizardDraft draft);
+  Future<Report> submit(
+    ReportWizardDraft draft, {
+    String languageCode = 'en',
+  });
 }
 
 /// Error thrown by [MockReportSubmissionService] when the simulated send
@@ -26,15 +33,11 @@ class ReportSubmissionException implements Exception {
 }
 
 /// Simulated submission: waits like a network call and saves the report to
-/// [MyReportsStore] in memory.
-///
-/// The real API does not exist yet, and the wizard does not collect the fields
-/// `ReportRepository.submitReport` requires (title, description, category
-/// metrics), so this service builds a report directly.
-///
-/// TODO(lapor): replace with `ReportRepository.submitReport` plus the real
-/// fields once the form and the backend are ready.
+/// [MyReportsStore], the same session collection read by My Reports.
 class MockReportSubmissionService implements ReportSubmissionService {
+  static const _mockReportDescription =
+      'Dikirim melalui Lapor Temuan BlueTrack.';
+
   MockReportSubmissionService({
     this.delay = AppConfig.reportSubmitDelay,
     this.simulateFailure = AppConfig.reportSubmitSimulateFailure,
@@ -51,7 +54,10 @@ class MockReportSubmissionService implements ReportSubmissionService {
   final MyReportsStore _store;
 
   @override
-  Future<Report> submit(ReportWizardDraft draft) async {
+  Future<Report> submit(
+    ReportWizardDraft draft, {
+    String languageCode = 'en',
+  }) async {
     await Future<void>.delayed(delay);
     if (simulateFailure) throw const ReportSubmissionException();
 
@@ -67,19 +73,27 @@ class MockReportSubmissionService implements ReportSubmissionService {
       throw const ReportSubmissionException('Draft is incomplete');
     }
 
+    final reportedAt = DateTime.now().toUtc();
+    final reportId = _store.nextReportNumber();
+    final localizations = AppLocalizations(Locale(languageCode));
+    final title = localizations.text('report_submit.generated_title', {
+      'category': localizations.text(_categoryLabelKey(category)),
+      'date': Formatters.dateTime(reportedAt, languageCode),
+      'id': reportId,
+    });
+
     final report = Report(
-      id: _store.nextReportNumber(),
+      id: reportId,
       locationId: AppConfig.reportSimulatedLocationId,
       reporterId: AppConfig.reportCurrentUserId,
       reporterName: AppConfig.reportCurrentUserName,
       category: category,
       severity: severity,
       status: ReportStatus.submitted,
-      reportedAt: DateTime.now().toUtc(),
-      // The wizard collects no free-text fields; these placeholders keep the
-      // domain model happy until a detail step exists.
-      title: 'Laporan temuan lapangan',
-      description: 'Dikirim melalui Lapor Temuan BlueTrack.',
+      reportedAt: reportedAt,
+      // The wizard collects no free-text description yet.
+      title: title,
+      description: _mockReportDescription,
       latitude: latitude,
       longitude: longitude,
       photoPaths: List<String>.unmodifiable(draft.photoPaths),
@@ -91,4 +105,12 @@ class MockReportSubmissionService implements ReportSubmissionService {
     _store.add(report);
     return report;
   }
+
+  static String _categoryLabelKey(ReportCategory category) => switch (category) {
+    ReportCategory.marineDebris => 'p04_category_marine_debris',
+    ReportCategory.damagedReef => 'p04_category_damaged_reef',
+    ReportCategory.deforestedMangrove => 'p04_category_deforested_mangrove',
+    ReportCategory.destructiveFishing => 'p04_category_destructive_fishing',
+    ReportCategory.affectedWildlife => 'p04_category_affected_wildlife',
+  };
 }

@@ -315,7 +315,10 @@ class _ReportWizardPageState extends State<ReportWizardPage>
     });
 
     try {
-      final report = await _submissionService.submit(_draft);
+      final report = await _submissionService.submit(
+        _draft,
+        languageCode: Localizations.localeOf(context).languageCode,
+      );
       if (!mounted) return;
 
       // Cancel a pending autosave before clearing, otherwise the debounce can

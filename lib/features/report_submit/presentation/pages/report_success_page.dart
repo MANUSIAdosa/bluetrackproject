@@ -6,15 +6,16 @@ import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/primary_button.dart';
+import '../../../../shared/widgets/report_metadata_chip.dart';
+import '../../../my_reports/data/my_reports_store.dart';
 import '../../../project/domain/report.dart';
 import '../../../project/presentation/p04_report_visuals.dart';
-import '../../data/my_reports_store.dart';
 
 /// Terminal screen shown after a report is sent.
 ///
 /// Back (system gesture or the close button) goes to Explore and never returns
 /// to the wizard, so a submitted draft cannot be re-sent by accident. The
-/// report list is planned for a later update, so there is no link to it yet.
+/// primary action opens the same session-backed list used by the wizard.
 class ReportSuccessPage extends StatelessWidget {
   const ReportSuccessPage({super.key, required this.reportId, this.store});
 
@@ -164,7 +165,16 @@ class _SuccessBody extends StatelessWidget {
                   const SizedBox(height: 12),
                   _SummaryRow(
                     label: context.tr('report_success_status'),
-                    child: _StatusChip(status: report.status),
+                    child: ReportMetadataChip(
+                      icon: context.p04StatusIcon(report.status),
+                      label: context.p04StatusLabel(report.status),
+                      color: context.p04StatusColor(report.status),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      backgroundOpacity: 0.12,
+                    ),
                   ),
                 ],
               ),
@@ -174,9 +184,7 @@ class _SuccessBody extends StatelessWidget {
           PrimaryButton(
             key: const ValueKey('report_success_view_reports'),
             label: context.tr('report_success_view_reports'),
-            // The report list is planned for a later update, so this entry
-            // point stays inactive for now.
-            onPressed: null,
+            onPressed: () => context.go(Routes.myReports),
           ),
           const SizedBox(height: 12),
           OutlinedButton(
@@ -231,39 +239,6 @@ class _SummaryRow extends StatelessWidget {
         const SizedBox(width: 12),
         Flexible(child: child),
       ],
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.status});
-
-  final ReportStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = context.p04StatusColor(status);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(context.p04StatusIcon(status), size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(
-            context.p04StatusLabel(status),
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

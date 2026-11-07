@@ -15,26 +15,47 @@ import '../../project/data/report_repository.dart';
 import '../../project/domain/report.dart';
 import '../../project/presentation/p04_report_visuals.dart';
 import '../data/my_reports_config.dart';
+import '../data/my_reports_store.dart';
 import 'widgets/my_report_card.dart';
 import 'widgets/my_report_detail_sheet.dart';
 import 'widgets/my_reports_filter_sheet.dart';
 
+/// Widest the report list grows. On tablets the cards stay centred instead of
+/// stretching edge to edge; on phones the normal page padding applies.
+const double _kMaxListWidth = 640;
+
+/// Padding shared by the report list and its skeleton, so the placeholder
+/// lines up with the real cards. The bottom keeps the last card clear of the
+/// floating action button and the system inset.
+EdgeInsets _listPadding(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  final side = width > _kMaxListWidth + AppDimens.padding * 2
+      ? (width - _kMaxListWidth) / 2
+      : AppDimens.padding;
+  final bottom = 96 + MediaQuery.paddingOf(context).bottom;
+  return EdgeInsets.fromLTRB(side, 12, side, bottom);
+}
+
 /// My Reports — the signed-in user's citizen reports.
 ///
 /// The page is protected: signed-out visitors see the same login prompt as My
-/// Impact and return here after signing in. Reports are loaded once and the
-/// status filter is applied locally, so the page can tell "you have no reports
-/// yet" apart from "no reports in this status".
+/// Impact and return here after signing in. The repository seeds the shared
+/// session collection; both this page and the submit flow then read/write the
+/// same [MyReportsStore]. The status filter is applied locally.
 class MyReportsPage extends StatefulWidget {
   const MyReportsPage({
     super.key,
     this.repository,
+    this.store,
     this.userId = kMockCurrentUserId,
     this.mapTileProvider,
   });
 
-  /// Test/demo override for the report data source.
+  /// Repository used to seed the session collection with bundled mock reports.
   final ReportRepository? repository;
+
+  /// Session collection shared with the report submission flow.
+  final MyReportsStore? store;
 
   /// Owner of the reports. Mock auth has no profile yet, so this defaults to
   /// the mock user id; [kMockCurrentUserId] documents the replacement point.
@@ -50,6 +71,7 @@ class MyReportsPage extends StatefulWidget {
 class _MyReportsPageState extends State<MyReportsPage> {
   late final ReportRepository _repository =
       widget.repository ?? ProjectDataRepositories.reports;
+  late final MyReportsStore _store = widget.store ?? MyReportsStore.instance;
 
   List<Report>? _reports;
   bool _loading = false;
@@ -61,12 +83,18 @@ class _MyReportsPageState extends State<MyReportsPage> {
   void initState() {
     super.initState();
     AuthController.instance.addListener(_onAuthChanged);
-    if (AuthController.instance.signedIn) _load();
+    _store.addListener(_onStoreChanged);
+    if (AuthController.instance.signedIn) {
+      final cachedReports = _reportsForUser();
+      if (cachedReports.isNotEmpty) _reports = cachedReports;
+      _load();
+    }
   }
 
   @override
   void dispose() {
     AuthController.instance.removeListener(_onAuthChanged);
+    _store.removeListener(_onStoreChanged);
     super.dispose();
   }
 
@@ -82,28 +110,57 @@ class _MyReportsPageState extends State<MyReportsPage> {
       });
       return;
     }
-    if (_reports == null && !_loading) _load();
+    if (_reports == null && !_loading) {
+      final cachedReports = _reportsForUser();
+      if (cachedReports.isNotEmpty) {
+        setState(() => _reports = cachedReports);
+      }
+      _load();
+    }
   }
 
-  Future<void> _load() async {
+  void _onStoreChanged() {
+    if (!mounted || !AuthController.instance.signedIn) return;
+    final reports = _reportsForUser();
+    setState(() {
+      _reports = reports;
+      if (reports.isNotEmpty) {
+        _loading = false;
+        _error = false;
+      }
+    });
+  }
+
+  List<Report> _reportsForUser() {
+    final reports = _store.reports
+        .where((report) => report.reporterId == widget.userId)
+        .toList()
+      ..sort((a, b) => b.reportedAt.compareTo(a.reportedAt));
+    return reports;
+  }
+
+  Future<void> _load({bool showSkeleton = true}) async {
     final requestId = ++_requestId;
     setState(() {
-      _loading = true;
+      _loading = showSkeleton && _reports == null;
       _error = false;
     });
 
     try {
-      final reports = await _repository.getReportsByUser(widget.userId);
+      final seedReports = await _repository.getReportsByUser(widget.userId);
       if (!mounted || requestId != _requestId) return;
+      _store.addAllIfMissing(seedReports);
       setState(() {
-        _reports = reports;
+        _reports = _reportsForUser();
         _loading = false;
       });
     } catch (_) {
       if (!mounted || requestId != _requestId) return;
+      final cachedReports = _reportsForUser();
       setState(() {
+        _reports = cachedReports.isEmpty ? null : cachedReports;
         _loading = false;
-        _error = true;
+        _error = cachedReports.isEmpty;
       });
     }
   }
@@ -115,9 +172,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
   }
 
   Future<void> _openReportForm() async {
-    await context.push(Routes.report);
-    if (!mounted) return;
-    _load();
+    await context.push<void>(Routes.report);
   }
 
   List<Report> _visibleReports(List<Report> reports) {
@@ -133,7 +188,6 @@ class _MyReportsPageState extends State<MyReportsPage> {
       for (final status in ReportStatus.values)
         status.id: reports.where((report) => report.status == status).length,
     };
-
     final id = await showMyReportsFilterSheet(
       context,
       selectedId: _selectedStatus?.id ?? 'all',
@@ -143,12 +197,25 @@ class _MyReportsPageState extends State<MyReportsPage> {
     _selectFilter(id);
   }
 
+  Widget _refreshableState(BuildContext context, Widget state) {
+    return RefreshIndicator(
+      onRefresh: () => _load(showSkeleton: false),
+      child: LayoutBuilder(
+        builder: (context, constraints) => ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [SizedBox(height: constraints.maxHeight, child: state)],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: AuthController.instance,
       builder: (context, _) {
         final signedIn = AuthController.instance.signedIn;
+        final textTheme = Theme.of(context).textTheme;
         final reports = signedIn ? _reports : null;
         final selected = _selectedStatus;
         final visible = reports == null ? null : _visibleReports(reports);
@@ -176,7 +243,7 @@ class _MyReportsPageState extends State<MyReportsPage> {
               children: [
                 Text(
                   context.tr('detail.myReports'),
-                  style: const TextStyle(
+                  style: textTheme.titleLarge?.copyWith(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
@@ -188,8 +255,8 @@ class _MyReportsPageState extends State<MyReportsPage> {
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 11,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textSecondary,
                     ),
@@ -197,28 +264,48 @@ class _MyReportsPageState extends State<MyReportsPage> {
                 ],
               ],
             ),
-            actions: [
-              if (reports != null && reports.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: Badge(
-                    isLabelVisible: selected != null,
-                    smallSize: 8,
-                    backgroundColor: AppColors.coral,
-                    child: IconButton(
+            actions: reports != null && reports.isNotEmpty
+                ? [
+                    IconButton(
                       key: const ValueKey('my-reports-filter-button'),
                       tooltip: context.tr('my_reports.filter_title'),
                       onPressed: _openFilter,
-                      icon: Icon(
-                        Icons.tune,
-                        color: selected == null
-                            ? AppColors.textPrimary
-                            : AppColors.ocean,
+                      constraints: const BoxConstraints.tightFor(
+                        width: 48,
+                        height: 48,
+                      ),
+                      icon: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Icon(
+                            Icons.tune,
+                            color: selected == null
+                                ? AppColors.textPrimary
+                                : AppColors.ocean,
+                          ),
+                          if (selected != null)
+                            Positioned(
+                              top: -2,
+                              right: -2,
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: AppColors.coral,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: AppColors.surface,
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                  ),
-                ),
-            ],
+                    const SizedBox(width: 8),
+                  ]
+                : null,
           ),
           floatingActionButton: showCreateAction
               ? FloatingActionButton.extended(
@@ -253,11 +340,15 @@ class _MyReportsPageState extends State<MyReportsPage> {
 
     final all = reports ?? const <Report>[];
     if (all.isEmpty) {
-      return EmptyState(
-        icon: Icons.description_outlined,
-        message: context.tr('my_reports.empty'),
-        actionLabel: context.tr('my_reports.create'),
-        onAction: _openReportForm,
+      return _refreshableState(
+        context,
+        EmptyState(
+          icon: Icons.waves,
+          title: context.tr('my_reports.empty_title'),
+          message: context.tr('my_reports.empty'),
+          actionLabel: context.tr('my_reports.create'),
+          onAction: _openReportForm,
+        ),
       );
     }
 
@@ -267,42 +358,54 @@ class _MyReportsPageState extends State<MyReportsPage> {
     // Reports exist but none match the active status: the user can clear the
     // filter, but nothing here invites another report.
     if (visible.isEmpty && selected != null) {
-      return EmptyState(
-        icon: Icons.filter_alt_off_outlined,
-        message: context.tr('my_reports.empty_filter', {
-          'status': context.p04StatusLabel(selected),
-        }),
-        actionLabel: context.tr('my_reports.show_all'),
-        onAction: () => _selectFilter('all'),
+      return _refreshableState(
+        context,
+        EmptyState(
+          icon: Icons.filter_alt_off_outlined,
+          message: context.tr('my_reports.empty_filter', {
+            'status': context.p04StatusLabel(selected),
+          }),
+          actionLabel: context.tr('my_reports.show_all'),
+          onAction: () => _selectFilter('all'),
+        ),
       );
     }
 
-    return ListView.separated(
-      key: const ValueKey('my-reports-list'),
-      padding: const EdgeInsets.fromLTRB(
-        AppDimens.padding,
-        12,
-        AppDimens.padding,
-        96,
-      ),
-      itemCount: visible.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        final report = visible[index];
-        return MyReportCard(
-          report: report,
-          onTap: () => showMyReportDetailSheet(
-            context,
+    return RefreshIndicator(
+      onRefresh: () => _load(showSkeleton: false),
+      child: ListView.separated(
+        key: const ValueKey('my-reports-list'),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: _listPadding(context),
+        itemCount: visible.length,
+        separatorBuilder: (_, _) => const SizedBox(height: AppDimens.gap),
+        itemBuilder: (context, index) {
+          final report = visible[index];
+          return MyReportCard(
             report: report,
-            mapTileProvider: widget.mapTileProvider,
-          ),
-        );
-      },
+            onTap: () => showMyReportDetailSheet(
+              context,
+              report: report,
+              mapTileProvider: widget.mapTileProvider,
+            ),
+            onCompletionProofTap:
+                report.status == ReportStatus.completed &&
+                    report.hasCompletionProof
+                ? () => showMyReportDetailSheet(
+                    context,
+                    report: report,
+                    mapTileProvider: widget.mapTileProvider,
+                    openCompletionProof: true,
+                  )
+                : null,
+          );
+        },
+      ),
     );
   }
 }
 
-/// Filter and card placeholders that mirror the populated page's rhythm.
+/// Card-shaped placeholders that mirror the populated report list.
 class _MyReportsSkeleton extends StatelessWidget {
   const _MyReportsSkeleton();
 
@@ -312,17 +415,82 @@ class _MyReportsSkeleton extends StatelessWidget {
       label: context.tr('my_reports.loading'),
       child: ListView(
         key: const ValueKey('my-reports-skeleton'),
-        padding: const EdgeInsets.fromLTRB(
-          AppDimens.padding,
-          12,
-          AppDimens.padding,
-          96,
-        ),
+        padding: _listPadding(context),
         children: [
           for (var i = 0; i < 4; i++) ...[
-            const Skeleton(height: 116, radius: AppDimens.cardRadius),
-            if (i < 3) const SizedBox(height: 10),
+            const _MyReportCardSkeleton(),
+            if (i < 3) const SizedBox(height: AppDimens.gap),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MyReportCardSkeleton extends StatelessWidget {
+  const _MyReportCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDimens.cardRadius),
+        side: const BorderSide(color: AppColors.border),
+      ),
+      child: Stack(
+        children: [
+          const Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 4,
+            child: DecoratedBox(
+              decoration: BoxDecoration(color: AppColors.border),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Skeleton(width: 64, height: 64, radius: 14),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Skeleton(width: 96, height: 12, radius: 6),
+                          const SizedBox(height: 8),
+                          const Skeleton(height: 16, radius: 6),
+                          const SizedBox(height: 5),
+                          const Skeleton(width: 170, height: 16, radius: 6),
+                          const SizedBox(height: 8),
+                          const Skeleton(width: 132, height: 12, radius: 6),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Divider(height: 1, color: AppColors.border),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Skeleton(width: 86, height: 24, radius: 999),
+                    const SizedBox(width: 10),
+                    const Skeleton(width: 96, height: 14, radius: 7),
+                    const Spacer(),
+                    const Skeleton(width: 20, height: 20, radius: 10),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

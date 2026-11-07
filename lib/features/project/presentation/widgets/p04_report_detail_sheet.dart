@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/error_state.dart';
+import '../../../../shared/widgets/report_metadata_chip.dart';
 import '../../../../shared/widgets/skeleton.dart';
 import '../../../../shared/widgets/zoomable_photo_viewer.dart';
 import '../../data/report_repository.dart';
@@ -261,20 +262,23 @@ class _DetailContent extends StatelessWidget {
           spacing: AppDimens.gap,
           runSpacing: AppDimens.gap,
           children: [
-            _DetailChip(
+            ReportMetadataChip(
               icon: context.p04CategoryIcon(report.category),
               label: context.p04CategoryLabel(report.category),
               color: categoryColor,
+              borderRadius: BorderRadius.circular(AppDimens.cardRadius),
             ),
-            _DetailChip(
+            ReportMetadataChip(
               icon: Icons.speed_outlined,
               label: context.p04SeverityLabel(report.severity),
               color: context.p04SeverityColor(report.severity),
+              borderRadius: BorderRadius.circular(AppDimens.cardRadius),
             ),
-            _DetailChip(
+            ReportMetadataChip(
               icon: context.p04StatusIcon(report.status),
               label: context.p04StatusLabel(report.status),
               color: context.p04StatusColor(report.status),
+              borderRadius: BorderRadius.circular(AppDimens.cardRadius),
             ),
           ],
         ),
@@ -508,44 +512,6 @@ class _PhotoPlaceholder extends StatelessWidget {
             message,
             textAlign: TextAlign.center,
             style: const TextStyle(color: AppColors.textSecondary),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DetailChip extends StatelessWidget {
-  const _DetailChip({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(AppDimens.cardRadius),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
           ),
         ],
       ),

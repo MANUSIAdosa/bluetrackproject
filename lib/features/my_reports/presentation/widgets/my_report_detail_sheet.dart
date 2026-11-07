@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +8,7 @@ import 'package:latlong2/latlong.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/report_metadata_chip.dart';
 import '../../../../shared/widgets/zoomable_photo_viewer.dart';
 import '../../../project/domain/report.dart';
 import '../../../project/presentation/p04_format.dart';
@@ -15,13 +18,16 @@ import '../../../project/presentation/p04_report_visuals.dart';
 ///
 /// The report is already loaded by the list, so the sheet does not fetch again:
 /// it shows the status tracker, the zoomable photo, a small map, the verifier
-/// note and the description. Reports that are being followed up or finished
-/// also link to the Aksi tab.
+/// note and the description. Followed-up and finished reports also expose a
+/// secondary link to the general Aksi agenda.
 Future<void> showMyReportDetailSheet(
   BuildContext context, {
   required Report report,
   TileProvider? mapTileProvider,
+  bool openCompletionProof = false,
 }) {
+  final proofSectionKey = GlobalKey();
+  var scrollScheduled = false;
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -36,6 +42,21 @@ Future<void> showMyReportDetailSheet(
     builder: (_) {
       return LayoutBuilder(
         builder: (context, constraints) {
+          if (openCompletionProof && !scrollScheduled) {
+            scrollScheduled = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final proofContext = proofSectionKey.currentContext;
+              if (proofContext == null) return;
+              unawaited(
+                Scrollable.ensureVisible(
+                  proofContext,
+                  alignment: 0.08,
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOut,
+                ),
+              );
+            });
+          }
           final available = constraints.maxHeight.isFinite
               ? constraints.maxHeight
               : MediaQuery.sizeOf(context).height;
@@ -44,6 +65,7 @@ Future<void> showMyReportDetailSheet(
             child: _MyReportDetailSheet(
               report: report,
               mapTileProvider: mapTileProvider,
+              proofSectionKey: proofSectionKey,
             ),
           );
         },
@@ -56,18 +78,21 @@ class _MyReportDetailSheet extends StatelessWidget {
   const _MyReportDetailSheet({
     required this.report,
     required this.mapTileProvider,
+    required this.proofSectionKey,
   });
 
   final Report report;
   final TileProvider? mapTileProvider;
+  final GlobalKey proofSectionKey;
 
-  bool get _hasRelatedActions =>
+  bool get _showActionsAgenda =>
       report.status == ReportStatus.followedUp ||
       report.status == ReportStatus.completed;
 
   @override
   Widget build(BuildContext context) {
     final lang = Localizations.localeOf(context).languageCode;
+    final textTheme = Theme.of(context).textTheme;
 
     return Column(
       children: [
@@ -75,7 +100,7 @@ class _MyReportDetailSheet extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(
             AppDimens.padding,
             0,
-            AppDimens.padding,
+            4,
             8,
           ),
           child: Row(
@@ -83,7 +108,7 @@ class _MyReportDetailSheet extends StatelessWidget {
               Expanded(
                 child: Text(
                   context.tr('p04_detail_title'),
-                  style: const TextStyle(
+                  style: textTheme.titleLarge?.copyWith(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
@@ -122,7 +147,7 @@ class _MyReportDetailSheet extends StatelessWidget {
               const SizedBox(height: AppDimens.gap),
               Text(
                 report.title,
-                style: const TextStyle(
+                style: textTheme.titleLarge?.copyWith(
                   fontSize: 20,
                   height: 1.3,
                   fontWeight: FontWeight.w800,
@@ -139,34 +164,54 @@ class _MyReportDetailSheet extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  _DetailChip(
+                  ReportMetadataChip(
                     icon: context.p04CategoryIcon(report.category),
                     label: context.p04CategoryLabel(report.category),
                     color: context.p04CategoryColor(report.category),
                   ),
-                  _DetailChip(
+                  ReportMetadataChip(
                     icon: Icons.speed_outlined,
-                    label: context.p04SeverityLabel(report.severity),
+                    label: context.tr('my_reports.severity_chip', {
+                      'level': context.p04SeverityLabel(report.severity),
+                    }),
                     color: context.p04SeverityColor(report.severity),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
-              _CurrentStatusPanel(status: report.status),
-              const SizedBox(height: 12),
               _SectionCard(
                 icon: Icons.timeline,
                 title: context.tr('my_reports.tracker'),
-                child: _StatusTracker(status: report.status),
+                child: _StatusTracker(
+                  status: report.status,
+                  completedAt: report.completionProof?.completedAt,
+                  languageCode: lang,
+                ),
               ),
+              if (report.status == ReportStatus.completed) ...[
+                const SizedBox(height: 12),
+                KeyedSubtree(
+                  key: proofSectionKey,
+                  child: _SectionCard(
+                    key: const ValueKey('my-report-completion-proof-section'),
+                    icon: Icons.fact_check_outlined,
+                    title: context.tr('my_reports.completion_proof'),
+                    child: report.completionProof == null
+                        ? const _CompletionProofEmptyState()
+                        : _CompletionProofDetails(
+                            proof: report.completionProof!,
+                            languageCode: lang,
+                          ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               _SectionCard(
                 icon: Icons.notes_outlined,
                 title: context.tr('p04_detail_description'),
                 child: Text(
                   report.description,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: textTheme.bodyMedium?.copyWith(
                     height: 1.6,
                     color: AppColors.textPrimary,
                   ),
@@ -176,7 +221,10 @@ class _MyReportDetailSheet extends StatelessWidget {
               _SectionCard(
                 icon: Icons.rate_review_outlined,
                 title: context.tr('p04_detail_verifier_note'),
-                child: _VerifierNote(note: report.verifierNote),
+                child: _VerifierNote(
+                  note: report.verifierNote,
+                  status: report.status,
+                ),
               ),
               const SizedBox(height: 12),
               _SectionCard(
@@ -184,7 +232,7 @@ class _MyReportDetailSheet extends StatelessWidget {
                 title: context.tr('p04_detail_location'),
                 child: _MiniMap(report: report, tileProvider: mapTileProvider),
               ),
-              if (_hasRelatedActions) ...[
+              if (_showActionsAgenda) ...[
                 const SizedBox(height: 12),
                 const _OpenActionsRow(),
               ],
@@ -226,6 +274,7 @@ class _ReportPhoto extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     if (photoPaths.isEmpty) {
       return const AspectRatio(aspectRatio: 16 / 9, child: _PhotoPlaceholder());
     }
@@ -272,9 +321,9 @@ class _ReportPhoto extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       context.tr('p04_photo_open'),
-                      style: const TextStyle(
+                      style: textTheme.bodySmall?.copyWith(
+                        fontSize: 12,
                         color: AppColors.surface,
-                        fontSize: 11,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -300,9 +349,9 @@ class _ReportPhoto extends StatelessWidget {
                       'current': '1',
                       'total': '${photoPaths.length}',
                     }),
-                    style: const TextStyle(
+                    style: textTheme.bodySmall?.copyWith(
+                      fontSize: 12,
                       color: AppColors.surface,
-                      fontSize: 11,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -344,82 +393,17 @@ class _PhotoPlaceholder extends StatelessWidget {
   }
 }
 
-/// The report's present state, promoted above the step-by-step tracker.
-class _CurrentStatusPanel extends StatelessWidget {
-  const _CurrentStatusPanel({required this.status});
-
-  final ReportStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = context.p04StatusColor(status);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.22)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              context.p04StatusIcon(status),
-              size: 20,
-              color: color,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.tr('my_reports.current_status'),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  context.p04StatusLabel(status),
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: color,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '${status.index + 1}/${ReportStatus.values.length}',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: color.withValues(alpha: 0.75),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
+/// Current report status and the steps leading to it in one tracker.
 class _StatusTracker extends StatelessWidget {
-  const _StatusTracker({required this.status});
+  const _StatusTracker({
+    required this.status,
+    required this.languageCode,
+    this.completedAt,
+  });
 
   final ReportStatus status;
+  final String languageCode;
+  final DateTime? completedAt;
 
   @override
   Widget build(BuildContext context) {
@@ -428,14 +412,19 @@ class _StatusTracker extends StatelessWidget {
 
     return Column(
       key: const ValueKey('my-report-tracker'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (var i = 0; i < steps.length; i++)
           _TrackerRow(
             status: steps[i],
+            index: i,
+            total: steps.length,
             reached: i <= currentIndex,
             current: i == currentIndex,
             isLast: i == steps.length - 1,
             nextReached: i + 1 <= currentIndex,
+            completedAt: i == steps.length - 1 ? completedAt : null,
+            languageCode: languageCode,
           ),
       ],
     );
@@ -445,22 +434,69 @@ class _StatusTracker extends StatelessWidget {
 class _TrackerRow extends StatelessWidget {
   const _TrackerRow({
     required this.status,
+    required this.index,
+    required this.total,
     required this.reached,
     required this.current,
     required this.isLast,
     required this.nextReached,
+    required this.languageCode,
+    this.completedAt,
   });
 
   final ReportStatus status;
+
+  /// Zero-based position of this step and the number of steps, announced to
+  /// screen readers as "step N of TOTAL".
+  final int index;
+  final int total;
   final bool reached;
   final bool current;
   final bool isLast;
   final bool nextReached;
+  final DateTime? completedAt;
+  final String languageCode;
 
+  /// One spoken sentence per step: position, status and whether it is the
+  /// current step, already reached or not reached yet. Reached, current and
+  /// pending otherwise differ only by colour and icon, which a screen reader
+  /// cannot convey, so the visual row is excluded and this label replaces it.
   @override
   Widget build(BuildContext context) {
-    final color = context.p04StatusColor(status);
+    final stateKey = current
+        ? 'my_reports.tracker_step_current'
+        : reached
+        ? 'my_reports.tracker_step_reached'
+        : 'my_reports.tracker_step_pending';
+    var semanticsLabel = context.tr(stateKey, {
+      'step': '${index + 1}',
+      'total': '$total',
+      'status': context.p04StatusLabel(status),
+    });
+    if (isLast && reached && completedAt != null) {
+      final completedLabel = context.tr('my_reports.completed_step_date', {
+        'date': P04Format.dateTime(completedAt!.toLocal(), languageCode),
+      });
+      semanticsLabel = '$semanticsLabel. $completedLabel';
+    }
 
+    return Semantics(
+      container: true,
+      selected: current,
+      label: semanticsLabel,
+      child: ExcludeSemantics(child: _buildVisual(context)),
+    );
+  }
+
+  Widget _buildVisual(BuildContext context) {
+    final color = context.p04StatusColor(status);
+    final foreground = context.p04StatusForeground(status);
+    final progressColor = current ? color : AppColors.inactiveTab;
+    final textTheme = Theme.of(context).textTheme;
+
+    // The row grows with its content (larger text, the completion date line)
+    // and the connector stretches to meet the next node, so no step needs a
+    // fixed height.
     return IntrinsicHeight(
       child: Row(
         key: ValueKey('my-report-tracker-${status.id}'),
@@ -474,18 +510,31 @@ class _TrackerRow extends StatelessWidget {
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: reached ? color : AppColors.surface,
+                    color: reached
+                        ? progressColor.withValues(alpha: 0.42)
+                        : AppColors.surface,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: reached ? color : AppColors.inactiveTab,
+                      color: reached
+                          ? progressColor.withValues(alpha: 0.75)
+                          : AppColors.textSecondary,
                       width: 1.5,
                     ),
+                    // A soft ring marks the step the report is at right now.
+                    boxShadow: current
+                        ? [
+                            BoxShadow(
+                              color: color.withValues(alpha: 0.22),
+                              spreadRadius: 4,
+                            ),
+                          ]
+                        : null,
                   ),
                   child: reached
-                      ? const Icon(
+                      ? Icon(
                           Icons.check,
                           size: 14,
-                          color: AppColors.surface,
+                          color: current ? foreground : AppColors.textSecondary,
                         )
                       : null,
                 ),
@@ -493,27 +542,97 @@ class _TrackerRow extends StatelessWidget {
                   Expanded(
                     child: Container(
                       width: 2,
-                      margin: const EdgeInsets.symmetric(vertical: 3),
                       color: nextReached
-                          ? color.withValues(alpha: 0.45)
+                          ? AppColors.inactiveTab.withValues(alpha: 0.55)
                           : AppColors.border,
                     ),
                   ),
               ],
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Padding(
-              padding: EdgeInsets.only(top: 2, bottom: isLast ? 0 : 14),
-              child: Text(
-                context.p04StatusLabel(status),
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: current ? FontWeight.w800 : FontWeight.w600,
-                  color: reached
-                      ? AppColors.textPrimary
-                      : AppColors.textSecondary,
+              padding: EdgeInsets.only(top: 2, bottom: isLast ? 0 : 12),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 3,
+                ),
+                decoration: current
+                    ? BoxDecoration(
+                        color: color.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      )
+                    : null,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (current)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              context.p04StatusLabel(status),
+                              style: textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              context.tr('my_reports.current_status'),
+                              style: textTheme.labelSmall?.copyWith(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: foreground,
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      Text(
+                        context.p04StatusLabel(status),
+                        style: textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: current
+                              ? AppColors.textPrimary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    if (isLast && reached && completedAt != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        context.tr('my_reports.completed_step_date', {
+                          'date': P04Format.dateTime(
+                            completedAt!.toLocal(),
+                            languageCode,
+                          ),
+                        }),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.bodySmall?.copyWith(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: context.p04StatusForeground(
+                            ReportStatus.completed,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),
@@ -532,12 +651,13 @@ class _DateRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     return Row(
       children: [
         const Icon(
           Icons.calendar_today_outlined,
-          size: 18,
-          color: AppColors.ocean,
+          size: 14,
+          color: AppColors.textSecondary,
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -546,7 +666,7 @@ class _DateRow extends StatelessWidget {
               children: [
                 TextSpan(
                   text: '$label: ',
-                  style: const TextStyle(
+                  style: textTheme.bodySmall?.copyWith(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textSecondary,
@@ -554,7 +674,7 @@ class _DateRow extends StatelessWidget {
                 ),
                 TextSpan(
                   text: value,
-                  style: const TextStyle(
+                  style: textTheme.bodySmall?.copyWith(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -570,25 +690,38 @@ class _DateRow extends StatelessWidget {
 }
 
 class _VerifierNote extends StatelessWidget {
-  const _VerifierNote({required this.note});
+  const _VerifierNote({required this.note, required this.status});
 
   final String? note;
+  final ReportStatus status;
 
   @override
   Widget build(BuildContext context) {
     final trimmed = note?.trim();
-    final waiting = trimmed == null || trimmed.isEmpty;
-    final message = waiting
+    final noNote = trimmed == null || trimmed.isEmpty;
+    final waiting = noNote && status == ReportStatus.submitted;
+    final message = !noNote
+        ? trimmed!
+        : waiting
         ? context.tr('my_reports.waiting_verification')
-        : trimmed;
-    final color = waiting ? AppColors.warning : AppColors.ocean;
+        : context.tr('my_reports.no_verifier_note');
+    final color = waiting
+        ? AppColors.warning
+        : noNote
+        ? AppColors.textSecondary
+        : AppColors.ocean;
+    final textTheme = Theme.of(context).textTheme;
 
     return Container(
       key: const ValueKey('my-report-verifier-note'),
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.06),
+        color: waiting
+            ? AppColors.warning.withValues(alpha: 0.06)
+            : noNote
+            ? AppColors.background
+            : AppColors.ocean.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withValues(alpha: 0.18)),
       ),
@@ -596,7 +729,11 @@ class _VerifierNote extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
-            waiting ? Icons.schedule : Icons.verified_outlined,
+            waiting
+                ? Icons.schedule
+                : noNote
+                ? Icons.info_outline
+                : Icons.verified_outlined,
             size: 18,
             color: color,
           ),
@@ -606,14 +743,13 @@ class _VerifierNote extends StatelessWidget {
               message,
               key: waiting
                   ? const ValueKey('my-report-waiting-verification')
+                  : noNote
+                  ? const ValueKey('my-report-no-verifier-note')
                   : null,
-              style: TextStyle(
-                fontSize: 13,
+              style: textTheme.bodyMedium?.copyWith(
                 height: 1.5,
-                fontWeight: waiting ? FontWeight.w600 : FontWeight.w500,
-                color: waiting
-                    ? AppColors.textSecondary
-                    : AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+                color: noNote ? AppColors.textSecondary : AppColors.textPrimary,
               ),
             ),
           ),
@@ -688,9 +824,13 @@ class _MiniMap extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                 color: AppColors.surface.withValues(alpha: 0.82),
-                child: const Text(
+                child: Text(
                   '© OpenStreetMap',
-                  style: TextStyle(fontSize: 9, color: AppColors.textSecondary),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ),
             ),
@@ -747,8 +887,7 @@ class _OpenActionsRow extends StatelessWidget {
                   children: [
                     Text(
                       context.tr('my_reports.open_actions'),
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
                       ),
@@ -756,8 +895,8 @@ class _OpenActionsRow extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       context.tr('my_reports.open_actions_hint'),
-                      style: const TextStyle(
-                        fontSize: 11,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontSize: 12,
                         height: 1.35,
                         color: AppColors.textSecondary,
                       ),
@@ -775,36 +914,32 @@ class _OpenActionsRow extends StatelessWidget {
   }
 }
 
-class _DetailChip extends StatelessWidget {
-  const _DetailChip({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
+class _CompletionProofEmptyState extends StatelessWidget {
+  const _CompletionProofEmptyState();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      key: const ValueKey('my-report-completion-proof-empty'),
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(999),
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+          const Icon(Icons.info_outline, color: AppColors.textSecondary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              context.tr('my_reports.completion_proof_missing'),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                height: 1.45,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
         ],
@@ -813,9 +948,138 @@ class _DetailChip extends StatelessWidget {
   }
 }
 
+class _CompletionProofDetails extends StatelessWidget {
+  const _CompletionProofDetails({
+    required this.proof,
+    required this.languageCode,
+  });
+
+  final CompletionProof proof;
+  final String languageCode;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (proof.photoPaths.isEmpty)
+          const _CompletionProofPhotoMissing()
+        else ...[
+          Text(
+            context.tr('my_reports.completion_proof_photo_caption'),
+            style: textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _ReportPhoto(photoPaths: proof.photoPaths),
+        ],
+        const SizedBox(height: 12),
+        Text(
+          context.tr('my_reports.completion_proof_note'),
+          style: textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          proof.note,
+          style: textTheme.bodyMedium?.copyWith(
+            height: 1.5,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _CompletionProofInfoRow(
+          icon: Icons.calendar_today_outlined,
+          label: context.tr('my_reports.completion_date'),
+          value: P04Format.dateTime(
+            proof.completedAt.toLocal(),
+            languageCode,
+          ),
+        ),
+        const SizedBox(height: 8),
+        _CompletionProofInfoRow(
+          icon: Icons.person_outline,
+          label: context.tr('my_reports.completion_by'),
+          value: proof.completedBy,
+        ),
+      ],
+    );
+  }
+}
+
+class _CompletionProofPhotoMissing extends StatelessWidget {
+  const _CompletionProofPhotoMissing();
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(AppDimens.padding),
+        decoration: BoxDecoration(
+          color: AppColors.border,
+          borderRadius: BorderRadius.circular(AppDimens.cardRadius),
+        ),
+        child: Text(
+          context.tr('my_reports.completion_photo_missing'),
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
+      ),
+    );
+  }
+}
+
+class _CompletionProofInfoRow extends StatelessWidget {
+  const _CompletionProofInfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: AppColors.textSecondary),
+        const SizedBox(width: 8),
+        Text(
+          '$label: ',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            fontSize: 12,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// One titled block of the detail sheet, with a soft panel behind it.
 class _SectionCard extends StatelessWidget {
   const _SectionCard({
+    super.key,
     required this.icon,
     required this.title,
     required this.child,
@@ -845,8 +1109,7 @@ class _SectionCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
                   ),

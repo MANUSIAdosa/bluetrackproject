@@ -353,19 +353,40 @@ class AppLocalizations {
       'my_reports.loading': 'Memuat laporan...',
       'my_reports.load_error':
           'Gagal memuat laporan. Periksa koneksi lalu coba lagi.',
-      'my_reports.empty': 'Kamu belum punya laporan. Laporkan temuan di sekitarmu untuk membantu menjaga laut tetap lestari.',
+      'my_reports.empty_title': 'Belum ada laporan',
+      'my_reports.empty':
+          'Laporkan temuan di sekitarmu untuk membantu menjaga laut tetap lestari.',
       'my_reports.create': 'Buat laporan',
       'my_reports.empty_filter': 'Tidak ada laporan berstatus {status}.',
+      'my_reports.filter_count': '{label} ({count})',
+      'my_reports.filter_title': 'Filter status laporan',
+      'my_reports.filter_hint': 'Pilih status laporan yang ingin ditampilkan.',
       'my_reports.tracker': 'Pelacak status',
       'my_reports.report_date': 'Tanggal laporan',
       'my_reports.waiting_verification': 'Menunggu verifikasi',
+      'my_reports.no_verifier_note': 'Tidak ada catatan dari verifikator.',
       'my_reports.severity_chip': 'Tingkat: {level}',
-      'my_reports.open_actions': 'Lihat aksi terkait',
+      'my_reports.completed_step_date': 'Selesai pada {date}',
+      'my_reports.tracker_step_current':
+          'Langkah {step} dari {total}: {status}, status saat ini',
+      'my_reports.tracker_step_reached':
+          'Langkah {step} dari {total}: {status}, sudah dilalui',
+      'my_reports.tracker_step_pending':
+          'Langkah {step} dari {total}: {status}, belum dicapai',
+      'my_reports.completion_proof': 'Bukti penyelesaian',
+      'my_reports.completion_proof_missing': 'Bukti belum diunggah.',
+      'my_reports.completion_photo_missing': 'Foto bukti belum tersedia.',
+      'my_reports.completion_proof_note': 'Catatan penyelesaian',
+      'my_reports.completion_proof_photo_caption': 'Foto bukti penyelesaian',
+      'my_reports.completion_date': 'Selesai pada',
+      'my_reports.completion_by': 'Pelaksana',
+      'my_reports.completion_proof_available': 'Bukti penyelesaian tersedia',
+      'my_reports.card_photo_semantics': 'Foto laporan',
+      'my_reports.open_actions': 'Lihat agenda aksi',
       'my_reports.open_actions_hint':
-          'Temukan kegiatan yang terhubung dengan laporan ini.',
+          'Jelajahi agenda kegiatan konservasi yang tersedia.',
       'my_reports.count': '{n} laporan',
       'my_reports.filtered_count': '{status} · {n} laporan',
-      'my_reports.filter_title': 'Filter status',
       'my_reports.show_all': 'Tampilkan semua',
       'my_reports.current_status': 'Status saat ini',
       'p04_photo_error': 'Foto tidak dapat dimuat.',
@@ -558,7 +579,9 @@ class AppLocalizations {
       'p08_receipt_unavailable_title': 'E-Receipt belum tersedia',
       'p08_receipt_unavailable_body':
           'E-Receipt baru tersedia setelah dukungan berhasil.',
-      'p08_view_reports': 'Lihat laporan proyek',
+      'p08_download_receipt': 'Unduh e-receipt',
+      'p08_download_receipt_hint': 'Simpan bukti donasi ini sebagai PDF.',
+      'p08_download_receipt_soon': 'Unduh e-receipt akan segera tersedia.',
 
       // --- Legal (Privacy Policy / Terms) ---
       'legal.privacy.title': 'Kebijakan Privasi',
@@ -758,6 +781,7 @@ class AppLocalizations {
       'report_submit_missing_location': 'Tandai lokasi temuan terlebih dahulu.',
       'report_submit_missing_type':
           'Pilih jenis dan tingkat temuan terlebih dahulu.',
+      'report_submit.generated_title': 'Laporan {category} · {date} · {id}',
       'report_success_title': 'Laporan terkirim',
       'report_success_body':
           'Terima kasih. Laporanmu akan diverifikasi sebelum tayang ke publik.',
@@ -767,10 +791,6 @@ class AppLocalizations {
       'report_success_view_reports': 'Lihat Laporan Saya',
       'report_success_new_report': 'Buat Laporan Lain',
       'report_success_not_found': 'Laporan tidak ditemukan di sesi ini.',
-      'report_mine_title': 'Laporan Saya',
-      'report_mine_empty':
-          'Belum ada laporan. Laporan yang kamu kirim akan muncul di sini.',
-      'report_mine_new': 'Buat Laporan',
       'report_photo_viewer_counter': '{current}/{total}',
       'report_photo_viewer_close': 'Tutup',
 
@@ -1109,18 +1129,42 @@ class AppLocalizations {
       'my_reports.loading': 'Loading reports...',
       'my_reports.load_error':
           'Could not load reports. Check your connection and try again.',
-      'my_reports.empty': 'You have no reports yet. Report what you find around you to help keep the sea healthy.',
+      'my_reports.empty_title': 'No reports yet',
+      'my_reports.empty':
+          'Report what you find around you to help keep the sea healthy.',
       'my_reports.create': 'Create report',
       'my_reports.empty_filter': 'No reports with status {status}.',
+      'my_reports.filter_count': '{label} ({count})',
+      'my_reports.filter_title': 'Filter report status',
+      'my_reports.filter_hint': 'Choose which report statuses to display.',
       'my_reports.tracker': 'Status tracker',
       'my_reports.report_date': 'Report date',
       'my_reports.waiting_verification': 'Waiting for verification',
+      'my_reports.no_verifier_note': 'No note from the verifier.',
       'my_reports.severity_chip': 'Severity: {level}',
-      'my_reports.open_actions': 'View related actions',
-      'my_reports.open_actions_hint': 'Find activities linked to this report.',
+      'my_reports.completed_step_date': 'Completed on {date}',
+      'my_reports.tracker_step_current':
+          'Step {step} of {total}: {status}, current status',
+      'my_reports.tracker_step_reached':
+          'Step {step} of {total}: {status}, reached',
+      'my_reports.tracker_step_pending':
+          'Step {step} of {total}: {status}, not reached yet',
+      'my_reports.completion_proof': 'Completion proof',
+      'my_reports.completion_proof_missing':
+          'Completion proof has not been uploaded yet.',
+      'my_reports.completion_photo_missing':
+          'Completion proof photo is not available.',
+      'my_reports.completion_proof_note': 'Completion note',
+      'my_reports.completion_proof_photo_caption': 'Completion proof photo',
+      'my_reports.completion_date': 'Completed on',
+      'my_reports.completion_by': 'Completed by',
+      'my_reports.completion_proof_available': 'Completion proof available',
+      'my_reports.card_photo_semantics': 'Report photo',
+      'my_reports.open_actions': 'View the action agenda',
+      'my_reports.open_actions_hint':
+          'Browse available conservation activities.',
       'my_reports.count': '{n} reports',
       'my_reports.filtered_count': '{status} · {n} reports',
-      'my_reports.filter_title': 'Filter status',
       'my_reports.show_all': 'Show all',
       'my_reports.current_status': 'Current status',
       'p04_photo_error': 'Photo could not be loaded.',
@@ -1315,7 +1359,9 @@ class AppLocalizations {
       'p08_receipt_unavailable_title': 'E-Receipt not available yet',
       'p08_receipt_unavailable_body':
           'The E-Receipt becomes available once the support succeeds.',
-      'p08_view_reports': 'View project reports',
+      'p08_download_receipt': 'Download e-receipt',
+      'p08_download_receipt_hint': 'Save this donation proof as a PDF.',
+      'p08_download_receipt_soon': 'E-receipt download is coming soon.',
 
       // --- Legal (Privacy Policy / Terms) ---
       'legal.privacy.title': 'Privacy Policy',
@@ -1515,6 +1561,7 @@ class AppLocalizations {
       'report_submit_missing_location': 'Mark the finding location first.',
       'report_submit_missing_type':
           'Choose the finding type and severity first.',
+      'report_submit.generated_title': '{category} report · {date} · {id}',
       'report_success_title': 'Report sent',
       'report_success_body':
           'Thank you. Your report will be verified before it is published.',
@@ -1525,9 +1572,6 @@ class AppLocalizations {
       'report_success_new_report': 'Create Another Report',
       'report_success_not_found':
           'This report is no longer available in this session.',
-      'report_mine_title': 'My Reports',
-      'report_mine_empty': 'No reports yet. Reports you send will appear here.',
-      'report_mine_new': 'Create Report',
       'report_photo_viewer_counter': '{current}/{total}',
       'report_photo_viewer_close': 'Close',
 
