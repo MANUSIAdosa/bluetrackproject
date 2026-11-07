@@ -131,6 +131,7 @@ class MyReportCard extends StatelessWidget {
                   const Divider(height: 1, color: AppColors.border),
                   const SizedBox(height: 8),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: Wrap(
@@ -167,10 +168,17 @@ class MyReportCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Icon(
-                        Icons.chevron_right,
-                        size: 20,
-                        color: AppColors.inactiveTab,
+                      const SizedBox(
+                        width: 20,
+                        height: 24,
+                        child: Align(
+                          alignment: Alignment.topCenter,
+                          child: Icon(
+                            Icons.chevron_right,
+                            size: 20,
+                            color: AppColors.inactiveTab,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -247,12 +255,16 @@ class _CompletionProofMarker extends StatelessWidget {
           onTap: onTap,
           child: ConstrainedBox(
             constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            child: Center(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              widthFactor: 1,
+              heightFactor: 1,
               child: ReportMetadataChip(
                 icon: Icons.fact_check_outlined,
                 label: label,
                 color: AppColors.success,
                 fontSize: 12,
+                maxLabelLines: 2,
               ),
             ),
           ),

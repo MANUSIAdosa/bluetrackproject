@@ -13,6 +13,7 @@ class ReportMetadataChip extends StatelessWidget {
     this.iconSize = 14,
     this.fontSize = 12,
     this.fontWeight = FontWeight.w700,
+    this.maxLabelLines,
     this.borderRadius = const BorderRadius.all(Radius.circular(999)),
   });
 
@@ -25,6 +26,7 @@ class ReportMetadataChip extends StatelessWidget {
   final double iconSize;
   final double fontSize;
   final FontWeight fontWeight;
+  final int? maxLabelLines;
   final BorderRadiusGeometry borderRadius;
 
   @override
@@ -42,12 +44,18 @@ class ReportMetadataChip extends StatelessWidget {
         children: [
           Icon(icon, size: iconSize, color: color),
           const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: fontSize,
-              fontWeight: fontWeight,
-              color: color,
+          Flexible(
+            child: Text(
+              label,
+              maxLines: maxLabelLines,
+              overflow: maxLabelLines == null
+                  ? TextOverflow.clip
+                  : TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: fontWeight,
+                color: color,
+              ),
             ),
           ),
         ],

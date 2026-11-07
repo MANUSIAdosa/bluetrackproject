@@ -13,7 +13,6 @@ import '../../../shared/widgets/skeleton.dart';
 import '../../project/data/project_data_repositories.dart';
 import '../../project/data/report_repository.dart';
 import '../../project/domain/report.dart';
-import '../../project/presentation/p04_format.dart';
 import '../../project/presentation/p04_report_visuals.dart';
 import '../data/my_reports_config.dart';
 import '../data/my_reports_store.dart';
@@ -249,27 +248,46 @@ class _MyReportsPageState extends State<MyReportsPage> {
                 ],
               ],
             ),
-            actions: signedIn
+            actions: reports != null && reports.isNotEmpty
                 ? [
-                    Padding(
-                      padding: const EdgeInsets.only(right: 4),
-                      child: Badge(
-                        isLabelVisible: selected != null,
-                        smallSize: 8,
-                        backgroundColor: AppColors.coral,
-                        child: IconButton(
-                          key: const ValueKey('my-reports-filter-button'),
-                          tooltip: context.tr('my_reports.filter_title'),
-                          onPressed: _openFilter,
-                          icon: Icon(
+                    IconButton(
+                      key: const ValueKey('my-reports-filter-button'),
+                      tooltip: context.tr('my_reports.filter_title'),
+                      onPressed: _openFilter,
+                      constraints: const BoxConstraints.tightFor(
+                        width: 48,
+                        height: 48,
+                      ),
+                      icon: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Icon(
                             Icons.tune,
                             color: selected == null
                                 ? AppColors.textPrimary
                                 : AppColors.ocean,
                           ),
-                        ),
+                          if (selected != null)
+                            Positioned(
+                              top: -2,
+                              right: -2,
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: AppColors.coral,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: AppColors.surface,
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
+                    const SizedBox(width: 8),
                   ]
                 : null,
           ),
@@ -468,112 +486,6 @@ class _MyReportCardSkeleton extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _MyReportsFilterOption {
-  const _MyReportsFilterOption({
-    required this.id,
-    required this.label,
-    required this.count,
-    required this.icon,
-    required this.color,
-  });
-
-  final String id;
-  final String label;
-  final int count;
-  final IconData icon;
-  final Color color;
-}
-
-class _MyReportsFilterChip extends StatelessWidget {
-  const _MyReportsFilterChip({
-    required this.option,
-    required this.selected,
-    required this.languageCode,
-    required this.onTap,
-  });
-
-  final _MyReportsFilterOption option;
-  final bool selected;
-  final String languageCode;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final foreground = selected ? AppColors.surface : option.color;
-    final countBackground = selected
-        ? AppColors.surface.withValues(alpha: 0.18)
-        : option.color.withValues(alpha: 0.1);
-
-    return Semantics(
-      key: ValueKey('my-reports-filter-${option.id}'),
-      button: true,
-      selected: selected,
-      label: context.tr('my_reports.filter_count', {
-        'label': option.label,
-        'count': P04Format.integer(option.count, languageCode),
-      }),
-      onTap: onTap,
-      child: ExcludeSemantics(
-        child: Material(
-          color: selected ? AppColors.ocean : AppColors.surface,
-          shape: StadiumBorder(
-            side: BorderSide(
-              color: selected ? AppColors.ocean : AppColors.border,
-            ),
-          ),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(999),
-            onTap: onTap,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 48),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(option.icon, size: 16, color: foreground),
-                    const SizedBox(width: 7),
-                    Text(
-                      option.label,
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                        color: selected
-                            ? AppColors.surface
-                            : AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: countBackground,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        P04Format.integer(option.count, languageCode),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: selected
-                              ? AppColors.surface
-                              : AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }

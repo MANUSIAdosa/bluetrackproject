@@ -276,7 +276,13 @@ void main() {
         findsOneWidget,
       );
     }
-    expect(find.text('Selesai (2)'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('my-reports-filter-option-selesai')),
+        matching: find.text('2'),
+      ),
+      findsOneWidget,
+    );
     await tester.tap(find.byKey(const ValueKey('my-reports-filter-close')));
     await tester.pumpAndSettle();
 
@@ -457,14 +463,13 @@ void main() {
     expect(find.text('Belum ada laporan'), findsOneWidget);
     expect(find.textContaining('Laporkan temuan di sekitarmu'), findsOneWidget);
     expect(find.text('Buat laporan'), findsOneWidget);
-    // The empty state button is the only create affordance. The filter menu
-    // remains available with zero counts, without a duplicate FAB.
+    // The empty state button is the only create affordance; no filter button
+    // is shown when there is nothing to filter.
     expect(find.byKey(const ValueKey('my-reports-create')), findsNothing);
-    await tester.tap(find.byKey(const ValueKey('my-reports-filter-button')));
-    await tester.pumpAndSettle();
-    expect(find.text('Selesai (0)'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('my-reports-filter-close')));
-    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('my-reports-filter-button')),
+      findsNothing,
+    );
   });
 
   testWidgets('the create-report action opens the report form', (tester) async {
@@ -735,6 +740,7 @@ void main() {
       const ValueKey('my-report-completion-proof-section'),
     );
     expect(proof, findsOneWidget);
+    expect(find.text('Foto bukti penyelesaian'), findsOneWidget);
     expect(
       find.text(
         'Dua tukik pulih setelah observasi dan dilepas kembali ke habitatnya.',

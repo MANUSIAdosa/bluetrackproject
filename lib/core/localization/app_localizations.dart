@@ -358,8 +358,7 @@ class AppLocalizations {
       'my_reports.empty_filter': 'Tidak ada laporan berstatus {status}.',
       'my_reports.filter_count': '{label} ({count})',
       'my_reports.filter_title': 'Filter status laporan',
-      'my_reports.filter_hint':
-          'Pilih status laporan yang ingin ditampilkan.',
+      'my_reports.filter_hint': 'Pilih status laporan yang ingin ditampilkan.',
       'my_reports.tracker': 'Pelacak status',
       'my_reports.report_date': 'Tanggal laporan',
       'my_reports.waiting_verification': 'Menunggu verifikasi',
@@ -370,6 +369,7 @@ class AppLocalizations {
       'my_reports.completion_proof_missing': 'Bukti belum diunggah.',
       'my_reports.completion_photo_missing': 'Foto bukti belum tersedia.',
       'my_reports.completion_proof_note': 'Catatan penyelesaian',
+      'my_reports.completion_proof_photo_caption': 'Foto bukti penyelesaian',
       'my_reports.completion_date': 'Selesai pada',
       'my_reports.completion_by': 'Pelaksana',
       'my_reports.completion_proof_available': 'Bukti penyelesaian tersedia',
@@ -1137,6 +1137,7 @@ class AppLocalizations {
       'my_reports.completion_photo_missing':
           'Completion proof photo is not available.',
       'my_reports.completion_proof_note': 'Completion note',
+      'my_reports.completion_proof_photo_caption': 'Completion proof photo',
       'my_reports.completion_date': 'Completed on',
       'my_reports.completion_by': 'Completed by',
       'my_reports.completion_proof_available': 'Completion proof available',
