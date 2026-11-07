@@ -881,6 +881,17 @@ void main() {
 
     expect(find.text('Simpan draf dan keluar?'), findsOneWidget);
 
+    // Dialog actions sit on one row: the global button theme asks for an
+    // unbounded width, so the dialog overrides it with a finite minimum.
+    final cancelCenter = tester.getCenter(
+      find.widgetWithText(TextButton, 'Batal'),
+    );
+    final leaveCenter = tester.getCenter(
+      find.widgetWithText(FilledButton, 'Keluar'),
+    );
+    expect((cancelCenter.dy - leaveCenter.dy).abs(), lessThan(1));
+    expect(cancelCenter.dx, lessThan(leaveCenter.dx));
+
     await tester.tap(find.text('Keluar'));
     await tester.pumpAndSettle();
 

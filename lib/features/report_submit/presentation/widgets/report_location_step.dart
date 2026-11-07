@@ -309,6 +309,9 @@ class _ReportLocationStepState extends State<ReportLocationStep> {
           ),
           if (canOpenSettings)
             FilledButton(
+              style: FilledButton.styleFrom(
+                minimumSize: AppDimens.dialogActionMinSize,
+              ),
               onPressed: () async {
                 Navigator.pop(dialogContext);
                 var opened = false;

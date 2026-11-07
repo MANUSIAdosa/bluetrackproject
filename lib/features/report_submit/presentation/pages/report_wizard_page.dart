@@ -173,6 +173,9 @@ class _ReportWizardPageState extends State<ReportWizardPage>
             child: Text(dialogContext.tr('report_resume_new')),
           ),
           FilledButton(
+            style: FilledButton.styleFrom(
+              minimumSize: AppDimens.dialogActionMinSize,
+            ),
             onPressed: () => Navigator.pop(dialogContext, true),
             child: Text(dialogContext.tr('report_resume_continue')),
           ),
@@ -256,6 +259,9 @@ class _ReportWizardPageState extends State<ReportWizardPage>
             child: Text(dialogContext.tr('common.cancel')),
           ),
           FilledButton(
+            style: FilledButton.styleFrom(
+              minimumSize: AppDimens.dialogActionMinSize,
+            ),
             onPressed: () => Navigator.pop(dialogContext, true),
             child: Text(dialogContext.tr('report_exit_confirm')),
           ),
