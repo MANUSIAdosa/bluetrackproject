@@ -4,8 +4,10 @@ import 'dart:io';
 
 import 'package:blue_track/core/state/app_state.dart';
 import 'package:blue_track/features/project/domain/report.dart';
+import 'package:blue_track/features/report_submit/data/geocoding_service.dart';
 import 'package:blue_track/features/report_submit/data/report_draft_store.dart';
 import 'package:blue_track/features/report_submit/data/report_photo_picker.dart';
+import 'package:blue_track/features/report_submit/domain/geocoding.dart';
 import 'package:blue_track/features/report_submit/domain/report_draft.dart';
 import 'package:blue_track/features/report_submit/domain/report_location.dart';
 import 'package:blue_track/features/report_submit/presentation/pages/report_wizard_page.dart';
@@ -74,6 +76,25 @@ class _FakePicker implements ReportPhotoPicker {
   }
 }
 
+class _FakeGeocoding implements GeocodingService {
+  GeocodingSearchResult searchResult = const GeocodingSearchResult.failed(
+    GeocodingFailure.empty,
+  );
+
+  @override
+  Future<GeocodingSearchResult> search(
+    String query, {
+    String languageCode = 'id',
+  }) async => searchResult;
+
+  @override
+  Future<GeocodingPlaceResult> reverse({
+    required double latitude,
+    required double longitude,
+    String languageCode = 'id',
+  }) async => const GeocodingPlaceResult.failed(GeocodingFailure.empty);
+}
+
 void main() {
   late Directory tempDir;
   late List<String> photoPaths;
@@ -109,6 +130,7 @@ void main() {
     required _FakeStore store,
     _FakePicker? picker,
     FakeReportLocationService? location,
+    GeocodingService? geocoding,
   }) async {
     phoneSurface(tester);
     await tester.pumpWidget(
@@ -117,6 +139,7 @@ void main() {
           store: store,
           photoPicker: picker ?? _FakePicker(),
           locationService: location ?? locationService,
+          geocodingService: geocoding ?? _FakeGeocoding(),
           locationTileProvider: tileProvider,
         ),
       ),
@@ -131,7 +154,21 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  Future<void> enterDescription(
+    WidgetTester tester, [
+    String description = 'Seekor satwa laut terlilit sampah.',
+  ]) async {
+    final field = find.byKey(const ValueKey('report_description_field'));
+    await tester.ensureVisible(field);
+    await tester.enterText(field, description);
+    await tester.pumpAndSettle();
+  }
+
   Future<void> tapMap(WidgetTester tester) async {
+    // The step scrolls; a previous ensureVisible may have moved the map out of
+    // the viewport, so bring it back before tapping like a person would.
+    await tester.ensureVisible(find.byType(FlutterMap));
+    await tester.pumpAndSettle();
     await tester.tapAt(tester.getCenter(find.byType(FlutterMap)));
     // flutter_map delays single taps by 250 ms to tell them apart from double
     // taps; pump past that before settling.
@@ -139,13 +176,14 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('starts on step 1 with continue disabled until a photo exists', (
+  testWidgets('starts on step 1 with required photo and description', (
     tester,
   ) async {
     await pumpWizard(tester, store: _FakeStore());
 
     expect(find.text('Lapor Temuan'), findsOneWidget);
     expect(find.text('0/3 foto'), findsOneWidget);
+    expect(find.text('Deskripsi temuan'), findsOneWidget);
     expect(find.text('Foto'), findsOneWidget);
     expect(find.text('Lokasi'), findsOneWidget);
     expect(find.text('Jenis'), findsOneWidget);
@@ -157,6 +195,42 @@ void main() {
     expect(button.onPressed, isNull);
   });
 
+  testWidgets('step 1 requires a description before continuing', (
+    tester,
+  ) async {
+    final store = _FakeStore();
+    await pumpWizard(
+      tester,
+      store: store,
+      picker: _FakePicker(paths: photoPaths.take(1).toList()),
+    );
+
+    await addFromGallery(tester);
+    final descriptionField = find.byKey(
+      const ValueKey('report_description_field'),
+    );
+    expect(descriptionField, findsOneWidget);
+
+    await tester.enterText(descriptionField, '   ');
+    await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Deskripsi temuan wajib diisi.'), findsOneWidget);
+    expect(find.text('Tandai lokasi temuan'), findsNothing);
+
+    await tester.enterText(
+      descriptionField,
+      'Seekor penyu terlilit jaring plastik.',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tandai lokasi temuan'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(store.draft!.description, 'Seekor penyu terlilit jaring plastik.');
+  });
+
   testWidgets('adds photos from the gallery and keeps them across steps', (
     tester,
   ) async {
@@ -165,6 +239,7 @@ void main() {
     await pumpWizard(tester, store: store, picker: picker);
 
     await addFromGallery(tester);
+    await enterDescription(tester);
 
     expect(find.text('2/3 foto'), findsOneWidget);
     expect(find.byType(Image), findsNWidgets(2));
@@ -186,6 +261,14 @@ void main() {
 
     expect(find.text('2/3 foto'), findsOneWidget);
     expect(find.byType(Image), findsNWidgets(2));
+    expect(
+      tester
+          .widget<TextFormField>(
+            find.byKey(const ValueKey('report_description_field')),
+          )
+          .initialValue,
+      'Seekor satwa laut terlilit sampah.',
+    );
   });
 
   testWidgets('removes a photo and brings the add tile back', (tester) async {
@@ -272,11 +355,12 @@ void main() {
     );
 
     await addFromGallery(tester);
+    await enterDescription(tester);
     await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
     await tester.pumpAndSettle();
 
     expect(find.text('Tandai lokasi temuan'), findsOneWidget);
-    expect(find.text('Gunakan lokasi saya'), findsOneWidget);
+    expect(find.text('Lokasi saya'), findsOneWidget);
     expect(
       tester
           .widget<FilledButton>(find.widgetWithText(FilledButton, 'Lanjut'))
@@ -310,6 +394,7 @@ void main() {
     );
 
     await addFromGallery(tester);
+    await enterDescription(tester);
     await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
     await tester.pumpAndSettle();
     await tapMap(tester);
@@ -367,6 +452,7 @@ void main() {
     );
 
     await addFromGallery(tester);
+    await enterDescription(tester);
     await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
     await tester.pumpAndSettle();
     await tapMap(tester);
@@ -407,6 +493,7 @@ void main() {
     );
 
     await addFromGallery(tester);
+    await enterDescription(tester);
     await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
     await tester.pumpAndSettle();
     await tester.ensureVisible(
@@ -448,6 +535,7 @@ void main() {
     );
 
     await addFromGallery(tester);
+    await enterDescription(tester);
     await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
     await tester.pumpAndSettle();
 
@@ -456,6 +544,50 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
 
     expect(store.draft!.hasLocation, isTrue);
+  });
+
+  testWidgets('a chosen address moves the pin and fills the draft', (
+    tester,
+  ) async {
+    final store = _FakeStore()
+      ..draft = ReportWizardDraft(
+        photoPaths: photoPaths.take(1).toList(),
+        description: 'Temuan di pesisir.',
+        currentStep: ReportWizardDraft.locationStep,
+        updatedAt: DateTime.utc(2026, 10, 30, 9),
+      );
+    final geocoding = _FakeGeocoding()
+      ..searchResult = const GeocodingSearchResult.success([
+        GeocodingPlace(
+          displayName: 'Taman Nasional Meru Betiri',
+          latitude: -8.6,
+          longitude: 113.9,
+        ),
+      ]);
+
+    await pumpWizard(tester, store: store, geocoding: geocoding);
+    await tester.tap(find.text('Lanjutkan draf'));
+    await tester.pumpAndSettle();
+
+    final openSearch = find.byKey(const ValueKey('report_address_search'));
+    await tester.ensureVisible(openSearch);
+    await tester.pumpAndSettle();
+    await tester.tap(openSearch);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('report_address_field')),
+      'Meru Betiri',
+    );
+    await tester.tap(find.byKey(const ValueKey('report_address_sheet_search')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('report_address_result_0')));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(store.draft!.latitude, closeTo(-8.6, 0.0001));
+    expect(store.draft!.longitude, closeTo(113.9, 0.0001));
+    expect(store.draft!.areaName, 'Taman Nasional Meru Betiri');
+    expect(store.draft!.locationDetail, isEmpty);
   });
 
   ReportWizardDraft typeStepDraft({
@@ -468,6 +600,7 @@ void main() {
       longitude: 114.61,
       category: category,
       severity: severity,
+      description: 'Temuan terlihat jelas pada foto.',
       currentStep: ReportWizardDraft.typeStep,
       updatedAt: DateTime.utc(2026, 10, 30, 9),
     );

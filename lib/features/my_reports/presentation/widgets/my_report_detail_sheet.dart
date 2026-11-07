@@ -97,12 +97,7 @@ class _MyReportDetailSheet extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppDimens.padding,
-            0,
-            4,
-            8,
-          ),
+          padding: const EdgeInsets.fromLTRB(AppDimens.padding, 0, 4, 8),
           child: Row(
             children: [
               Expanded(
@@ -556,10 +551,7 @@ class _TrackerRow extends StatelessWidget {
               padding: EdgeInsets.only(top: 2, bottom: isLast ? 0 : 12),
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 3,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: current
                     ? BoxDecoration(
                         color: color.withValues(alpha: 0.1),
@@ -701,7 +693,7 @@ class _VerifierNote extends StatelessWidget {
     final noNote = trimmed == null || trimmed.isEmpty;
     final waiting = noNote && status == ReportStatus.submitted;
     final message = !noNote
-        ? trimmed!
+        ? trimmed
         : waiting
         ? context.tr('my_reports.waiting_verification')
         : context.tr('my_reports.no_verifier_note');
@@ -936,10 +928,8 @@ class _CompletionProofEmptyState extends StatelessWidget {
           Expanded(
             child: Text(
               context.tr('my_reports.completion_proof_missing'),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                height: 1.45,
-                color: AppColors.textSecondary,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium
+                  ?.copyWith(height: 1.45, color: AppColors.textSecondary),
             ),
           ),
         ],
@@ -996,10 +986,7 @@ class _CompletionProofDetails extends StatelessWidget {
         _CompletionProofInfoRow(
           icon: Icons.calendar_today_outlined,
           label: context.tr('my_reports.completion_date'),
-          value: P04Format.dateTime(
-            proof.completedAt.toLocal(),
-            languageCode,
-          ),
+          value: P04Format.dateTime(proof.completedAt.toLocal(), languageCode),
         ),
         const SizedBox(height: 8),
         _CompletionProofInfoRow(
@@ -1056,10 +1043,8 @@ class _CompletionProofInfoRow extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           '$label: ',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            fontSize: 12,
-            color: AppColors.textSecondary,
-          ),
+          style: Theme.of(context).textTheme.bodySmall
+              ?.copyWith(fontSize: 12, color: AppColors.textSecondary),
         ),
         Expanded(
           child: Text(

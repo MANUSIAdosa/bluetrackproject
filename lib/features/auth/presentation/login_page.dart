@@ -16,16 +16,19 @@ import '../../../shared/widgets/primary_button.dart';
 /// the width on a large phone.
 const double _sidePadding = 24;
 
-/// Clearance under the app bar, so the heading does not crowd it.
-const double _topPadding = 16;
+/// Clearance under the app bar, so the heading does not crowd it. Matches
+/// the page's 24dp side margin instead of the tighter app-wide 16dp.
+const double _topPadding = 24;
 
 const double _bottomPadding = 24;
 
 /// Regular spacing follows an 8dp rhythm; compact spacing protects the form
 /// when the keyboard or a short viewport reduces available height.
 const double _regularSectionGap = 24;
-const double _loginHeadingToFieldGap = 40;
-const double _otpHeadingGap = 32;
+
+/// Both stages (identifier and OTP) use the same gap under their subtitle, so
+/// the two steps feel like one page.
+const double _headingToFieldGap = 32;
 const double _compactSectionGap = 16;
 
 /// Compact spacing around the email/phone separator keeps both options grouped.
@@ -371,10 +374,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
         SizedBox(
-          height: _adaptiveSectionGap(
-            context,
-            regularGap: _loginHeadingToFieldGap,
-          ),
+          height: _adaptiveSectionGap(context, regularGap: _headingToFieldGap),
         ),
         TextField(
           key: const Key('auth_email_field'),
@@ -530,14 +530,19 @@ class _LoginPageState extends State<LoginPage> {
           }),
         ),
         SizedBox(
-          height: _adaptiveSectionGap(context, regularGap: _otpHeadingGap),
+          height: _adaptiveSectionGap(context, regularGap: _headingToFieldGap),
         ),
         LayoutBuilder(
           builder: (context, constraints) {
             // Keep a fixed gap and let each box share the available row width.
-            // The cap prevents oversized boxes on tablets and desktop previews.
+            // Integer widths stop the first and last box from rounding to a
+            // different size than the rest.
             const gap = 8.0;
-            final rowWidth = constraints.maxWidth.clamp(0.0, 360.0).toDouble();
+            const boxCount = 6;
+            final available = constraints.maxWidth.clamp(0.0, 360.0);
+            final boxWidth = ((available - gap * (boxCount - 1)) / boxCount)
+                .floorToDouble();
+            final rowWidth = boxWidth * boxCount + gap * (boxCount - 1);
 
             return Center(
               child: SizedBox(
@@ -545,9 +550,10 @@ class _LoginPageState extends State<LoginPage> {
                 width: rowWidth,
                 child: Row(
                   children: [
-                    for (var i = 0; i < 6; i++) ...[
+                    for (var i = 0; i < boxCount; i++) ...[
                       if (i > 0) const SizedBox(width: gap),
-                      Expanded(
+                      SizedBox(
+                        width: boxWidth,
                         child: TextField(
                           key: ValueKey('auth_otp_$i'),
                           controller: _otpControllers[i],

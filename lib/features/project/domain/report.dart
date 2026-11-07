@@ -14,6 +14,8 @@ class Report {
     required this.reportedAt,
     required this.title,
     required this.description,
+    this.locationDetail,
+    this.areaName,
     required this.latitude,
     required this.longitude,
     required this.photoPaths,
@@ -42,6 +44,13 @@ class Report {
   final DateTime reportedAt;
   final String title;
   final String description;
+
+  /// Optional free-text landmark or nearby area supplied with a field report.
+  final String? locationDetail;
+
+  /// Human-readable area resolved through geocoding, when one was available.
+  final String? areaName;
+
   final double latitude;
   final double longitude;
 
@@ -89,6 +98,8 @@ class Report {
     reportedAt: DateTime.parse(json['reportedAt'] as String).toUtc(),
     title: json['title'] as String,
     description: json['description'] as String,
+    locationDetail: json['locationDetail'] as String?,
+    areaName: json['areaName'] as String?,
     latitude: (json['latitude'] as num).toDouble(),
     longitude: (json['longitude'] as num).toDouble(),
     photoPaths: (json['photos'] as List<dynamic>).cast<String>(),
@@ -114,6 +125,8 @@ class Report {
     'reportedAt': reportedAt.toUtc().toIso8601String(),
     'title': title,
     'description': description,
+    'locationDetail': locationDetail,
+    'areaName': areaName,
     'latitude': latitude,
     'longitude': longitude,
     'photos': photoPaths,

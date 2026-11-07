@@ -20,12 +20,16 @@ class ReportReviewStep extends StatelessWidget {
   const ReportReviewStep({
     super.key,
     required this.photoPaths,
+    required this.description,
+    this.areaName = '',
+    this.locationDetail = '',
     required this.latitude,
     required this.longitude,
     required this.category,
     required this.severity,
     required this.reportedAt,
     required this.onEditPhotos,
+    required this.onEditDescription,
     required this.onEditLocation,
     required this.onEditType,
     required this.onEditSeverity,
@@ -35,6 +39,9 @@ class ReportReviewStep extends StatelessWidget {
   });
 
   final List<String> photoPaths;
+  final String description;
+  final String areaName;
+  final String locationDetail;
   final double? latitude;
   final double? longitude;
   final ReportCategory? category;
@@ -44,6 +51,7 @@ class ReportReviewStep extends StatelessWidget {
   final DateTime reportedAt;
 
   final VoidCallback onEditPhotos;
+  final VoidCallback onEditDescription;
   final VoidCallback onEditLocation;
   final VoidCallback onEditType;
   final VoidCallback onEditSeverity;
@@ -90,6 +98,22 @@ class ReportReviewStep extends StatelessWidget {
                 _PhotoSection(photoPaths: photoPaths),
                 const Divider(height: 24),
                 _SectionHeader(
+                  title: context.tr('report_review_description'),
+                  editKey: const ValueKey('report_review_edit_description'),
+                  onEdit: onEditDescription,
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    description.trim().isEmpty
+                        ? context.tr('report_review_empty_value')
+                        : description.trim(),
+                    key: const ValueKey('report_review_description_value'),
+                    style: const TextStyle(fontSize: 14, height: 1.45),
+                  ),
+                ),
+                const Divider(height: 24),
+                _SectionHeader(
                   title: context.tr('report_review_location'),
                   editKey: const ValueKey('report_review_edit_location'),
                   onEdit: onEditLocation,
@@ -97,6 +121,8 @@ class ReportReviewStep extends StatelessWidget {
                 _LocationSection(
                   latitude: latitude,
                   longitude: longitude,
+                  areaName: areaName,
+                  locationDetail: locationDetail,
                   tileProvider: tileProvider,
                 ),
                 const Divider(height: 24),
@@ -320,11 +346,15 @@ class _LocationSection extends StatelessWidget {
   const _LocationSection({
     required this.latitude,
     required this.longitude,
+    this.areaName = '',
+    this.locationDetail = '',
     this.tileProvider,
   });
 
   final double? latitude;
   final double? longitude;
+  final String areaName;
+  final String locationDetail;
   final TileProvider? tileProvider;
 
   @override
@@ -400,7 +430,19 @@ class _LocationSection extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 6),
+          if (areaName.trim().isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              areaName.trim(),
+              key: const ValueKey('report_review_area_value'),
+              style: const TextStyle(
+                fontSize: 15,
+                height: 1.35,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+          const SizedBox(height: 4),
           Text(
             '${latitude.toStringAsFixed(6)}, ${longitude.toStringAsFixed(6)}',
             key: const ValueKey('report_review_coordinates'),
@@ -409,6 +451,9 @@ class _LocationSection extends StatelessWidget {
               color: AppColors.textSecondary,
             ),
           ),
+          // The reporter's own note is secondary, so it stays last and folded.
+          if (locationDetail.trim().isNotEmpty)
+            _LandmarkDetails(text: locationDetail.trim()),
         ],
       ),
     );
@@ -522,6 +567,64 @@ class _WarningCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The reporter's own landmark note, kept out of the way until asked for.
+///
+/// The summary leads with the area name and coordinates; the free-text
+/// landmark stays available for checking without cluttering the card.
+class _LandmarkDetails extends StatefulWidget {
+  const _LandmarkDetails({required this.text});
+
+  final String text;
+
+  @override
+  State<_LandmarkDetails> createState() => _LandmarkDetailsState();
+}
+
+class _LandmarkDetailsState extends State<_LandmarkDetails> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            key: const ValueKey('report_review_details_toggle'),
+            onPressed: () => setState(() => _open = !_open),
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(48, 48),
+            ),
+            icon: Icon(_open ? Icons.expand_less : Icons.expand_more, size: 18),
+            label: Text(
+              context.tr(
+                _open ? 'report_review_hide_details' : 'report_review_details',
+              ),
+            ),
+          ),
+        ),
+        if (_open) ...[
+          Text(
+            context.tr('report_review_landmark_label'),
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            widget.text,
+            key: const ValueKey('report_review_landmark_value'),
+            style: const TextStyle(fontSize: 14, height: 1.4),
+          ),
+        ],
+      ],
     );
   }
 }

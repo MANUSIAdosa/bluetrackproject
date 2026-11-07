@@ -2,14 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:blue_track/core/config/app_config.dart';
 import 'package:blue_track/core/state/app_state.dart';
-import 'package:blue_track/features/my_reports/data/my_reports_store.dart';
-import 'package:blue_track/features/my_reports/presentation/my_reports_page.dart';
 import 'package:blue_track/features/project/domain/report.dart';
+import 'package:blue_track/features/my_reports/data/my_reports_store.dart';
 import 'package:blue_track/features/report_submit/data/report_draft_store.dart';
 import 'package:blue_track/features/report_submit/data/report_submission_service.dart';
 import 'package:blue_track/features/report_submit/domain/report_draft.dart';
+import 'package:blue_track/features/my_reports/presentation/my_reports_page.dart'
+    as my_reports;
 import 'package:blue_track/features/report_submit/presentation/pages/report_success_page.dart';
 import 'package:blue_track/features/report_submit/presentation/pages/report_wizard_page.dart';
 import 'package:flutter/material.dart';
@@ -57,10 +57,7 @@ class _ControllableService implements ReportSubmissionService {
   int calls = 0;
 
   @override
-  Future<Report> submit(
-    ReportWizardDraft draft, {
-    String languageCode = 'en',
-  }) {
+  Future<Report> submit(ReportWizardDraft draft, {String languageCode = 'en'}) {
     calls++;
     return _completer.future;
   }
@@ -95,14 +92,18 @@ Report _buildReport(ReportWizardDraft draft, {String id = 'RPT-0001'}) {
   return Report(
     id: id,
     locationId: 'p01',
-    reporterId: AppConfig.reportCurrentUserId,
-    reporterName: AppConfig.reportCurrentUserName,
+    reporterId: 'u01',
+    reporterName: 'Pengguna BlueTrack',
     category: draft.category ?? ReportCategory.damagedReef,
     severity: draft.severity ?? ReportSeverity.high,
     status: ReportStatus.submitted,
     reportedAt: DateTime.utc(2026, 10, 31, 10),
     title: 'Laporan temuan lapangan',
-    description: 'Dikirim melalui Lapor Temuan BlueTrack.',
+    description: draft.description,
+    locationDetail: draft.locationDetail.trim().isEmpty
+        ? null
+        : draft.locationDetail.trim(),
+    areaName: draft.areaName.trim().isEmpty ? null : draft.areaName.trim(),
     latitude: draft.latitude ?? -8.52,
     longitude: draft.longitude ?? 114.61,
     photoPaths: draft.photoPaths,
@@ -138,6 +139,8 @@ void main() {
     ReportCategory? category = ReportCategory.damagedReef,
     ReportSeverity? severity = ReportSeverity.high,
     List<String>? photoPaths,
+    String? areaName = 'Pantai Sukamade, Banyuwangi',
+    String? locationDetail = 'Sekitar 2 mil laut dari pulau.',
   }) {
     return ReportWizardDraft(
       photoPaths: photoPaths ?? [photoPath],
@@ -145,6 +148,9 @@ void main() {
       longitude: 114.6131,
       category: category,
       severity: severity,
+      description: 'Penyu terlihat terjerat jaring plastik.',
+      locationDetail: locationDetail ?? '',
+      areaName: areaName ?? '',
       currentStep: ReportWizardDraft.lastStep,
       updatedAt: DateTime.utc(2026, 10, 31, 9, 15),
     );
@@ -175,8 +181,8 @@ void main() {
         ),
         GoRoute(
           path: '/my-reports',
-          builder: (context, state) => MyReportsPage(
-            repository: InMemoryReportRepository(reports: reports.reports),
+          builder: (context, state) => my_reports.MyReportsPage(
+            repository: InMemoryReportRepository(reports: const []),
             store: reports,
           ),
         ),
@@ -238,20 +244,84 @@ void main() {
     expect(find.text('Tingkat kerusakan'), findsOneWidget);
     expect(find.text('Terumbu rusak'), findsOneWidget);
     expect(find.text('Berat'), findsOneWidget);
+    expect(
+      find.text('Penyu terlihat terjerat jaring plastik.'),
+      findsOneWidget,
+    );
+    expect(find.text('Pantai Sukamade, Banyuwangi'), findsOneWidget);
+    expect(find.text('Sekitar 2 mil laut dari pulau.'), findsNothing);
+
+    // Reading order: area name, then coordinates, then the folded detail.
+    final areaY = tester
+        .getTopLeft(find.byKey(const ValueKey('report_review_area_value')))
+        .dy;
+    final coordinatesY = tester
+        .getTopLeft(find.byKey(const ValueKey('report_review_coordinates')))
+        .dy;
+    final detailsY = tester
+        .getTopLeft(find.byKey(const ValueKey('report_review_details_toggle')))
+        .dy;
+    expect(areaY, lessThan(coordinatesY));
+    expect(coordinatesY, lessThan(detailsY));
+
+    // The landmark stays behind "Lihat rincian" so the summary stays clean.
+    final details = find.byKey(const ValueKey('report_review_details_toggle'));
+    await tester.ensureVisible(details);
+    await tester.tap(details);
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('report_review_landmark_value')),
+      findsOneWidget,
+    );
+    expect(find.text('Sekitar 2 mil laut dari pulau.'), findsOneWidget);
+
+    await tester.tap(details);
+    await tester.pumpAndSettle();
+    expect(find.text('Sekitar 2 mil laut dari pulau.'), findsNothing);
+
     expect(find.text('Waktu'), findsOneWidget);
     expect(
       find.text('Laporan akan diverifikasi sebelum tayang ke publik.'),
       findsOneWidget,
     );
-    expect(find.widgetWithText(TextButton, 'Ubah'), findsNWidgets(4));
+    expect(find.widgetWithText(TextButton, 'Ubah'), findsNWidgets(5));
 
     // Photos open the full-screen viewer.
-    await tester.tap(find.byKey(const ValueKey('report_review_photo_0')));
+    final photo = find.byKey(const ValueKey('report_review_photo_0'));
+    await tester.ensureVisible(photo);
+    await tester.pumpAndSettle();
+    await tester.tap(photo);
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('report_photo_viewer')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('report_photo_viewer_close')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('report_photo_viewer')), findsNothing);
+
+    final editDescription = find.byKey(
+      const ValueKey('report_review_edit_description'),
+    );
+    await tester.ensureVisible(editDescription);
+    await tester.tap(editDescription);
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('report_description_field')),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<TextFormField>(
+            find.byKey(const ValueKey('report_description_field')),
+          )
+          .initialValue,
+      'Penyu terlihat terjerat jaring plastik.',
+    );
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
+    await tester.pumpAndSettle();
 
     // Editing the type goes back to step 3 without losing anything.
     final editType = find.byKey(const ValueKey('report_review_edit_type'));
@@ -295,25 +365,39 @@ void main() {
     expect(find.text('Laporan terkirim'), findsOneWidget);
     expect(find.text('RPT-0001'), findsOneWidget);
     expect(find.text('Terkirim'), findsOneWidget);
-    expect(find.text('Terumbu rusak'), findsOneWidget);
-    expect(find.text('Berat'), findsOneWidget);
+    expect(find.text('Menunggu verifikasi'), findsOneWidget);
+    expect(find.text('Pantai Sukamade, Banyuwangi'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('report_success_coordinates')),
+      findsOneWidget,
+    );
+
+    // The success screen closes the flow; the full report lives in the list.
+    expect(find.text('Terumbu rusak'), findsNothing);
+    expect(find.text('Berat'), findsNothing);
+    expect(find.text('Penyu terlihat terjerat jaring plastik.'), findsNothing);
+    expect(find.text('Sekitar 2 mil laut dari pulau.'), findsNothing);
     expect(store.draft, isNull);
     expect(reports.reports, hasLength(1));
 
-    // The report list is available from the success screen.
-    final viewReports = tester.widget<FilledButton>(
-      find.descendant(
-        of: find.byKey(const ValueKey('report_success_view_reports')),
-        matching: find.byType(FilledButton),
-      ),
+    final viewReports = find.byKey(
+      const ValueKey('report_success_view_reports'),
     );
-    expect(viewReports.onPressed, isNotNull);
-
-    // Closing the success screen returns to Explore, never to the form.
-    await tester.tap(find.byKey(const ValueKey('report_success_close')));
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.descendant(
+              of: viewReports,
+              matching: find.byType(FilledButton),
+            ),
+          )
+          .onPressed,
+      isNotNull,
+    );
+    await tester.tap(viewReports);
     await tester.pumpAndSettle();
-    expect(find.text('EXPLORE'), findsOneWidget);
-    expect(find.text('Tinjau laporan'), findsNothing);
+    expect(find.text('Laporan Saya'), findsOneWidget);
+    expect(find.byKey(const ValueKey('my-report-RPT-0001')), findsOneWidget);
   });
 
   testWidgets('a failed send keeps the draft and retry sends it', (
@@ -432,6 +516,62 @@ void main() {
     expect(store.draft!.currentStep, ReportWizardDraft.typeStep);
   });
 
+  testWidgets('success block is centred and still scrolls on short screens', (
+    tester,
+  ) async {
+    AuthController.instance.setSignedIn(true);
+    final store = _RecordingStore(reviewDraft());
+    final service = _ControllableService(reports);
+    await openReview(tester, store: store, service: service);
+
+    await tapSubmit(tester);
+    await tester.pump();
+    service.completeWith(_buildReport(store.draft!));
+    await tester.pumpAndSettle();
+
+    final screenHeight = tester.view.physicalSize.height;
+    final top = tester.getRect(find.byIcon(Icons.check_circle_rounded)).top;
+    final bottom = tester
+        .getRect(find.byKey(const ValueKey('report_success_new_report')))
+        .bottom;
+    final gapAbove = top;
+    final gapBelow = screenHeight - bottom;
+
+    // Centred within the padding, so the two gaps are close to equal.
+    expect((gapAbove - gapBelow).abs(), lessThan(24));
+    expect(gapAbove, greaterThan(60));
+  });
+
+  testWidgets('success keeps coordinates when no area name exists', (
+    tester,
+  ) async {
+    AuthController.instance.setSignedIn(true);
+    final store = _RecordingStore(
+      reviewDraft(areaName: null, locationDetail: null),
+    );
+    final service = _ControllableService(reports);
+    await openReview(tester, store: store, service: service);
+
+    await tapSubmit(tester);
+    await tester.pump();
+    service.completeWith(_buildReport(store.draft!));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Laporan terkirim'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('report_success_area_name')),
+      findsNothing,
+    );
+    expect(
+      tester
+          .widget<Text>(
+            find.byKey(const ValueKey('report_success_coordinates')),
+          )
+          .data,
+      '-8.523600, 114.613100',
+    );
+  });
+
   testWidgets('system back on success goes to Explore, not the form', (
     tester,
   ) async {
@@ -467,7 +607,9 @@ void main() {
     service.completeWith(_buildReport(store.draft!));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('report_success_new_report')));
+    final newReport = find.byKey(const ValueKey('report_success_new_report'));
+    await tester.ensureVisible(newReport);
+    await tester.tap(newReport);
     await tester.pumpAndSettle();
 
     expect(find.text('Foto temuan'), findsOneWidget);
@@ -491,8 +633,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Laporan Saya'), findsOneWidget);
-    expect(find.text('Belum ada laporan'), findsOneWidget);
-    expect(find.textContaining('Laporkan temuan di sekitarmu'), findsOneWidget);
+    expect(find.textContaining('Belum ada laporan'), findsOneWidget);
     expect(find.text('Buat laporan'), findsOneWidget);
   });
 

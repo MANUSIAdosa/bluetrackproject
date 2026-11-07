@@ -182,7 +182,7 @@ void main() {
         .dy;
     expect(fieldTop, greaterThan(100));
     expect(fieldTop, lessThan(240));
-    expect(fieldTop - subtitleBottom, inInclusiveRange(36, 44));
+    expect(fieldTop - subtitleBottom, inInclusiveRange(28, 40));
 
     final consentTop = tester.getTopLeft(legalNotice()).dy;
     final consentBottom = tester.getBottomLeft(legalNotice()).dy;
@@ -393,10 +393,20 @@ void main() {
     final resendPrompt = find.text('Belum menerima kode?');
     final countdown = find.textContaining('Kirim ulang dalam');
 
+    // Previous proportions: 50dp boxes, 8dp gaps, inside the page margin.
     expect(
       tester.getSize(find.byKey(const Key('auth_otp_row'))).width,
-      closeTo(342, 0.5),
+      closeTo(340, 0.5),
     );
+
+    final boxWidth = tester.getSize(otpField(0)).width;
+    expect(boxWidth, closeTo(50, 0.5));
+    for (var index = 0; index < 6; index++) {
+      final size = tester.getSize(otpField(index));
+      expect(size.width, closeTo(boxWidth, 0.01));
+      // Comfortable tap target, height from the text and field padding.
+      expect(size.height, greaterThanOrEqualTo(48));
+    }
     for (var index = 0; index < 5; index++) {
       final gap =
           tester.getTopLeft(otpField(index + 1)).dx -
@@ -413,6 +423,27 @@ void main() {
     expect(actionGap, inInclusiveRange(12, 24));
     expect(resendGap, inInclusiveRange(20, 32));
     expect(countdownGap, inInclusiveRange(4, 16));
+  });
+
+  testWidgets('jarak judul ke isian sama di tahap email dan OTP', (
+    tester,
+  ) async {
+    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+    await tester.pumpAndSettle();
+
+    final identifierGap =
+        tester.getTopLeft(emailField()).dy -
+        tester.getBottomLeft(find.text('Pilih email atau nomor telepon.')).dy;
+
+    await openOtpWithEmail(tester);
+
+    final otpGap =
+        tester.getTopLeft(otpField(0)).dy -
+        tester
+            .getBottomLeft(find.text('Kode dikirim ke penyayang@contoh.id'))
+            .dy;
+
+    expect((identifierGap - otpGap).abs(), lessThan(2));
   });
 
   testWidgets('resend menampilkan prompt dan countdown dengan jelas', (

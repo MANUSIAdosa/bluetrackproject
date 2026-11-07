@@ -35,6 +35,7 @@ class AppLocalizations {
       'common.continue': 'Lanjut',
       'common.next': 'Berikutnya',
       'common.cancel': 'Batal',
+      'common.close': 'Tutup',
       'common.comingSoon':
           'Halaman ini akan tersedia pada subproyek berikutnya.',
       'common.error': 'Terjadi kesalahan.',
@@ -354,8 +355,7 @@ class AppLocalizations {
       'my_reports.load_error':
           'Gagal memuat laporan. Periksa koneksi lalu coba lagi.',
       'my_reports.empty_title': 'Belum ada laporan',
-      'my_reports.empty':
-          'Laporkan temuan di sekitarmu untuk membantu menjaga laut tetap lestari.',
+      'my_reports.empty': 'Laporkan temuan di sekitarmu untuk membantu menjaga laut tetap lestari.',
       'my_reports.create': 'Buat laporan',
       'my_reports.empty_filter': 'Tidak ada laporan berstatus {status}.',
       'my_reports.filter_count': '{label} ({count})',
@@ -662,6 +662,10 @@ class AppLocalizations {
       'report_step_review': 'Tinjau',
       'report_photos_title': 'Foto temuan',
       'report_photos_body': 'Tambahkan 1–3 foto temuanmu.',
+      'report_description_title': 'Deskripsi temuan',
+      'report_description_hint':
+          'Ceritakan kondisi yang terlihat dan konteks foto.',
+      'report_description_error': 'Deskripsi temuan wajib diisi.',
       'report_photo_counter': '{n}/{max} foto',
       'report_add_photo': 'Tambah Foto',
       'report_remove_photo': 'Hapus foto',
@@ -703,10 +707,32 @@ class AppLocalizations {
           'titik temuan.',
       'report_location_hint': 'Geser pin ke lokasi temuan',
       'report_location_gps': 'Gunakan lokasi saya',
+      'report_location_gps_short': 'Lokasi saya',
       'report_location_gps_loading': 'Mengambil lokasi...',
+      'report_location_gps_loading_short': 'Mengambil...',
       'report_location_card_title': 'Koordinat temuan',
       'report_location_latitude': 'Lintang',
       'report_location_longitude': 'Bujur',
+      'report_location_detail_title': 'Patokan atau area sekitar (opsional)',
+      'report_location_detail_hint':
+          'Contoh: dekat dermaga utara atau terumbu karang.',
+      'report_area_hint': 'Tekan tombol untuk menampilkan nama area dari pin.',
+      'report_area_empty_hint': 'Tandai pin dulu untuk melihat nama area.',
+      'report_area_offline': 'Nama area butuh koneksi internet.',
+      'report_area_empty':
+          'Nama area tidak ditemukan. Geser pin lalu coba lagi.',
+      'report_area_error':
+          'Nama area tidak dapat diambil. Periksa koneksi lalu coba lagi.',
+      'report_address_title': 'Cari alamat',
+      'report_address_hint': 'Contoh: Pantai Sukamade',
+      'report_address_action': 'Cari',
+      'report_address_empty': 'Alamat tidak ditemukan. Coba kata kunci lain.',
+      'report_address_error':
+          'Pencarian gagal. Periksa koneksi lalu coba lagi.',
+      'report_geocoding_rate_limited':
+          'Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.',
+      'report_geocoding_offline': 'Pencarian lokasi butuh koneksi internet.',
+      'report_osm_attribution': 'Data © OpenStreetMap contributors',
       'report_location_empty_hint':
           'Ketuk peta atau gunakan lokasi saya untuk mengisi koordinat.',
       'report_location_error_title': 'Lokasi tidak tersedia',
@@ -757,6 +783,11 @@ class AppLocalizations {
       'report_review_title': 'Tinjau laporan',
       'report_review_subtitle': 'Periksa kembali isianmu sebelum mengirim.',
       'report_review_photos': 'Foto',
+      'report_review_description': 'Deskripsi temuan',
+      'report_review_area': 'Nama area',
+      'report_review_details': 'Lihat rincian',
+      'report_review_hide_details': 'Sembunyikan rincian',
+      'report_review_landmark_label': 'Patokan atau area sekitar',
       'report_review_location': 'Lokasi',
       'report_review_type': 'Jenis temuan',
       'report_review_severity': 'Tingkat kerusakan',
@@ -778,13 +809,14 @@ class AppLocalizations {
       'report_submit_offline_body':
           'Sambungkan perangkat ke internet untuk mengirim laporan.',
       'report_submit_missing_photos': 'Lengkapi foto temuan terlebih dahulu.',
+      'report_submit_missing_description':
+          'Lengkapi deskripsi temuan terlebih dahulu.',
       'report_submit_missing_location': 'Tandai lokasi temuan terlebih dahulu.',
       'report_submit_missing_type':
           'Pilih jenis dan tingkat temuan terlebih dahulu.',
       'report_submit.generated_title': 'Laporan {category} · {date} · {id}',
       'report_success_title': 'Laporan terkirim',
-      'report_success_body':
-          'Terima kasih. Laporanmu akan diverifikasi sebelum tayang ke publik.',
+      'report_success_status_note': 'Menunggu verifikasi',
       'report_success_coordinates': 'Koordinat',
       'report_success_number': 'Nomor laporan',
       'report_success_status': 'Status',
@@ -821,6 +853,7 @@ class AppLocalizations {
       'common.continue': 'Continue',
       'common.next': 'Next',
       'common.cancel': 'Cancel',
+      'common.close': 'Close',
       'common.comingSoon':
           'This page will be available in the next subproject.',
       'common.error': 'Something went wrong.',
@@ -1441,6 +1474,10 @@ class AppLocalizations {
       'report_step_review': 'Review',
       'report_photos_title': 'Photos of the finding',
       'report_photos_body': 'Add 1–3 photos of your finding.',
+      'report_description_title': 'Finding description',
+      'report_description_hint':
+          'Describe what you observed and the context shown in the photos.',
+      'report_description_error': 'Add a description of the finding.',
       'report_photo_counter': '{n}/{max} photos',
       'report_add_photo': 'Add Photo',
       'report_remove_photo': 'Remove photo',
@@ -1482,10 +1519,33 @@ class AppLocalizations {
           'finding.',
       'report_location_hint': 'Drag the pin to the finding location',
       'report_location_gps': 'Use my location',
+      'report_location_gps_short': 'My location',
       'report_location_gps_loading': 'Getting location...',
+      'report_location_gps_loading_short': 'Locating...',
       'report_location_card_title': 'Finding coordinates',
       'report_location_latitude': 'Latitude',
       'report_location_longitude': 'Longitude',
+      'report_location_detail_title': 'Nearby landmark or area (optional)',
+      'report_location_detail_hint':
+          'For example: near the north pier or coral reef.',
+      'report_area_hint': 'Tap the button to name the area around the pin.',
+      'report_area_empty_hint': 'Place the pin first to see the area name.',
+      'report_area_offline': 'The area name needs an internet connection.',
+      'report_area_empty': 'No area name found. Move the pin and try again.',
+      'report_area_error':
+          'The area name could not be loaded. Check your connection and try '
+          'again.',
+      'report_address_title': 'Search an address',
+      'report_address_hint': 'For example: Sukamade Beach',
+      'report_address_action': 'Search',
+      'report_address_empty': 'No address found. Try different words.',
+      'report_address_error':
+          'Search failed. Check your connection and try again.',
+      'report_geocoding_rate_limited':
+          'Too many requests. Wait a moment and try again.',
+      'report_geocoding_offline':
+          'Location search needs an internet connection.',
+      'report_osm_attribution': 'Data © OpenStreetMap contributors',
       'report_location_empty_hint':
           'Tap the map or use my location to fill in the coordinates.',
       'report_location_error_title': 'Location unavailable',
@@ -1537,6 +1597,11 @@ class AppLocalizations {
       'report_review_title': 'Review report',
       'report_review_subtitle': 'Check your answers before sending.',
       'report_review_photos': 'Photos',
+      'report_review_description': 'Finding description',
+      'report_review_area': 'Area name',
+      'report_review_details': 'Show details',
+      'report_review_hide_details': 'Hide details',
+      'report_review_landmark_label': 'Nearby landmark or area',
       'report_review_location': 'Location',
       'report_review_type': 'Finding type',
       'report_review_severity': 'Damage severity',
@@ -1558,13 +1623,14 @@ class AppLocalizations {
       'report_submit_offline_body':
           'Connect the device to the internet to send the report.',
       'report_submit_missing_photos': 'Add the finding photo first.',
+      'report_submit_missing_description':
+          'Add a description before sending the report.',
       'report_submit_missing_location': 'Mark the finding location first.',
       'report_submit_missing_type':
           'Choose the finding type and severity first.',
       'report_submit.generated_title': '{category} report · {date} · {id}',
       'report_success_title': 'Report sent',
-      'report_success_body':
-          'Thank you. Your report will be verified before it is published.',
+      'report_success_status_note': 'Awaiting verification',
       'report_success_coordinates': 'Coordinates',
       'report_success_number': 'Report number',
       'report_success_status': 'Status',
