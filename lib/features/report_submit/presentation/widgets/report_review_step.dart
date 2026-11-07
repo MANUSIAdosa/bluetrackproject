@@ -102,7 +102,7 @@ class ReportReviewStep extends StatelessWidget {
                 _PhotoSection(photoPaths: photoPaths),
                 const Divider(height: 24),
                 _SectionHeader(
-                  title: context.tr('report_review_title_label'),
+                  title: context.tr('report_title_field'),
                   editKey: const ValueKey('report_review_edit_title'),
                   onEdit: onEditTitle,
                 ),
