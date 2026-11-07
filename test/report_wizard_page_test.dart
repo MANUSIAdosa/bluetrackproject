@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:blue_track/core/state/app_state.dart';
+import 'package:blue_track/core/theme/app_colors.dart';
 import 'package:blue_track/features/project/domain/report.dart';
 import 'package:blue_track/features/report_submit/data/geocoding_service.dart';
 import 'package:blue_track/features/report_submit/data/report_draft_store.dart';
@@ -154,10 +155,16 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// Fills the required title and description of step 1.
   Future<void> enterDescription(
     WidgetTester tester, [
     String description = 'Seekor satwa laut terlilit sampah.',
   ]) async {
+    final title = find.byKey(const ValueKey('report_title_field'));
+    await tester.ensureVisible(title);
+    await tester.enterText(title, 'Satwa laut terlilit sampah');
+    await tester.pumpAndSettle();
+
     final field = find.byKey(const ValueKey('report_description_field'));
     await tester.ensureVisible(field);
     await tester.enterText(field, description);
@@ -195,6 +202,37 @@ void main() {
     expect(button.onPressed, isNull);
   });
 
+  testWidgets('step 1 requires a title before continuing', (tester) async {
+    final store = _FakeStore();
+    await pumpWizard(
+      tester,
+      store: store,
+      picker: _FakePicker(paths: photoPaths.take(1).toList()),
+    );
+
+    await addFromGallery(tester);
+    final titleField = find.byKey(const ValueKey('report_title_field'));
+    expect(titleField, findsOneWidget);
+
+    await tester.enterText(titleField, '   ');
+    await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Judul laporan wajib diisi.'), findsOneWidget);
+    expect(find.text('Tandai lokasi temuan'), findsNothing);
+
+    await tester.enterText(titleField, 'Penyu terjerat jaring');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
+    await tester.pumpAndSettle();
+
+    // The description is still required after the title is filled.
+    expect(find.text('Deskripsi temuan wajib diisi.'), findsOneWidget);
+    expect(find.text('Tandai lokasi temuan'), findsNothing);
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(store.draft!.title, 'Penyu terjerat jaring');
+  });
+
   testWidgets('step 1 requires a description before continuing', (
     tester,
   ) async {
@@ -206,6 +244,10 @@ void main() {
     );
 
     await addFromGallery(tester);
+    final titleField = find.byKey(const ValueKey('report_title_field'));
+    await tester.ensureVisible(titleField);
+    await tester.enterText(titleField, 'Penyu terjerat jaring');
+
     final descriptionField = find.byKey(
       const ValueKey('report_description_field'),
     );
@@ -318,6 +360,13 @@ void main() {
     await pumpWizard(tester, store: store);
 
     expect(find.text('Lanjutkan draf?'), findsOneWidget);
+
+    // Starting over discards the draft, so it is styled as destructive.
+    final startNew = tester.widget<TextButton>(
+      find.widgetWithText(TextButton, 'Mulai baru'),
+    );
+    expect(startNew.style?.foregroundColor?.resolve({}), AppColors.danger);
+
     await tester.tap(find.text('Lanjutkan draf'));
     await tester.pumpAndSettle();
 
@@ -552,6 +601,7 @@ void main() {
     final store = _FakeStore()
       ..draft = ReportWizardDraft(
         photoPaths: photoPaths.take(1).toList(),
+        title: 'Temuan di pesisir',
         description: 'Temuan di pesisir.',
         currentStep: ReportWizardDraft.locationStep,
         updatedAt: DateTime.utc(2026, 10, 30, 9),
@@ -600,6 +650,7 @@ void main() {
       longitude: 114.61,
       category: category,
       severity: severity,
+      title: 'Temuan di pesisir',
       description: 'Temuan terlihat jelas pada foto.',
       currentStep: ReportWizardDraft.typeStep,
       updatedAt: DateTime.utc(2026, 10, 30, 9),
@@ -837,6 +888,17 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Simpan draf dan keluar?'), findsOneWidget);
+
+    // Dialog actions sit on one row: the global button theme asks for an
+    // unbounded width, so the dialog overrides it with a finite minimum.
+    final cancelCenter = tester.getCenter(
+      find.widgetWithText(TextButton, 'Batal'),
+    );
+    final leaveCenter = tester.getCenter(
+      find.widgetWithText(FilledButton, 'Keluar'),
+    );
+    expect((cancelCenter.dy - leaveCenter.dy).abs(), lessThan(1));
+    expect(cancelCenter.dx, lessThan(leaveCenter.dx));
 
     await tester.tap(find.text('Keluar'));
     await tester.pumpAndSettle();
