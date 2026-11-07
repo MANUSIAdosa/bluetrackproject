@@ -89,19 +89,13 @@ class ReportReviewStep extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _SectionHeader(
-                  title: context.tr('report_review_photos'),
-                  hint: context.tr('report_review_edit_report_hint'),
-                  editKey: const ValueKey('report_review_edit_photos'),
-                  onEdit: onEditReport,
-                ),
-                _PhotoSection(photoPaths: photoPaths),
-                const Divider(height: 24),
-                _SectionHeader(
-                  title: context.tr('report_review_details_group'),
+                  title: context.tr('report_review_content_group'),
                   hint: context.tr('report_review_edit_report_hint'),
                   editKey: const ValueKey('report_review_edit_report'),
                   onEdit: onEditReport,
                 ),
+                _PhotoSection(photoPaths: photoPaths),
+                const SizedBox(height: 8),
                 Text(
                   title.trim().isEmpty
                       ? context.tr('report_review_empty_value')

@@ -285,8 +285,8 @@ void main() {
       find.text('Laporan akan diverifikasi sebelum tayang ke publik.'),
       findsOneWidget,
     );
-    // Photos and the narrative each keep their own label and edit action.
-    expect(find.widgetWithText(TextButton, 'Ubah'), findsNWidgets(4));
+    // Photos, title and description share the step-1 group and one action.
+    expect(find.widgetWithText(TextButton, 'Ubah'), findsNWidgets(3));
 
     // The reporter's title must outrank the group labels it sits under.
     final titleSize = tester
@@ -294,15 +294,11 @@ void main() {
         .style!
         .fontSize!;
     final groupLabelSize = tester
-        .widget<Text>(find.text('Keterangan'))
+        .widget<Text>(find.text('Foto dan keterangan'))
         .style!
         .fontSize!;
     expect(titleSize, greaterThan(groupLabelSize + 3));
-    expect(
-      find.byKey(const ValueKey('report_review_edit_photos')),
-      findsOneWidget,
-    );
-    expect(find.text('Keterangan'), findsOneWidget);
+    expect(find.text('Foto dan keterangan'), findsOneWidget);
     expect(find.text('Jenis dan tingkat'), findsOneWidget);
 
     // Photos open the full-screen viewer.
