@@ -287,6 +287,17 @@ void main() {
     );
     // One "Ubah" per wizard step, not per section.
     expect(find.widgetWithText(TextButton, 'Ubah'), findsNWidgets(3));
+
+    // The reporter's title must outrank the group labels it sits under.
+    final titleSize = tester
+        .widget<Text>(find.byKey(const ValueKey('report_review_title_value')))
+        .style!
+        .fontSize!;
+    final groupLabelSize = tester
+        .widget<Text>(find.text('Laporan'))
+        .style!
+        .fontSize!;
+    expect(titleSize, greaterThan(groupLabelSize + 3));
     expect(find.text('Laporan'), findsOneWidget);
     expect(find.text('Jenis dan tingkat'), findsOneWidget);
 

@@ -101,9 +101,10 @@ class ReportReviewStep extends StatelessWidget {
                       : title.trim(),
                   key: const ValueKey('report_review_title_value'),
                   style: const TextStyle(
-                    fontSize: 15,
-                    height: 1.35,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 17,
+                    height: 1.3,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -248,7 +249,12 @@ class _SectionHeader extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+            style: const TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
+              color: AppColors.textSecondary,
+            ),
           ),
         ),
         if (onEdit != null)
