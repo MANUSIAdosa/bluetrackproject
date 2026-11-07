@@ -72,7 +72,7 @@ class _MyReportsFilterSheet extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(
               AppDimens.padding,
               0,
-              AppDimens.padding,
+              4,
               4,
             ),
             child: Row(
@@ -85,7 +85,7 @@ class _MyReportsFilterSheet extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
-                    Icons.filter_list_rounded,
+                    Icons.tune,
                     color: AppColors.ocean,
                   ),
                 ),
@@ -118,10 +118,7 @@ class _MyReportsFilterSheet extends StatelessWidget {
                   key: const ValueKey('my-reports-filter-close'),
                   onPressed: () => Navigator.of(context).maybePop(),
                   tooltip: context.tr('p04_detail_close'),
-                  icon: Transform.translate(
-                    offset: const Offset(12, 0),
-                    child: const Icon(Icons.close),
-                  ),
+                  icon: const Icon(Icons.close),
                   constraints: const BoxConstraints.tightFor(
                     width: 48,
                     height: 48,

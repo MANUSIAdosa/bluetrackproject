@@ -49,14 +49,7 @@ class MyReportCard extends StatelessWidget {
               top: 0,
               bottom: 0,
               width: 4,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  borderRadius: BorderRadius.horizontal(
-                    left: Radius.circular(AppDimens.cardRadius),
-                  ),
-                ),
-              ),
+              child: ColoredBox(color: statusColor),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
@@ -102,7 +95,7 @@ class MyReportCard extends StatelessWidget {
                               children: [
                                 const Icon(
                                   Icons.calendar_today_outlined,
-                                  size: 13,
+                                  size: 14,
                                   color: AppColors.textSecondary,
                                 ),
                                 const SizedBox(width: 4),
@@ -159,11 +152,6 @@ class MyReportCard extends StatelessWidget {
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
-                            if (report.status == ReportStatus.completed &&
-                                report.hasCompletionProof)
-                              _CompletionProofMarker(
-                                onTap: onCompletionProofTap ?? onTap,
-                              ),
                           ],
                         ),
                       ),
@@ -182,6 +170,13 @@ class MyReportCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                  if (report.status == ReportStatus.completed &&
+                      report.hasCompletionProof) ...[
+                    const SizedBox(height: 8),
+                    _CompletionProofMarker(
+                      onTap: onCompletionProofTap ?? onTap,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -236,6 +231,10 @@ class _LeadingVisual extends StatelessWidget {
   }
 }
 
+/// Shortcut on completed reports that carry proof.
+///
+/// It lives on its own full-width row under the status chips, so it never
+/// wraps beside them, and it opens the detail sheet at the proof section.
 class _CompletionProofMarker extends StatelessWidget {
   const _CompletionProofMarker({required this.onTap});
 
@@ -244,27 +243,50 @@ class _CompletionProofMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = context.tr('my_reports.completion_proof_available');
+    final textTheme = Theme.of(context).textTheme;
+    final borderRadius = BorderRadius.circular(12);
+
     return Semantics(
       button: true,
       label: label,
       onTap: onTap,
       child: ExcludeSemantics(
-        child: InkWell(
-          key: const ValueKey('my-report-proof-marker'),
-          borderRadius: BorderRadius.circular(999),
-          onTap: onTap,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              widthFactor: 1,
-              heightFactor: 1,
-              child: ReportMetadataChip(
-                icon: Icons.fact_check_outlined,
-                label: label,
-                color: AppColors.success,
-                fontSize: 12,
-                maxLabelLines: 2,
+        child: Material(
+          color: AppColors.success.withValues(alpha: 0.08),
+          borderRadius: borderRadius,
+          child: InkWell(
+            key: const ValueKey('my-report-proof-marker'),
+            borderRadius: borderRadius,
+            onTap: onTap,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 44),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.fact_check_outlined,
+                      size: 16,
+                      color: AppColors.success,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        label,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.bodySmall?.copyWith(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.success,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

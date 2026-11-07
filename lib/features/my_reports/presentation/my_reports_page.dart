@@ -20,6 +20,22 @@ import 'widgets/my_report_card.dart';
 import 'widgets/my_report_detail_sheet.dart';
 import 'widgets/my_reports_filter_sheet.dart';
 
+/// Widest the report list grows. On tablets the cards stay centred instead of
+/// stretching edge to edge; on phones the normal page padding applies.
+const double _kMaxListWidth = 640;
+
+/// Padding shared by the report list and its skeleton, so the placeholder
+/// lines up with the real cards. The bottom keeps the last card clear of the
+/// floating action button and the system inset.
+EdgeInsets _listPadding(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  final side = width > _kMaxListWidth + AppDimens.padding * 2
+      ? (width - _kMaxListWidth) / 2
+      : AppDimens.padding;
+  final bottom = 96 + MediaQuery.paddingOf(context).bottom;
+  return EdgeInsets.fromLTRB(side, 12, side, bottom);
+}
+
 /// My Reports — the signed-in user's citizen reports.
 ///
 /// The page is protected: signed-out visitors see the same login prompt as My
@@ -360,14 +376,9 @@ class _MyReportsPageState extends State<MyReportsPage> {
       child: ListView.separated(
         key: const ValueKey('my-reports-list'),
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(
-          AppDimens.padding,
-          12,
-          AppDimens.padding,
-          96,
-        ),
+        padding: _listPadding(context),
         itemCount: visible.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 10),
+        separatorBuilder: (_, _) => const SizedBox(height: AppDimens.gap),
         itemBuilder: (context, index) {
           final report = visible[index];
           return MyReportCard(
@@ -404,16 +415,11 @@ class _MyReportsSkeleton extends StatelessWidget {
       label: context.tr('my_reports.loading'),
       child: ListView(
         key: const ValueKey('my-reports-skeleton'),
-        padding: const EdgeInsets.fromLTRB(
-          AppDimens.padding,
-          12,
-          AppDimens.padding,
-          96,
-        ),
+        padding: _listPadding(context),
         children: [
           for (var i = 0; i < 4; i++) ...[
             const _MyReportCardSkeleton(),
-            if (i < 3) const SizedBox(height: 10),
+            if (i < 3) const SizedBox(height: AppDimens.gap),
           ],
         ],
       ),

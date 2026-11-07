@@ -571,7 +571,9 @@ class AppLocalizations {
       'p08_receipt_unavailable_title': 'E-Receipt belum tersedia',
       'p08_receipt_unavailable_body':
           'E-Receipt baru tersedia setelah dukungan berhasil.',
-      'p08_view_reports': 'Lihat laporan proyek',
+      'p08_download_receipt': 'Unduh e-receipt',
+      'p08_download_receipt_hint': 'Simpan bukti donasi ini sebagai PDF.',
+      'p08_download_receipt_soon': 'Unduh e-receipt akan segera tersedia.',
 
       // --- Legal (Privacy Policy / Terms) ---
       'legal.privacy.title': 'Kebijakan Privasi',
@@ -1341,7 +1343,9 @@ class AppLocalizations {
       'p08_receipt_unavailable_title': 'E-Receipt not available yet',
       'p08_receipt_unavailable_body':
           'The E-Receipt becomes available once the support succeeds.',
-      'p08_view_reports': 'View project reports',
+      'p08_download_receipt': 'Download e-receipt',
+      'p08_download_receipt_hint': 'Save this donation proof as a PDF.',
+      'p08_download_receipt_soon': 'E-receipt download is coming soon.',
 
       // --- Legal (Privacy Policy / Terms) ---
       'legal.privacy.title': 'Privacy Policy',

@@ -100,7 +100,7 @@ class _MyReportDetailSheet extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(
             AppDimens.padding,
             0,
-            AppDimens.padding,
+            4,
             8,
           ),
           child: Row(
@@ -440,8 +440,6 @@ class _TrackerRow extends StatelessWidget {
     this.completedAt,
   });
 
-  static const double _rowHeight = 84;
-
   final ReportStatus status;
   final bool reached;
   final bool current;
@@ -455,15 +453,16 @@ class _TrackerRow extends StatelessWidget {
     final color = context.p04StatusColor(status);
     final textTheme = Theme.of(context).textTheme;
 
-    return SizedBox(
-      height: _rowHeight,
+    // The row grows with its content (larger text, the completion date line)
+    // and the connector stretches to meet the next node, so no step needs a
+    // fixed height.
+    return IntrinsicHeight(
       child: Row(
         key: ValueKey('my-report-tracker-${status.id}'),
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(
             width: 24,
-            height: _rowHeight,
             child: Column(
               children: [
                 Container(
@@ -476,6 +475,15 @@ class _TrackerRow extends StatelessWidget {
                       color: reached ? color : AppColors.inactiveTab,
                       width: 1.5,
                     ),
+                    // A soft ring marks the step the report is at right now.
+                    boxShadow: current
+                        ? [
+                            BoxShadow(
+                              color: color.withValues(alpha: 0.22),
+                              spreadRadius: 4,
+                            ),
+                          ]
+                        : null,
                   ),
                   child: reached
                       ? const Icon(
@@ -497,10 +505,10 @@ class _TrackerRow extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(top: 2),
+              padding: EdgeInsets.only(top: 2, bottom: isLast ? 0 : 12),
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
@@ -601,7 +609,7 @@ class _DateRow extends StatelessWidget {
       children: [
         const Icon(
           Icons.calendar_today_outlined,
-          size: 13,
+          size: 14,
           color: AppColors.textSecondary,
         ),
         const SizedBox(width: 8),
