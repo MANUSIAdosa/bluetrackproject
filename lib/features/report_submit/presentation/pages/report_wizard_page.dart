@@ -12,6 +12,7 @@ import '../../../../shared/widgets/login_prompt_card.dart';
 import '../../../../shared/widgets/offline_banner.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../data/report_draft_store.dart';
+import '../../data/geocoding_service.dart';
 import '../../data/report_location_service.dart';
 import '../../data/report_photo_picker.dart';
 import '../../data/report_submission_service.dart';
@@ -35,6 +36,7 @@ class ReportWizardPage extends StatefulWidget {
     this.store,
     this.photoPicker,
     this.locationService,
+    this.geocodingService,
     this.locationTileProvider,
     this.submissionService,
     this.autoResume = false,
@@ -48,6 +50,9 @@ class ReportWizardPage extends StatefulWidget {
 
   /// Injectable for tests; defaults to Geolocator.
   final ReportLocationService? locationService;
+
+  /// Injectable for tests; defaults to public Nominatim.
+  final GeocodingService? geocodingService;
 
   /// Test seam for the two maps; defaults to the OSM network tiles.
   final TileProvider? locationTileProvider;
@@ -83,6 +88,7 @@ class _ReportWizardPageState extends State<ReportWizardPage>
   bool _draftReady = false;
   bool _loading = true;
   bool _picking = false;
+  bool _showDescriptionValidation = false;
   bool _showTypeValidation = false;
   bool _submitting = false;
   bool _submitError = false;
@@ -94,7 +100,8 @@ class _ReportWizardPageState extends State<ReportWizardPage>
 
   bool get _canContinue {
     if (_step == ReportWizardDraft.firstStep) {
-      return _draft.photoCount >= ReportRules.minPhotos;
+      return _draft.photoCount >= ReportRules.minPhotos &&
+          _draft.hasDescription;
     }
     if (_step == ReportWizardDraft.locationStep) return _draft.hasLocation;
     if (_step == ReportWizardDraft.typeStep) return _draft.hasType;
@@ -197,9 +204,11 @@ class _ReportWizardPageState extends State<ReportWizardPage>
   void _update(ReportWizardDraft next) {
     setState(() {
       if (next.currentStep != _draft.currentStep) {
+        _showDescriptionValidation = false;
         _showTypeValidation = false;
         _submitError = false;
       }
+      if (next.hasDescription) _showDescriptionValidation = false;
       _draft = next.copyWith(updatedAt: DateTime.now().toUtc());
     });
     _scheduleSave();
@@ -257,12 +266,23 @@ class _ReportWizardPageState extends State<ReportWizardPage>
 
   void _goNext() {
     if (_step >= ReportWizardDraft.lastStep) return;
+    if (_step == ReportWizardDraft.firstStep &&
+        _draft.photoCount >= ReportRules.minPhotos &&
+        !_draft.hasDescription) {
+      _revealDescriptionValidation();
+      return;
+    }
     if (_step == ReportWizardDraft.typeStep && !_draft.hasType) {
       _revealTypeValidation();
       return;
     }
     if (!_canContinue) return;
     _update(_draft.copyWith(currentStep: _step + 1));
+  }
+
+  void _revealDescriptionValidation() {
+    if (_draft.hasDescription || _showDescriptionValidation) return;
+    setState(() => _showDescriptionValidation = true);
   }
 
   void _revealTypeValidation() {
@@ -273,7 +293,7 @@ class _ReportWizardPageState extends State<ReportWizardPage>
   /// First step with a missing requirement, or null when the draft is ready
   /// to send. Sending jumps to this step so the user can complete it.
   int? _firstIncompleteStep() {
-    if (_draft.photoCount < ReportRules.minPhotos) {
+    if (_draft.photoCount < ReportRules.minPhotos || !_draft.hasDescription) {
       return ReportWizardDraft.firstStep;
     }
     if (!_draft.hasLocation) return ReportWizardDraft.locationStep;
@@ -288,7 +308,10 @@ class _ReportWizardPageState extends State<ReportWizardPage>
     if (missingStep != null) {
       _showSnack(
         context.tr(switch (missingStep) {
-          ReportWizardDraft.firstStep => 'report_submit_missing_photos',
+          ReportWizardDraft.firstStep =>
+            _draft.photoCount < ReportRules.minPhotos
+                ? 'report_submit_missing_photos'
+                : 'report_submit_missing_description',
           ReportWizardDraft.locationStep => 'report_submit_missing_location',
           _ => 'report_submit_missing_type',
         }),
@@ -536,6 +559,25 @@ class _ReportWizardPageState extends State<ReportWizardPage>
             color: AppColors.textSecondary,
           ),
         ),
+        const SizedBox(height: 20),
+        TextFormField(
+          key: const ValueKey('report_description_field'),
+          initialValue: _draft.description,
+          minLines: 3,
+          maxLines: 5,
+          keyboardType: TextInputType.multiline,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: InputDecoration(
+            labelText: context.tr('report_description_title'),
+            hintText: context.tr('report_description_hint'),
+            alignLabelWithHint: true,
+            errorText: _showDescriptionValidation && !_draft.hasDescription
+                ? context.tr('report_description_error')
+                : null,
+          ),
+          onChanged: (description) =>
+              _update(_draft.copyWith(description: description)),
+        ),
       ],
     );
   }
@@ -544,10 +586,20 @@ class _ReportWizardPageState extends State<ReportWizardPage>
     return ReportLocationStep(
       latitude: _draft.latitude,
       longitude: _draft.longitude,
+      locationDetail: _draft.locationDetail,
+      areaName: _draft.areaName,
+      geocodingService: widget.geocodingService,
       locationService: _locationService,
       tileProvider: widget.locationTileProvider,
       onLocationChanged: (latitude, longitude) {
         _update(_draft.copyWith(latitude: latitude, longitude: longitude));
+      },
+      onLocationDetailChanged: (locationDetail) {
+        _update(_draft.copyWith(locationDetail: locationDetail));
+      },
+      onAreaChanged: (areaName) {
+        if (areaName == _draft.areaName) return;
+        _update(_draft.copyWith(areaName: areaName));
       },
     );
   }
@@ -576,12 +628,17 @@ class _ReportWizardPageState extends State<ReportWizardPage>
           children: [
             ReportReviewStep(
               photoPaths: _draft.photoPaths,
+              description: _draft.description,
+              areaName: _draft.areaName,
+              locationDetail: _draft.locationDetail,
               latitude: _draft.latitude,
               longitude: _draft.longitude,
               category: _draft.category,
               severity: _draft.severity,
               reportedAt: _draft.updatedAt?.toLocal() ?? DateTime.now(),
               onEditPhotos: () => _editFromReview(ReportWizardDraft.firstStep),
+              onEditDescription: () =>
+                  _editFromReview(ReportWizardDraft.firstStep),
               onEditLocation: () =>
                   _editFromReview(ReportWizardDraft.locationStep),
               onEditType: () => _editFromReview(ReportWizardDraft.typeStep),
@@ -614,10 +671,19 @@ class _ReportWizardPageState extends State<ReportWizardPage>
       onPressed: _canContinue ? _goNext : null,
     );
 
-    // The CTA stays disabled until both choices are made. Tapping it anyway
-    // reveals the inline validation instead of doing nothing, so a user who
-    // missed a section learns what is missing.
-    if (_canContinue || _step != ReportWizardDraft.typeStep) return button;
+    // A disabled CTA still reveals inline feedback for a missing required
+    // description or for incomplete type/severity choices.
+    if (_canContinue) return button;
+    if (_step == ReportWizardDraft.firstStep &&
+        _draft.photoCount >= ReportRules.minPhotos &&
+        !_draft.hasDescription) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _revealDescriptionValidation,
+        child: button,
+      );
+    }
+    if (_step != ReportWizardDraft.typeStep) return button;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _revealTypeValidation,
