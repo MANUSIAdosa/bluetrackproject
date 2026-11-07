@@ -29,12 +29,9 @@ class ReportReviewStep extends StatelessWidget {
     required this.category,
     required this.severity,
     required this.reportedAt,
-    required this.onEditPhotos,
-    required this.onEditTitle,
-    required this.onEditDescription,
+    required this.onEditReport,
     required this.onEditLocation,
-    required this.onEditType,
-    required this.onEditSeverity,
+    required this.onEditClassification,
     this.showSubmitError = false,
     this.onRetry,
     this.tileProvider,
@@ -53,12 +50,9 @@ class ReportReviewStep extends StatelessWidget {
   /// Time shown as the finding time; stamped when the draft was last changed.
   final DateTime reportedAt;
 
-  final VoidCallback onEditPhotos;
-  final VoidCallback onEditTitle;
-  final VoidCallback onEditDescription;
+  final VoidCallback onEditReport;
   final VoidCallback onEditLocation;
-  final VoidCallback onEditType;
-  final VoidCallback onEditSeverity;
+  final VoidCallback onEditClassification;
 
   /// True after a failed send; shows the error card with [onRetry].
   final bool showSubmitError;
@@ -95,48 +89,34 @@ class ReportReviewStep extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _SectionHeader(
-                  title: context.tr('report_review_photos'),
-                  editKey: const ValueKey('report_review_edit_photos'),
-                  onEdit: onEditPhotos,
+                  title: context.tr('report_review_report_group'),
+                  hint: context.tr('report_review_edit_report_hint'),
+                  editKey: const ValueKey('report_review_edit_report'),
+                  onEdit: onEditReport,
                 ),
                 _PhotoSection(photoPaths: photoPaths),
-                const Divider(height: 24),
-                _SectionHeader(
-                  title: context.tr('report_title_field'),
-                  editKey: const ValueKey('report_review_edit_title'),
-                  onEdit: onEditTitle,
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    title.trim().isEmpty
-                        ? context.tr('report_review_empty_value')
-                        : title.trim(),
-                    key: const ValueKey('report_review_title_value'),
-                    style: const TextStyle(
-                      fontSize: 15,
-                      height: 1.35,
-                      fontWeight: FontWeight.w700,
-                    ),
+                Text(
+                  title.trim().isEmpty
+                      ? context.tr('report_review_empty_value')
+                      : title.trim(),
+                  key: const ValueKey('report_review_title_value'),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    height: 1.35,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const Divider(height: 24),
-                _SectionHeader(
-                  title: context.tr('report_review_description'),
-                  editKey: const ValueKey('report_review_edit_description'),
-                  onEdit: onEditDescription,
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: _DescriptionPreview(
-                    text: description.trim().isEmpty
-                        ? context.tr('report_review_empty_value')
-                        : description.trim(),
-                  ),
+                const SizedBox(height: 4),
+                _DescriptionPreview(
+                  key: const ValueKey('report_review_description'),
+                  text: description.trim().isEmpty
+                      ? context.tr('report_review_empty_value')
+                      : description.trim(),
                 ),
                 const Divider(height: 24),
                 _SectionHeader(
                   title: context.tr('report_review_location'),
+                  hint: context.tr('report_review_edit_location_hint'),
                   editKey: const ValueKey('report_review_edit_location'),
                   onEdit: onEditLocation,
                 ),
@@ -149,9 +129,10 @@ class ReportReviewStep extends StatelessWidget {
                 ),
                 const Divider(height: 24),
                 _SectionHeader(
-                  title: context.tr('report_review_type'),
-                  editKey: const ValueKey('report_review_edit_type'),
-                  onEdit: onEditType,
+                  title: context.tr('report_review_classification'),
+                  hint: context.tr('report_review_edit_classification_hint'),
+                  editKey: const ValueKey('report_review_edit_classification'),
+                  onEdit: onEditClassification,
                 ),
                 _DetailRow(
                   icon: category == null
@@ -165,11 +146,6 @@ class ReportReviewStep extends StatelessWidget {
                       : context.p04CategoryLabel(category!),
                 ),
                 const SizedBox(height: 4),
-                _SectionHeader(
-                  title: context.tr('report_review_severity'),
-                  editKey: const ValueKey('report_review_edit_severity'),
-                  onEdit: onEditSeverity,
-                ),
                 _DetailRow(
                   icon: severity == null
                       ? Icons.speed_outlined
@@ -181,13 +157,14 @@ class ReportReviewStep extends StatelessWidget {
                       ? context.tr('report_review_empty_value')
                       : context.p04SeverityLabel(severity!),
                 ),
-                const Divider(height: 24),
-                _SectionHeader(title: context.tr('report_review_time')),
+                const SizedBox(height: 8),
                 _DetailRow(
                   key: const ValueKey('report_review_time_value'),
                   icon: Icons.schedule_outlined,
                   color: AppColors.ocean,
-                  value: Formatters.dateTime(reportedAt, locale),
+                  value:
+                      '${context.tr('report_review_time')}: '
+                      '${Formatters.dateTime(reportedAt, locale)}',
                 ),
                 const SizedBox(height: 8),
               ],
@@ -250,9 +227,17 @@ class ReportReviewStep extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, this.editKey, this.onEdit});
+  const _SectionHeader({
+    required this.title,
+    this.hint,
+    this.editKey,
+    this.onEdit,
+  });
 
   final String title;
+
+  /// Tooltip for the shared "Ubah" label, so each edit targets a named group.
+  final String? hint;
   final Key? editKey;
   final VoidCallback? onEdit;
 
@@ -267,14 +252,17 @@ class _SectionHeader extends StatelessWidget {
           ),
         ),
         if (onEdit != null)
-          TextButton(
-            key: editKey,
-            onPressed: onEdit,
-            style: TextButton.styleFrom(
-              minimumSize: const Size(48, 48),
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+          Tooltip(
+            message: hint ?? context.tr('report_review_edit'),
+            child: TextButton(
+              key: editKey,
+              onPressed: onEdit,
+              style: TextButton.styleFrom(
+                minimumSize: const Size(48, 48),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+              child: Text(context.tr('report_review_edit')),
             ),
-            child: Text(context.tr('report_review_edit')),
           ),
       ],
     );
@@ -655,7 +643,7 @@ class _LandmarkDetailsState extends State<_LandmarkDetails> {
 /// text actually overflows. The description is required, so at least a preview
 /// stays visible; the toggle keeps long reports scannable.
 class _DescriptionPreview extends StatefulWidget {
-  const _DescriptionPreview({required this.text});
+  const _DescriptionPreview({super.key, required this.text});
 
   final String text;
 

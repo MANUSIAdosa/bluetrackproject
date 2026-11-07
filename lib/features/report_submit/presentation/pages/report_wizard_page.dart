@@ -679,14 +679,11 @@ class _ReportWizardPageState extends State<ReportWizardPage>
               category: _draft.category,
               severity: _draft.severity,
               reportedAt: _draft.updatedAt?.toLocal() ?? DateTime.now(),
-              onEditPhotos: () => _editFromReview(ReportWizardDraft.firstStep),
-              onEditTitle: () => _editFromReview(ReportWizardDraft.firstStep),
-              onEditDescription: () =>
-                  _editFromReview(ReportWizardDraft.firstStep),
+              onEditReport: () => _editFromReview(ReportWizardDraft.firstStep),
               onEditLocation: () =>
                   _editFromReview(ReportWizardDraft.locationStep),
-              onEditType: () => _editFromReview(ReportWizardDraft.typeStep),
-              onEditSeverity: () => _editFromReview(ReportWizardDraft.typeStep),
+              onEditClassification: () =>
+                  _editFromReview(ReportWizardDraft.typeStep),
               showSubmitError: _submitError,
               onRetry: _submitting ? null : () => unawaited(_submit()),
               tileProvider: widget.locationTileProvider,

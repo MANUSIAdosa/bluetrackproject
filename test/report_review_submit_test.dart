@@ -242,8 +242,6 @@ void main() {
     await openReview(tester, store: store, service: service);
 
     expect(find.text('Tinjau laporan'), findsOneWidget);
-    expect(find.text('Jenis temuan'), findsOneWidget);
-    expect(find.text('Tingkat kerusakan'), findsOneWidget);
     expect(find.text('Terumbu rusak'), findsOneWidget);
     expect(find.text('Berat'), findsOneWidget);
     expect(
@@ -282,12 +280,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Sekitar 2 mil laut dari pulau.'), findsNothing);
 
-    expect(find.text('Waktu'), findsOneWidget);
+    expect(find.textContaining('Waktu: '), findsOneWidget);
     expect(
       find.text('Laporan akan diverifikasi sebelum tayang ke publik.'),
       findsOneWidget,
     );
-    expect(find.widgetWithText(TextButton, 'Ubah'), findsNWidgets(6));
+    // One "Ubah" per wizard step, not per section.
+    expect(find.widgetWithText(TextButton, 'Ubah'), findsNWidgets(3));
+    expect(find.text('Laporan'), findsOneWidget);
+    expect(find.text('Jenis dan tingkat'), findsOneWidget);
 
     // Photos open the full-screen viewer.
     final photo = find.byKey(const ValueKey('report_review_photo_0'));
@@ -300,27 +301,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('report_photo_viewer')), findsNothing);
 
-    final editTitle = find.byKey(const ValueKey('report_review_edit_title'));
-    await tester.ensureVisible(editTitle);
-    await tester.tap(editTitle);
+    // One edit action returns to step 1 with both text fields intact.
+    final editReport = find.byKey(const ValueKey('report_review_edit_report'));
+    await tester.ensureVisible(editReport);
+    await tester.tap(editReport);
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('report_title_field')), findsOneWidget);
-    for (var step = 0; step < 3; step++) {
-      await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
-      await tester.pumpAndSettle();
-    }
-    expect(find.text('Tinjau laporan'), findsOneWidget);
-
-    final editDescription = find.byKey(
-      const ValueKey('report_review_edit_description'),
-    );
-    await tester.ensureVisible(editDescription);
-    await tester.tap(editDescription);
-    await tester.pumpAndSettle();
-    expect(
-      find.byKey(const ValueKey('report_description_field')),
-      findsOneWidget,
-    );
     expect(
       tester
           .widget<TextFormField>(
@@ -329,16 +315,16 @@ void main() {
           .initialValue,
       'Penyu terlihat terjerat jaring plastik.',
     );
-
-    await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
-    await tester.pumpAndSettle();
+    for (var step = 0; step < 3; step++) {
+      await tester.tap(find.widgetWithText(FilledButton, 'Lanjut'));
+      await tester.pumpAndSettle();
+    }
+    expect(find.text('Tinjau laporan'), findsOneWidget);
 
     // Editing the type goes back to step 3 without losing anything.
-    final editType = find.byKey(const ValueKey('report_review_edit_type'));
+    final editType = find.byKey(
+      const ValueKey('report_review_edit_classification'),
+    );
     await tester.ensureVisible(editType);
     await tester.tap(editType);
     await tester.pumpAndSettle();
