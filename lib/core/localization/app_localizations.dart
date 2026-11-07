@@ -35,6 +35,7 @@ class AppLocalizations {
       'common.continue': 'Lanjut',
       'common.next': 'Berikutnya',
       'common.cancel': 'Batal',
+      'common.close': 'Tutup',
       'common.comingSoon':
           'Halaman ini akan tersedia pada subproyek berikutnya.',
       'common.error': 'Terjadi kesalahan.',
@@ -109,6 +110,8 @@ class AppLocalizations {
       'p16_article_not_found': 'Artikel tidak ditemukan.',
       'p16_image_unavailable': 'Gambar tidak tersedia',
       'learn.emptyCategory': 'Belum ada artikel dalam kategori ini.',
+      'learn.readMore': 'Baca selengkapnya',
+      'learn.byAuthor': 'Oleh {author}',
 
       // --- Login prompt ---
       'login.prompt.title': 'Fitur ini butuh masuk',
@@ -170,7 +173,7 @@ class AppLocalizations {
       // The title lives in the body heading, not the app bar. Email and phone
       // share one page, so the heading is not tied to either field.
       'auth.title': 'Selamat datang kembali',
-      'auth.subtitle': 'Masuk dengan email atau nomor telepon Anda.',
+      'auth.subtitle': 'Pilih email atau nomor telepon.',
       'auth.email.label': 'Email',
       'auth.email.hint': 'nama@email.com',
       'auth.email.invalid': 'Format email tidak valid',
@@ -179,28 +182,37 @@ class AppLocalizations {
       'auth.phone.hint': '8123456789',
       'auth.phone.invalid': 'Nomor telepon tidak valid',
       'auth.identifier.missing': 'Masukkan email atau nomor telepon.',
+      'auth.identifier.chooseOne': 'Pilih salah satu cara masuk.',
       'auth.otp.title': 'Masukkan kode verifikasi',
       'auth.otp.subtitle': 'Kode dikirim ke {target}',
       'auth.otp.mismatch': 'Kode tidak cocok',
       'auth.otp.attemptsLeft': 'Sisa percobaan: {n}',
       'auth.otp.locked':
           'Terlalu banyak percobaan. Kirim ulang kode untuk melanjutkan.',
+      'auth.otp.resendPrompt': 'Belum menerima kode?',
       'auth.otp.resendIn': 'Kirim ulang dalam {s} detik',
       'auth.otp.resend': 'Kirim ulang kode',
       'auth.otp.sent': 'Kode verifikasi terkirim (mock: 123456)',
       'auth.verify': 'Verifikasi',
-      // Split around the two inline document links so each document name stays a
-      // separately tappable span instead of being parsed back out of a string.
-      'auth.privacy.lead': 'Dengan melanjutkan, Anda menyetujui',
+      // Keep consent as a distinct, required checkbox before each next step.
+      'auth.consent.lead': 'Saya menyetujui',
+      'auth.consent.semantic':
+          'Setuju dengan Kebijakan Privasi dan Syarat & Ketentuan',
+      'auth.consent.required': 'Centang persetujuan untuk melanjutkan.',
       'auth.privacyPolicy': 'Kebijakan Privasi',
       'auth.privacy.and': 'dan',
-      'auth.terms': 'Syarat & Ketentuan',
+      'auth.terms': 'Syarat\u00a0&\u00a0Ketentuan',
 
       // --- Explore (P03) ---
       'explore.title': 'Jelajahi',
       'explore.searchHint': 'Cari proyek, organisasi, atau lokasi',
       'explore.forYou': 'Untuk minatmu',
-      'explore.projects': 'Proyek',
+      'explore.forYouPosition': 'Proyek {n} dari {total}',
+      'explore.allProjects': 'Semua proyek',
+      'explore.savedProjects': 'Proyek tersimpan',
+      'explore.moreProjects': 'Proyek lainnya',
+      'explore.projectCount': '{n} proyek',
+      'explore.projectCountOne': '1 proyek',
       'explore.viewList': 'Daftar',
       'explore.viewMap': 'Peta',
       'explore.empty.title': 'Tidak ada proyek',
@@ -212,10 +224,15 @@ class AppLocalizations {
           'Simpan proyek agar bisa diakses saat offline.',
       'explore.emptySavedFiltered.title':
           'Tidak ada proyek tersimpan yang cocok',
+      'explore.emptySavedFiltered.category':
+          'Tidak ada proyek tersimpan di kategori {category}',
+      'explore.emptySavedFiltered.search':
+          'Tidak ada proyek tersimpan yang cocok dengan pencarian',
       'explore.savedFilter.on': 'Tampilkan proyek tersimpan',
       'explore.savedFilter.off': 'Tampilkan semua proyek',
       'explore.resetFilter': 'Atur ulang filter',
       'explore.viewAll': 'Lihat semua proyek',
+      'explore.viewAllCategories': 'Lihat semua kategori',
       'explore.mapUnavailable': 'Mode peta belum tersedia pada subproyek ini.',
 
       // P03 map, filters and offline collection. New keys use the `p03_`
@@ -237,6 +254,7 @@ class AppLocalizations {
       'p03_filter_active': '{n} filter aktif',
       'p03_map_layer_conservation': 'Kawasan konservasi',
       'p03_map_count': '{n} proyek di peta',
+      'p03_map_cluster': '{n} proyek berdekatan',
       'p03_map_empty': 'Tidak ada proyek di peta untuk filter ini.',
       'p03_map_open_project': 'Lihat proyek',
       'p03_map_zoom_in': 'Perbesar peta',
@@ -244,6 +262,7 @@ class AppLocalizations {
       'p03_map_distance': '{n} km dari {place} (mock)',
       'p03_save': 'Simpan proyek',
       'p03_saved': 'Hapus dari tersimpan',
+      'p03_save_failed': 'Gagal menyimpan proyek. Coba lagi.',
       'p03_map_condition': 'Kondisi',
       'p03_offline_empty_title': 'Belum ada proyek tersimpan',
       'p03_offline_reload': 'Muat ulang daftar tersimpan',
@@ -266,6 +285,7 @@ class AppLocalizations {
       'project.tab.reports': 'Laporan',
       'project.tab.reviews': 'Ulasan',
       'project.raised': 'Terkumpul',
+      'project.percent_reached': '{n} tercapai',
       'project.target': 'Target',
       'project.remaining': 'Sisa dana',
       'project.donate': 'Donasi',
@@ -313,6 +333,7 @@ class AppLocalizations {
       'p04_reports_error': 'Gagal memuat laporan.',
       'p04_reports_count': '{n} laporan',
       'p04_reports_count_one': '{n} laporan',
+      'p04_report_view_detail': 'Lihat detail',
       'p04_detail_title': 'Detail laporan',
       'p04_detail_close': 'Tutup',
       'p04_detail_reporter': 'Pelapor',
@@ -333,19 +354,39 @@ class AppLocalizations {
       'my_reports.loading': 'Memuat laporan...',
       'my_reports.load_error':
           'Gagal memuat laporan. Periksa koneksi lalu coba lagi.',
-      'my_reports.empty': 'Kamu belum punya laporan. Laporkan temuan di sekitarmu untuk membantu menjaga laut tetap lestari.',
+      'my_reports.empty_title': 'Belum ada laporan',
+      'my_reports.empty': 'Laporkan temuan di sekitarmu untuk membantu menjaga laut tetap lestari.',
       'my_reports.create': 'Buat laporan',
       'my_reports.empty_filter': 'Tidak ada laporan berstatus {status}.',
+      'my_reports.filter_count': '{label} ({count})',
+      'my_reports.filter_title': 'Filter status laporan',
+      'my_reports.filter_hint': 'Pilih status laporan yang ingin ditampilkan.',
       'my_reports.tracker': 'Pelacak status',
       'my_reports.report_date': 'Tanggal laporan',
       'my_reports.waiting_verification': 'Menunggu verifikasi',
+      'my_reports.no_verifier_note': 'Tidak ada catatan dari verifikator.',
       'my_reports.severity_chip': 'Tingkat: {level}',
-      'my_reports.open_actions': 'Lihat aksi terkait',
+      'my_reports.completed_step_date': 'Selesai pada {date}',
+      'my_reports.tracker_step_current':
+          'Langkah {step} dari {total}: {status}, status saat ini',
+      'my_reports.tracker_step_reached':
+          'Langkah {step} dari {total}: {status}, sudah dilalui',
+      'my_reports.tracker_step_pending':
+          'Langkah {step} dari {total}: {status}, belum dicapai',
+      'my_reports.completion_proof': 'Bukti penyelesaian',
+      'my_reports.completion_proof_missing': 'Bukti belum diunggah.',
+      'my_reports.completion_photo_missing': 'Foto bukti belum tersedia.',
+      'my_reports.completion_proof_note': 'Catatan penyelesaian',
+      'my_reports.completion_proof_photo_caption': 'Foto bukti penyelesaian',
+      'my_reports.completion_date': 'Selesai pada',
+      'my_reports.completion_by': 'Pelaksana',
+      'my_reports.completion_proof_available': 'Bukti penyelesaian tersedia',
+      'my_reports.card_photo_semantics': 'Foto laporan',
+      'my_reports.open_actions': 'Lihat agenda aksi',
       'my_reports.open_actions_hint':
-          'Temukan kegiatan yang terhubung dengan laporan ini.',
+          'Jelajahi agenda kegiatan konservasi yang tersedia.',
       'my_reports.count': '{n} laporan',
       'my_reports.filtered_count': '{status} · {n} laporan',
-      'my_reports.filter_title': 'Filter status',
       'my_reports.show_all': 'Tampilkan semua',
       'my_reports.current_status': 'Status saat ini',
       'p04_photo_error': 'Foto tidak dapat dimuat.',
@@ -538,7 +579,9 @@ class AppLocalizations {
       'p08_receipt_unavailable_title': 'E-Receipt belum tersedia',
       'p08_receipt_unavailable_body':
           'E-Receipt baru tersedia setelah dukungan berhasil.',
-      'p08_view_reports': 'Lihat laporan proyek',
+      'p08_download_receipt': 'Unduh e-receipt',
+      'p08_download_receipt_hint': 'Simpan bukti donasi ini sebagai PDF.',
+      'p08_download_receipt_soon': 'Unduh e-receipt akan segera tersedia.',
 
       // --- Legal (Privacy Policy / Terms) ---
       'legal.privacy.title': 'Kebijakan Privasi',
@@ -619,6 +662,13 @@ class AppLocalizations {
       'report_step_review': 'Tinjau',
       'report_photos_title': 'Foto temuan',
       'report_photos_body': 'Tambahkan 1–3 foto temuanmu.',
+      'report_title_field': 'Judul laporan',
+      'report_title_hint': 'Contoh: Penyu terlilit jaring di Pantai Sukamade',
+      'report_title_error': 'Judul laporan wajib diisi.',
+      'report_description_title': 'Deskripsi temuan',
+      'report_description_hint':
+          'Ceritakan kondisi yang terlihat dan konteks foto.',
+      'report_description_error': 'Deskripsi temuan wajib diisi.',
       'report_photo_counter': '{n}/{max} foto',
       'report_add_photo': 'Tambah Foto',
       'report_remove_photo': 'Hapus foto',
@@ -660,10 +710,32 @@ class AppLocalizations {
           'titik temuan.',
       'report_location_hint': 'Geser pin ke lokasi temuan',
       'report_location_gps': 'Gunakan lokasi saya',
+      'report_location_gps_short': 'Lokasi saya',
       'report_location_gps_loading': 'Mengambil lokasi...',
+      'report_location_gps_loading_short': 'Mengambil...',
       'report_location_card_title': 'Koordinat temuan',
       'report_location_latitude': 'Lintang',
       'report_location_longitude': 'Bujur',
+      'report_location_detail_title': 'Patokan atau area sekitar (opsional)',
+      'report_location_detail_hint':
+          'Contoh: dekat dermaga utara atau terumbu karang.',
+      'report_area_hint': 'Tekan tombol untuk menampilkan nama area dari pin.',
+      'report_area_empty_hint': 'Tandai pin dulu untuk melihat nama area.',
+      'report_area_offline': 'Nama area butuh koneksi internet.',
+      'report_area_empty':
+          'Nama area tidak ditemukan. Geser pin lalu coba lagi.',
+      'report_area_error':
+          'Nama area tidak dapat diambil. Periksa koneksi lalu coba lagi.',
+      'report_address_title': 'Cari alamat',
+      'report_address_hint': 'Contoh: Pantai Sukamade',
+      'report_address_action': 'Cari',
+      'report_address_empty': 'Alamat tidak ditemukan. Coba kata kunci lain.',
+      'report_address_error':
+          'Pencarian gagal. Periksa koneksi lalu coba lagi.',
+      'report_geocoding_rate_limited':
+          'Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.',
+      'report_geocoding_offline': 'Pencarian lokasi butuh koneksi internet.',
+      'report_osm_attribution': 'Data © OpenStreetMap contributors',
       'report_location_empty_hint':
           'Ketuk peta atau gunakan lokasi saya untuk mengisi koordinat.',
       'report_location_error_title': 'Lokasi tidak tersedia',
@@ -713,7 +785,19 @@ class AppLocalizations {
       'report_type_severity_error': 'Pilih tingkat temuan terlebih dahulu.',
       'report_review_title': 'Tinjau laporan',
       'report_review_subtitle': 'Periksa kembali isianmu sebelum mengirim.',
+      'report_review_content_group': 'Foto dan keterangan',
+      'report_review_classification': 'Jenis dan tingkat',
+      'report_review_edit_report_hint': 'Ubah laporan',
+      'report_review_edit_location_hint': 'Ubah lokasi',
+      'report_review_edit_classification_hint': 'Ubah jenis dan tingkat',
       'report_review_photos': 'Foto',
+      'report_review_description': 'Deskripsi temuan',
+      'report_review_area': 'Nama area',
+      'report_review_details': 'Lihat rincian',
+      'report_review_more': 'Selengkapnya',
+      'report_review_less': 'Sembunyikan',
+      'report_review_hide_details': 'Sembunyikan rincian',
+      'report_review_landmark_label': 'Patokan atau area sekitar',
       'report_review_location': 'Lokasi',
       'report_review_type': 'Jenis temuan',
       'report_review_severity': 'Tingkat kerusakan',
@@ -735,22 +819,21 @@ class AppLocalizations {
       'report_submit_offline_body':
           'Sambungkan perangkat ke internet untuk mengirim laporan.',
       'report_submit_missing_photos': 'Lengkapi foto temuan terlebih dahulu.',
+      'report_submit_missing_title': 'Lengkapi judul laporan terlebih dahulu.',
+      'report_submit_missing_description':
+          'Lengkapi deskripsi temuan terlebih dahulu.',
       'report_submit_missing_location': 'Tandai lokasi temuan terlebih dahulu.',
       'report_submit_missing_type':
           'Pilih jenis dan tingkat temuan terlebih dahulu.',
+      'report_submit.generated_title': 'Laporan {category} · {date} · {id}',
       'report_success_title': 'Laporan terkirim',
-      'report_success_body':
-          'Terima kasih. Laporanmu akan diverifikasi sebelum tayang ke publik.',
+      'report_success_status_note': 'Menunggu verifikasi',
       'report_success_coordinates': 'Koordinat',
       'report_success_number': 'Nomor laporan',
       'report_success_status': 'Status',
       'report_success_view_reports': 'Lihat Laporan Saya',
       'report_success_new_report': 'Buat Laporan Lain',
       'report_success_not_found': 'Laporan tidak ditemukan di sesi ini.',
-      'report_mine_title': 'Laporan Saya',
-      'report_mine_empty':
-          'Belum ada laporan. Laporan yang kamu kirim akan muncul di sini.',
-      'report_mine_new': 'Buat Laporan',
       'report_photo_viewer_counter': '{current}/{total}',
       'report_photo_viewer_close': 'Tutup',
 
@@ -781,6 +864,7 @@ class AppLocalizations {
       'common.continue': 'Continue',
       'common.next': 'Next',
       'common.cancel': 'Cancel',
+      'common.close': 'Close',
       'common.comingSoon':
           'This page will be available in the next subproject.',
       'common.error': 'Something went wrong.',
@@ -850,6 +934,8 @@ class AppLocalizations {
       'p16_article_not_found': 'Article not found.',
       'p16_image_unavailable': 'Image unavailable',
       'learn.emptyCategory': 'No articles in this category yet.',
+      'learn.readMore': 'Read more',
+      'learn.byAuthor': 'By {author}',
 
       // --- Login prompt ---
       'login.prompt.title': 'Sign in required',
@@ -911,7 +997,7 @@ class AppLocalizations {
       // The title lives in the body heading, not the app bar. Email and phone
       // share one page, so the heading is not tied to either field.
       'auth.title': 'Welcome back',
-      'auth.subtitle': 'Sign in with your email or phone number.',
+      'auth.subtitle': 'Choose email or phone number.',
       'auth.email.label': 'Email',
       'auth.email.hint': 'name@email.com',
       'auth.email.invalid': 'Invalid email format',
@@ -920,27 +1006,36 @@ class AppLocalizations {
       'auth.phone.hint': '8123456789',
       'auth.phone.invalid': 'Invalid phone number',
       'auth.identifier.missing': 'Enter your email or phone number.',
+      'auth.identifier.chooseOne': 'Choose one sign-in method.',
       'auth.otp.title': 'Enter verification code',
       'auth.otp.subtitle': 'Code sent to {target}',
       'auth.otp.mismatch': "Code doesn't match",
       'auth.otp.attemptsLeft': 'Attempts left: {n}',
       'auth.otp.locked': 'Too many attempts. Resend the code to continue.',
+      'auth.otp.resendPrompt': "Didn't receive the code?",
       'auth.otp.resendIn': 'Resend in {s}s',
       'auth.otp.resend': 'Resend code',
       'auth.otp.sent': 'Verification code sent (mock: 123456)',
       'auth.verify': 'Verify',
-      // Split around the two inline document links so each document name stays a
-      // separately tappable span instead of being parsed back out of a string.
-      'auth.privacy.lead': 'By continuing, you agree to the',
+      // Keep consent as a distinct, required checkbox before each next step.
+      'auth.consent.lead': 'I agree to the',
+      'auth.consent.semantic':
+          'Agree to the Privacy Policy and Terms & Conditions',
+      'auth.consent.required': 'Check the box to continue.',
       'auth.privacyPolicy': 'Privacy Policy',
       'auth.privacy.and': 'and',
-      'auth.terms': 'Terms & Conditions',
+      'auth.terms': 'Terms\u00a0&\u00a0Conditions',
 
       // --- Explore (P03) ---
       'explore.title': 'Explore',
       'explore.searchHint': 'Search projects, organizations, or places',
       'explore.forYou': 'For you',
-      'explore.projects': 'Projects',
+      'explore.forYouPosition': 'Project {n} of {total}',
+      'explore.allProjects': 'All projects',
+      'explore.savedProjects': 'Saved projects',
+      'explore.moreProjects': 'More projects',
+      'explore.projectCount': '{n} projects',
+      'explore.projectCountOne': '1 project',
       'explore.viewList': 'List',
       'explore.viewMap': 'Map',
       'explore.empty.title': 'No projects',
@@ -950,10 +1045,14 @@ class AppLocalizations {
           'Project Detail.',
       'explore.emptySaved.body': 'Save projects to access them while offline.',
       'explore.emptySavedFiltered.title': 'No saved projects match',
+      'explore.emptySavedFiltered.category': 'No saved projects in {category}',
+      'explore.emptySavedFiltered.search':
+          'No saved projects match your search',
       'explore.savedFilter.on': 'Show saved projects',
       'explore.savedFilter.off': 'Show all projects',
       'explore.resetFilter': 'Reset filters',
       'explore.viewAll': 'View all projects',
+      'explore.viewAllCategories': 'See all categories',
       'explore.mapUnavailable': 'Map mode is not available in this subproject.',
 
       // --- Explore map (P03) ---
@@ -974,6 +1073,7 @@ class AppLocalizations {
       'p03_filter_active': '{n} filters active',
       'p03_map_layer_conservation': 'Conservation areas',
       'p03_map_count': '{n} projects on the map',
+      'p03_map_cluster': '{n} nearby projects',
       'p03_map_empty': 'No projects on the map for these filters.',
       'p03_map_open_project': 'View project',
       'p03_map_zoom_in': 'Zoom in',
@@ -981,6 +1081,7 @@ class AppLocalizations {
       'p03_map_distance': '{n} km from {place} (mock)',
       'p03_save': 'Save project',
       'p03_saved': 'Remove from saved',
+      'p03_save_failed': 'Could not save the project. Try again.',
       'p03_map_condition': 'Condition',
       'p03_offline_empty_title': 'No saved projects yet',
       'p03_offline_reload': 'Reload saved projects',
@@ -1003,6 +1104,7 @@ class AppLocalizations {
       'project.tab.reports': 'Reports',
       'project.tab.reviews': 'Reviews',
       'project.raised': 'Raised',
+      'project.percent_reached': '{n} reached',
       'project.target': 'Target',
       'project.remaining': 'Remaining',
       'project.donate': 'Donate',
@@ -1050,6 +1152,7 @@ class AppLocalizations {
       'p04_reports_error': 'Failed to load reports.',
       'p04_reports_count': '{n} reports',
       'p04_reports_count_one': '{n} report',
+      'p04_report_view_detail': 'View details',
       'p04_detail_title': 'Report details',
       'p04_detail_close': 'Close',
       'p04_detail_reporter': 'Reporter',
@@ -1070,18 +1173,42 @@ class AppLocalizations {
       'my_reports.loading': 'Loading reports...',
       'my_reports.load_error':
           'Could not load reports. Check your connection and try again.',
-      'my_reports.empty': 'You have no reports yet. Report what you find around you to help keep the sea healthy.',
+      'my_reports.empty_title': 'No reports yet',
+      'my_reports.empty':
+          'Report what you find around you to help keep the sea healthy.',
       'my_reports.create': 'Create report',
       'my_reports.empty_filter': 'No reports with status {status}.',
+      'my_reports.filter_count': '{label} ({count})',
+      'my_reports.filter_title': 'Filter report status',
+      'my_reports.filter_hint': 'Choose which report statuses to display.',
       'my_reports.tracker': 'Status tracker',
       'my_reports.report_date': 'Report date',
       'my_reports.waiting_verification': 'Waiting for verification',
+      'my_reports.no_verifier_note': 'No note from the verifier.',
       'my_reports.severity_chip': 'Severity: {level}',
-      'my_reports.open_actions': 'View related actions',
-      'my_reports.open_actions_hint': 'Find activities linked to this report.',
+      'my_reports.completed_step_date': 'Completed on {date}',
+      'my_reports.tracker_step_current':
+          'Step {step} of {total}: {status}, current status',
+      'my_reports.tracker_step_reached':
+          'Step {step} of {total}: {status}, reached',
+      'my_reports.tracker_step_pending':
+          'Step {step} of {total}: {status}, not reached yet',
+      'my_reports.completion_proof': 'Completion proof',
+      'my_reports.completion_proof_missing':
+          'Completion proof has not been uploaded yet.',
+      'my_reports.completion_photo_missing':
+          'Completion proof photo is not available.',
+      'my_reports.completion_proof_note': 'Completion note',
+      'my_reports.completion_proof_photo_caption': 'Completion proof photo',
+      'my_reports.completion_date': 'Completed on',
+      'my_reports.completion_by': 'Completed by',
+      'my_reports.completion_proof_available': 'Completion proof available',
+      'my_reports.card_photo_semantics': 'Report photo',
+      'my_reports.open_actions': 'View the action agenda',
+      'my_reports.open_actions_hint':
+          'Browse available conservation activities.',
       'my_reports.count': '{n} reports',
       'my_reports.filtered_count': '{status} · {n} reports',
-      'my_reports.filter_title': 'Filter status',
       'my_reports.show_all': 'Show all',
       'my_reports.current_status': 'Current status',
       'p04_photo_error': 'Photo could not be loaded.',
@@ -1276,7 +1403,9 @@ class AppLocalizations {
       'p08_receipt_unavailable_title': 'E-Receipt not available yet',
       'p08_receipt_unavailable_body':
           'The E-Receipt becomes available once the support succeeds.',
-      'p08_view_reports': 'View project reports',
+      'p08_download_receipt': 'Download e-receipt',
+      'p08_download_receipt_hint': 'Save this donation proof as a PDF.',
+      'p08_download_receipt_soon': 'E-receipt download is coming soon.',
 
       // --- Legal (Privacy Policy / Terms) ---
       'legal.privacy.title': 'Privacy Policy',
@@ -1356,6 +1485,14 @@ class AppLocalizations {
       'report_step_review': 'Review',
       'report_photos_title': 'Photos of the finding',
       'report_photos_body': 'Add 1–3 photos of your finding.',
+      'report_title_field': 'Report title',
+      'report_title_hint':
+          'For example: Turtle entangled in netting at Sukamade',
+      'report_title_error': 'Add a report title.',
+      'report_description_title': 'Finding description',
+      'report_description_hint':
+          'Describe what you observed and the context shown in the photos.',
+      'report_description_error': 'Add a description of the finding.',
       'report_photo_counter': '{n}/{max} photos',
       'report_add_photo': 'Add Photo',
       'report_remove_photo': 'Remove photo',
@@ -1397,10 +1534,33 @@ class AppLocalizations {
           'finding.',
       'report_location_hint': 'Drag the pin to the finding location',
       'report_location_gps': 'Use my location',
+      'report_location_gps_short': 'My location',
       'report_location_gps_loading': 'Getting location...',
+      'report_location_gps_loading_short': 'Locating...',
       'report_location_card_title': 'Finding coordinates',
       'report_location_latitude': 'Latitude',
       'report_location_longitude': 'Longitude',
+      'report_location_detail_title': 'Nearby landmark or area (optional)',
+      'report_location_detail_hint':
+          'For example: near the north pier or coral reef.',
+      'report_area_hint': 'Tap the button to name the area around the pin.',
+      'report_area_empty_hint': 'Place the pin first to see the area name.',
+      'report_area_offline': 'The area name needs an internet connection.',
+      'report_area_empty': 'No area name found. Move the pin and try again.',
+      'report_area_error':
+          'The area name could not be loaded. Check your connection and try '
+          'again.',
+      'report_address_title': 'Search an address',
+      'report_address_hint': 'For example: Sukamade Beach',
+      'report_address_action': 'Search',
+      'report_address_empty': 'No address found. Try different words.',
+      'report_address_error':
+          'Search failed. Check your connection and try again.',
+      'report_geocoding_rate_limited':
+          'Too many requests. Wait a moment and try again.',
+      'report_geocoding_offline':
+          'Location search needs an internet connection.',
+      'report_osm_attribution': 'Data © OpenStreetMap contributors',
       'report_location_empty_hint':
           'Tap the map or use my location to fill in the coordinates.',
       'report_location_error_title': 'Location unavailable',
@@ -1451,7 +1611,19 @@ class AppLocalizations {
       'report_type_severity_error': 'Choose a severity level first.',
       'report_review_title': 'Review report',
       'report_review_subtitle': 'Check your answers before sending.',
+      'report_review_content_group': 'Photos and details',
+      'report_review_classification': 'Type and severity',
+      'report_review_edit_report_hint': 'Edit report',
+      'report_review_edit_location_hint': 'Edit location',
+      'report_review_edit_classification_hint': 'Edit type and severity',
       'report_review_photos': 'Photos',
+      'report_review_description': 'Finding description',
+      'report_review_area': 'Area name',
+      'report_review_details': 'Show details',
+      'report_review_more': 'Show more',
+      'report_review_less': 'Show less',
+      'report_review_hide_details': 'Hide details',
+      'report_review_landmark_label': 'Nearby landmark or area',
       'report_review_location': 'Location',
       'report_review_type': 'Finding type',
       'report_review_severity': 'Damage severity',
@@ -1473,12 +1645,15 @@ class AppLocalizations {
       'report_submit_offline_body':
           'Connect the device to the internet to send the report.',
       'report_submit_missing_photos': 'Add the finding photo first.',
+      'report_submit_missing_title': 'Add a report title first.',
+      'report_submit_missing_description':
+          'Add a description before sending the report.',
       'report_submit_missing_location': 'Mark the finding location first.',
       'report_submit_missing_type':
           'Choose the finding type and severity first.',
+      'report_submit.generated_title': '{category} report · {date} · {id}',
       'report_success_title': 'Report sent',
-      'report_success_body':
-          'Thank you. Your report will be verified before it is published.',
+      'report_success_status_note': 'Awaiting verification',
       'report_success_coordinates': 'Coordinates',
       'report_success_number': 'Report number',
       'report_success_status': 'Status',
@@ -1486,9 +1661,6 @@ class AppLocalizations {
       'report_success_new_report': 'Create Another Report',
       'report_success_not_found':
           'This report is no longer available in this session.',
-      'report_mine_title': 'My Reports',
-      'report_mine_empty': 'No reports yet. Reports you send will appear here.',
-      'report_mine_new': 'Create Report',
       'report_photo_viewer_counter': '{current}/{total}',
       'report_photo_viewer_close': 'Close',
 

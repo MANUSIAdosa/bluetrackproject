@@ -29,6 +29,10 @@ void main() {
       longitude: 114.61,
       category: ReportCategory.damagedReef,
       severity: ReportSeverity.high,
+      title: 'Oil sheen near the reef',
+      description: 'Oil sheen around the reef.',
+      locationDetail: 'About 100 m east of the pier.',
+      areaName: 'Pantai Sukamade, Banyuwangi',
       currentStep: 2,
       updatedAt: updatedAt,
     );
@@ -42,6 +46,10 @@ void main() {
     expect(loaded.longitude, closeTo(114.61, 0.0001));
     expect(loaded.category, ReportCategory.damagedReef);
     expect(loaded.severity, ReportSeverity.high);
+    expect(loaded.title, 'Oil sheen near the reef');
+    expect(loaded.description, 'Oil sheen around the reef.');
+    expect(loaded.locationDetail, 'About 100 m east of the pier.');
+    expect(loaded.areaName, 'Pantai Sukamade, Banyuwangi');
     expect(loaded.currentStep, 2);
     expect(loaded.updatedAt, updatedAt);
 
@@ -78,6 +86,23 @@ void main() {
     await box.put(HiveReportDraftStore.activeKey, '{not json');
 
     expect(await store.load(), isNull);
+  });
+
+  test('defaults new text fields when restoring a legacy draft', () async {
+    final store = HiveReportDraftStore();
+    final box = await Hive.openBox<dynamic>(HiveReportDraftStore.boxName);
+    await box.put(
+      HiveReportDraftStore.activeKey,
+      '{"photoPaths":["/tmp/a.jpg"],"currentStep":1}',
+    );
+
+    final loaded = await store.load();
+
+    expect(loaded, isNotNull);
+    expect(loaded!.title, isEmpty);
+    expect(loaded.description, isEmpty);
+    expect(loaded.locationDetail, isEmpty);
+    expect(loaded.areaName, isEmpty);
   });
 
   test('ignores unknown category and severity ids', () async {

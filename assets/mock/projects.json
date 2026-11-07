@@ -148,5 +148,230 @@
       {"item": "Pelaporan", "amount": 1000000, "percent": 10}
     ],
     "galleryColors": ["#0284C7", "#14B8A6", "#FF6F61"]
+  },
+  {
+    "id": "p07",
+    "title": "Tukik Kembali",
+    "category": "penyu",
+    "orgId": "c02",
+    "orgName": "Komunitas Pecinta Alam Pesisir",
+    "orgVerified": true,
+    "location": "Kuta, Bali",
+    "latitude": -8.718,
+    "longitude": 115.1686,
+    "raisedAmount": 0,
+    "targetAmount": 45000000,
+    "description": "Pelepasan tukik dan edukasi wisatawan di pantai peneluruhan Kuta.",
+    "about": [
+      "Pantai Kuta masih menjadi lokasi peneluruhan penyu hijau meski tekanan wisata terus meningkat.",
+      "Relawan menjaga sarang pada malam hari dan mengedukasi wisatawan agar tidak mendekati tukik."
+    ],
+    "budget": [
+      {"item": "Penjagaan sarang malam", "amount": 18000000, "percent": 40},
+      {"item": "Edukasi wisatawan", "amount": 13500000, "percent": 30},
+      {"item": "Peralatan relawan", "amount": 9000000, "percent": 20},
+      {"item": "Pelaporan", "amount": 4500000, "percent": 10}
+    ],
+    "galleryColors": ["#0EA5E9"]
+  },
+  {
+    "id": "p08",
+    "title": "Penjagaan Sarang Penyu dan Pelepasan Tukik di Pantai Pangumbahan Bersama Relawan Pesisir Sukabumi",
+    "category": "penyu",
+    "orgId": "o01",
+    "orgName": "Yayasan Laut Biru",
+    "orgVerified": true,
+    "location": "Pangumbahan, Sukabumi, Jawa Barat",
+    "latitude": -7.3231,
+    "longitude": 106.4826,
+    "raisedAmount": 60000000,
+    "targetAmount": 50000000,
+    "description": "Patroli sarang dan pelepasan tukik di pantai peneluruhan Pangumbahan sepanjang musim.",
+    "about": [
+      "Pangumbahan adalah pantai peneluruhan penyu hijau terbesar di Jawa Barat dan sudah dikelola sebagai kawasan konservasi.",
+      "Dana tambahan dipakai untuk memperluas patroli ke pantai sekitar dan melibatkan nelayan sebagai penjaga sarang."
+    ],
+    "budget": [
+      {"item": "Patroli sarang", "amount": 20000000, "percent": 40},
+      {"item": "Pelepasan tukik", "amount": 15000000, "percent": 30},
+      {"item": "Peralatan pencatatan", "amount": 10000000, "percent": 20},
+      {"item": "Pelaporan dan monitoring", "amount": 5000000, "percent": 10}
+    ],
+    "galleryColors": ["#0284C7", "#14B8A6"]
+  },
+  {
+    "id": "p09",
+    "title": "Pemulihan Karang Bunaken",
+    "category": "karang",
+    "orgId": "o02",
+    "orgName": "Konsorsium Pesisir Hijau",
+    "orgVerified": true,
+    "location": "Taman Nasional Bunaken, Sulawesi Utara",
+    "latitude": 1.6221,
+    "longitude": 124.7567,
+    "raisedAmount": 35000000,
+    "targetAmount": 35000000,
+    "description": "Transplantasi karang dan pemantauan terumbu di taman nasional Bunaken.",
+    "about": [
+      "Terumbu Bunaken menyimpan lebih dari 300 jenis karang dan menjadi sumber penghidupan penyelam lokal.",
+      "Program ini memasang rak transplantasi serta melatih pemandu wisata untuk memantau kesehatan karang."
+    ],
+    "budget": [
+      {"item": "Rak transplantasi", "amount": 14000000, "percent": 40},
+      {"item": "Operasional penyelaman", "amount": 10500000, "percent": 30},
+      {"item": "Pelatihan pemandu", "amount": 7000000, "percent": 20},
+      {"item": "Monitoring", "amount": 3500000, "percent": 10}
+    ],
+    "galleryColors": ["#FF6F61", "#F97316", "#FBBF24"]
+  },
+  {
+    "id": "p10",
+    "title": "Karang Karimunjawa",
+    "category": "karang",
+    "orgId": "o01",
+    "orgName": "Yayasan Laut Biru",
+    "orgVerified": true,
+    "location": "Karimunjawa, Jawa Tengah",
+    "latitude": -5.7986,
+    "longitude": 110.4313,
+    "raisedAmount": 180000000,
+    "targetAmount": 1200000000,
+    "description": "Restorasi terumbu karang skala luas di kepulauan Karimunjawa bersama komunitas pulau.",
+    "about": [
+      "Sebagian terumbu Karimunjawa rusak akibat penangkapan ikan yang merusak dan pemutihan karang.",
+      "Program lima tahun ini membangun pembibitan karang, melatih kelompok nelayan, dan memantau tutupan karang setiap enam bulan."
+    ],
+    "budget": [
+      {"item": "Pembibitan karang", "amount": 480000000, "percent": 40},
+      {"item": "Restorasi dan penanaman", "amount": 360000000, "percent": 30},
+      {"item": "Pelatihan nelayan", "amount": 240000000, "percent": 20},
+      {"item": "Pemantauan lima tahun", "amount": 120000000, "percent": 10}
+    ],
+    "galleryColors": ["#FF6F61", "#F97316"]
+  },
+  {
+    "id": "p11",
+    "title": "Mangrove Delta Mahakam",
+    "category": "mangrove",
+    "orgId": "c01",
+    "orgName": "Kelompok Nelayan Pantai Sukamade",
+    "orgVerified": true,
+    "location": "Delta Mahakam, Kalimantan Timur",
+    "latitude": -0.59,
+    "longitude": 117.5,
+    "raisedAmount": 8000000,
+    "targetAmount": 25000000,
+    "description": "Penanaman mangrove di delta Mahakam untuk menahan abrasi dan memulihkan habitat kepiting.",
+    "about": [
+      "Delta Mahakam kehilangan mangrove akibat tambak dan penebangan, sehingga abrasi makin cepat.",
+      "Nelayan lokal menanam bibit dan memantau tumbuh kembangnya bersama penyuluh desa."
+    ],
+    "budget": [
+      {"item": "Bibit mangrove", "amount": 10000000, "percent": 40},
+      {"item": "Penanaman", "amount": 7500000, "percent": 30},
+      {"item": "Perawatan bibit", "amount": 5000000, "percent": 20},
+      {"item": "Pemantauan", "amount": 2500000, "percent": 10}
+    ],
+    "galleryColors": ["#14B8A6", "#0D9488"]
+  },
+  {
+    "id": "p12",
+    "title": "Paus dan Lumba-lumba Teluk Saleh",
+    "category": "mamalia_laut",
+    "orgId": "o02",
+    "orgName": "Konsorsium Pesisir Hijau",
+    "orgVerified": true,
+    "location": "Teluk Saleh, Sumbawa, Nusa Tenggara Barat",
+    "latitude": -8.35,
+    "longitude": 117.7,
+    "raisedAmount": 12000000,
+    "targetAmount": 40000000,
+    "description": "Survei populasi paus dan lumba-lumba Teluk Saleh serta pelatihan pemandu wisata bahari.",
+    "about": [
+      "Teluk Saleh adalah jalur migrasi paus dan habitat tetap lumba-lumba hidung botol.",
+      "Program ini menyurvei populasi, menandai jalur migrasi, dan melatih pemandu agar mendekat dengan aman."
+    ],
+    "budget": [
+      {"item": "Survei populasi", "amount": 16000000, "percent": 40},
+      {"item": "Perahu dan bahan bakar", "amount": 12000000, "percent": 30},
+      {"item": "Pelatihan pemandu", "amount": 8000000, "percent": 20},
+      {"item": "Analisis dan pelaporan", "amount": 4000000, "percent": 10}
+    ],
+    "galleryColors": ["#0284C7", "#075985"]
+  },
+  {
+    "id": "p13",
+    "title": "Lumba-lumba Pulau Wetar",
+    "category": "mamalia_laut",
+    "orgId": "c03",
+    "orgName": "Karang Taruna Pesisir Makassar",
+    "orgVerified": false,
+    "location": "Pulau Wetar, Maluku",
+    "latitude": -7.8,
+    "longitude": 126.3,
+    "raisedAmount": 3000000,
+    "targetAmount": 30000000,
+    "description": "Pemantauan lumba-lumba dan edukasi nelayan di perairan Pulau Wetar.",
+    "about": [
+      "Perairan Wetar menjadi lintasan lumba-lumba yang sering terjerat jaring nelayan.",
+      "Karang taruna setempat mencatat perjumpaan dan membagikan panduan pelepasliaran yang aman."
+    ],
+    "budget": [
+      {"item": "Pemantauan harian", "amount": 12000000, "percent": 40},
+      {"item": "Edukasi nelayan", "amount": 9000000, "percent": 30},
+      {"item": "Peralatan pencatatan", "amount": 6000000, "percent": 20},
+      {"item": "Pelaporan", "amount": 3000000, "percent": 10}
+    ],
+    "galleryColors": ["#075985", "#0284C7", "#14B8A6"]
+  },
+  {
+    "id": "p14",
+    "title": "Lamun Kepulauan Kei",
+    "category": "lamun",
+    "orgId": "o01",
+    "orgName": "Yayasan Laut Biru",
+    "orgVerified": true,
+    "location": "Kepulauan Kei, Maluku",
+    "latitude": -5.65,
+    "longitude": 132.7,
+    "raisedAmount": 9000000,
+    "targetAmount": 18000000,
+    "description": "Penanaman lamun dan pemantauan duyung di perairan Kepulauan Kei.",
+    "about": [
+      "Padang lamun Kei menjadi makanan utama duyung dan tempat berlindung ikan kecil.",
+      "Relawan menanam lamun lokal dan mencatat kemunculan duyung di sekitar padang yang dipulihkan."
+    ],
+    "budget": [
+      {"item": "Bibit lamun", "amount": 7200000, "percent": 40},
+      {"item": "Penanaman", "amount": 5400000, "percent": 30},
+      {"item": "Pemantauan duyung", "amount": 3600000, "percent": 20},
+      {"item": "Koordinasi desa", "amount": 1800000, "percent": 10}
+    ],
+    "galleryColors": ["#0D9488", "#14B8A6", "#0284C7"]
+  },
+  {
+    "id": "p15",
+    "title": "Padang Lamun Bintan",
+    "category": "lamun",
+    "orgId": "c02",
+    "orgName": "Komunitas Pecinta Alam Pesisir",
+    "orgVerified": true,
+    "location": "Bintan, Kepulauan Riau",
+    "latitude": 1.0,
+    "longitude": 104.5,
+    "raisedAmount": 5000000,
+    "targetAmount": 22000000,
+    "description": "Restorasi lamun di pesisir Bintan bersama kelompok pemuda pesisir.",
+    "about": [
+      "Lamun di Bintan tertekan oleh lalu lintas kapal dan pembangunan pesisir.",
+      "Kelompok pemuda menanam lamun di area yang rusak dan memantau kepadatan setiap kuartal."
+    ],
+    "budget": [
+      {"item": "Penanaman lamun", "amount": 8800000, "percent": 40},
+      {"item": "Operasional perahu", "amount": 6600000, "percent": 30},
+      {"item": "Pemantauan kuartalan", "amount": 4400000, "percent": 20},
+      {"item": "Edukasi warga", "amount": 2200000, "percent": 10}
+    ],
+    "galleryColors": ["#14B8A6", "#0D9488"]
   }
 ]

@@ -7,7 +7,6 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/primary_button.dart';
-import '../../../shared/widgets/step_indicator.dart';
 import '../../explore/domain/project.dart';
 import '../../repositories.dart';
 import '../data/donation_flow_store.dart';
@@ -129,16 +128,6 @@ class _DonateAmountPageState extends State<DonateAmountPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              StepIndicator(
-                labels: [
-                  context.tr('donate.step1'),
-                  context.tr('donate.step2'),
-                  context.tr('donate.step3'),
-                  context.tr('donate.step4'),
-                ],
-                current: 0,
-              ),
-              const SizedBox(height: 20),
               if (_project != null)
                 Card(
                   child: ListTile(

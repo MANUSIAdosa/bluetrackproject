@@ -17,6 +17,10 @@ class ReportWizardDraft {
     this.longitude,
     this.category,
     this.severity,
+    this.title = '',
+    this.description = '',
+    this.locationDetail = '',
+    this.areaName = '',
     this.currentStep = firstStep,
     this.updatedAt,
   });
@@ -48,6 +52,19 @@ class ReportWizardDraft {
   final ReportCategory? category;
   final ReportSeverity? severity;
 
+  /// Short headline the reporter writes for the finding.
+  final String title;
+
+  /// User-written account of what the photos show.
+  final String description;
+
+  /// Optional nearby landmark or area, useful for locations without a street
+  /// address.
+  final String locationDetail;
+
+  /// Human-readable area resolved through geocoding for the current pin.
+  final String areaName;
+
   /// Last step the user opened, 1-based. Used to resume the draft.
   final int currentStep;
 
@@ -63,6 +80,12 @@ class ReportWizardDraft {
   /// Whether step 3 has both a type and a severity.
   bool get hasType => category != null && severity != null;
 
+  /// Whether the required headline contains non-whitespace text.
+  bool get hasTitle => title.trim().isNotEmpty;
+
+  /// Whether the required narrative description contains non-whitespace text.
+  bool get hasDescription => description.trim().isNotEmpty;
+
   /// Whether there is anything worth resuming.
   ///
   /// An untouched wizard (no photos, no pin, no type, still on step 1) is not
@@ -72,6 +95,10 @@ class ReportWizardDraft {
       hasLocation ||
       category != null ||
       severity != null ||
+      title.trim().isNotEmpty ||
+      description.trim().isNotEmpty ||
+      locationDetail.trim().isNotEmpty ||
+      areaName.trim().isNotEmpty ||
       currentStep > firstStep;
 
   ReportWizardDraft copyWith({
@@ -80,6 +107,10 @@ class ReportWizardDraft {
     double? longitude,
     ReportCategory? category,
     ReportSeverity? severity,
+    String? title,
+    String? description,
+    String? locationDetail,
+    String? areaName,
     int? currentStep,
     DateTime? updatedAt,
   }) {
@@ -89,6 +120,10 @@ class ReportWizardDraft {
       longitude: longitude ?? this.longitude,
       category: category ?? this.category,
       severity: severity ?? this.severity,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      locationDetail: locationDetail ?? this.locationDetail,
+      areaName: areaName ?? this.areaName,
       currentStep: currentStep ?? this.currentStep,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -102,6 +137,10 @@ class ReportWizardDraft {
     'longitude': longitude,
     'category': category?.id,
     'severity': severity?.id,
+    'title': title,
+    'description': description,
+    'locationDetail': locationDetail,
+    'areaName': areaName,
     'currentStep': currentStep,
     'updatedAt': updatedAt?.toUtc().toIso8601String(),
   };
@@ -131,6 +170,10 @@ class ReportWizardDraft {
       longitude: (json['longitude'] as num?)?.toDouble(),
       category: _categoryFromId(json['category']),
       severity: _severityFromId(json['severity']),
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      locationDetail: json['locationDetail'] as String? ?? '',
+      areaName: json['areaName'] as String? ?? '',
       currentStep: step.clamp(firstStep, lastStep),
       updatedAt: rawUpdatedAt is String
           ? DateTime.tryParse(rawUpdatedAt)
