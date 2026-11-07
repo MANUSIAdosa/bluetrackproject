@@ -33,13 +33,6 @@ abstract final class Formatters {
     return DateFormat.yMMMMd(locale).format(date);
   }
 
-  /// Short calendar date for tight card metadata (e.g. "24 Okt 2026").
-  static String shortDate(DateTime date, String localeLanguageCode) {
-    _ensureDateSymbols();
-    final locale = _locale(localeLanguageCode);
-    return DateFormat.yMMMd(locale).format(date);
-  }
-
   /// Short timestamp for one notification row. [now] is passed in so the
   /// grouping is testable; the page passes `DateTime.now()`.
   ///
