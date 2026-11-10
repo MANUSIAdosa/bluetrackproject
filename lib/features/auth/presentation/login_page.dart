@@ -809,7 +809,9 @@ class _ConsentNoticeState extends State<_ConsentNotice> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          // The checkbox glyph is centred in its 48dp tap target, so the text
+          // block is centred with it instead of carrying its own top padding.
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Semantics(
               label: context.tr('auth.consent.semantic'),
@@ -825,12 +827,15 @@ class _ConsentNoticeState extends State<_ConsentNotice> {
             ),
             const SizedBox(width: 4),
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 12),
-                // One line that always fits: the sentence is scaled down to the
-                // available width instead of being measured and then clipped.
+              // Pulled 8dp towards the checkbox: its 48dp tap target already
+              // leaves ~15dp of empty space around the glyph, so the default
+              // gap read much wider than it was.
+              child: Transform.translate(
+                offset: const Offset(-8, 0),
                 child: SizedBox(
                   height: 20,
+                  // One line that always fits: the sentence is scaled down to
+                  // the width instead of being measured and then clipped.
                   child: FittedBox(
                     key: const Key('auth_consent_sentence'),
                     fit: BoxFit.scaleDown,

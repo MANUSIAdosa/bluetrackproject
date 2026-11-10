@@ -178,6 +178,15 @@ void main() {
       top(button) - bottom(find.byKey(const Key('auth_consent_checkbox'))),
       closeTo(32, 2),
     );
+    // The sentence is pulled towards the checkbox glyph, not left dangling
+    // after its 48dp tap target.
+    expect(
+      tester.getTopLeft(find.byKey(const Key('auth_consent_sentence'))).dx,
+      lessThan(
+        tester.getTopRight(find.byKey(const Key('auth_consent_checkbox'))).dx,
+      ),
+    );
+
     // Sentence and checkbox read as one row, ~24dp under the input.
     expect(
       top(find.byKey(const Key('auth_consent_sentence'))) -
