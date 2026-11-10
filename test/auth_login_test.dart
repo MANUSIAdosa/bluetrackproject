@@ -170,13 +170,13 @@ void main() {
     expect(
       top(find.byKey(const Key('auth_consent_checkbox'))) -
           bottom(identifierField()),
-      inInclusiveRange(12, 20),
+      inInclusiveRange(4, 12),
     );
     // The checkbox is the tallest element of the consent row, so it marks the
     // group's bottom edge.
     expect(
       top(button) - bottom(find.byKey(const Key('auth_consent_checkbox'))),
-      closeTo(24, 2),
+      closeTo(32, 2),
     );
     // The sentence is pulled towards the checkbox glyph, not left dangling
     // after its 48dp tap target.
@@ -222,8 +222,8 @@ void main() {
     final buttonTop = tester.getTopLeft(find.byType(FilledButton)).dy;
     expect(consentTop, greaterThan(phoneBottom));
     expect(buttonTop, greaterThan(consentBottom));
-    expect(consentTop - phoneBottom, inInclusiveRange(20, 32));
-    expect(buttonTop - consentBottom, inInclusiveRange(30, 46));
+    expect(consentTop - phoneBottom, inInclusiveRange(16, 28));
+    expect(buttonTop - consentBottom, inInclusiveRange(32, 48));
     // The notice stays closer to the field than to the primary action.
     expect(consentTop - phoneBottom, lessThan(buttonTop - consentBottom));
   });

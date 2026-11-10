@@ -32,11 +32,11 @@ const double _headingToFieldGap = 32;
 const double _compactSectionGap = 16;
 
 /// Spacing for the single-identifier form, in dp: 8 heading→subtitle,
-/// 32 subtitle→input, 12 input→consent, 24 consent→Continue. The consent text
-/// keeps its own 12dp top padding so the sentence sits beside the checkbox.
+/// 32 subtitle→input, 8 input→consent, 32 consent→Continue. The checkbox and
+/// the sentence share one centre line, so the text needs no padding of its own.
 const double _headingToSubtitleGap = 8;
-const double _fieldToConsentGap = 12;
-const double _consentToButtonGap = 24;
+const double _fieldToConsentGap = 8;
+const double _consentToButtonGap = 32;
 
 /// Inputs stay 56–60dp tall: 20sp of text plus 18dp padding above and below.
 const EdgeInsets _fieldPadding = EdgeInsets.symmetric(
