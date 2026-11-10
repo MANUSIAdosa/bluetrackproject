@@ -767,34 +767,6 @@ class _ConsentNoticeState extends State<_ConsentNotice> {
     super.dispose();
   }
 
-  /// Smallest readable size for the consent sentence.
-  static const double _minConsentFontSize = 9;
-
-  /// Largest size that keeps the consent sentence on one line, or null when
-  /// even [_minConsentFontSize] overflows — then the sentence wraps instead.
-  double? _singleLineFontSize(
-    BuildContext context, {
-    required TextStyle base,
-    required double maxWidth,
-  }) {
-    if (maxWidth <= 0 || !maxWidth.isFinite) return null;
-    final scaler = MediaQuery.textScalerOf(context);
-
-    for (var size = base.fontSize!; size >= _minConsentFontSize; size -= 0.5) {
-      final painter = TextPainter(
-        text: TextSpan(
-          style: base.copyWith(fontSize: size),
-          children: _consentSpans(context, size),
-        ),
-        textDirection: Directionality.of(context),
-        textScaler: scaler,
-        maxLines: 1,
-      )..layout(maxWidth: maxWidth - 1);
-      if (!painter.didExceedMaxLines) return size;
-    }
-    return null;
-  }
-
   /// The consent sentence with tappable policy links at [fontSize].
   List<InlineSpan> _consentSpans(BuildContext context, double fontSize) {
     final link = TextStyle(
@@ -854,27 +826,24 @@ class _ConsentNoticeState extends State<_ConsentNotice> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.only(top: 12),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final fitted = _singleLineFontSize(
-                      context,
-                      base: base,
-                      maxWidth: constraints.maxWidth,
-                    );
-                    final fontSize = fitted ?? base.fontSize!;
-
-                    return Text.rich(
+                // One line that always fits: the sentence is scaled down to the
+                // available width instead of being measured and then clipped.
+                child: SizedBox(
+                  height: 20,
+                  child: FittedBox(
+                    key: const Key('auth_consent_sentence'),
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text.rich(
                       TextSpan(
-                        style: base.copyWith(fontSize: fontSize),
-                        children: _consentSpans(context, fontSize),
+                        style: base,
+                        children: _consentSpans(context, base.fontSize!),
                       ),
+                      maxLines: 1,
+                      softWrap: false,
                       textAlign: TextAlign.start,
-                      // One line when it fits without becoming unreadable;
-                      // otherwise wrap instead of clipping the sentence.
-                      maxLines: fitted == null ? null : 1,
-                      softWrap: fitted == null,
-                    );
-                  },
+                    ),
+                  ),
                 ),
               ),
             ),

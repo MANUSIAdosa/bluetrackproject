@@ -167,7 +167,12 @@ void main() {
           bottom(identifierField()),
       inInclusiveRange(12, 20),
     );
-    expect(top(button) - bottom(legalNotice()), closeTo(32, 2));
+    // The checkbox is the tallest element of the consent row, so it marks the
+    // group's bottom edge.
+    expect(
+      top(button) - bottom(find.byKey(const Key('auth_consent_checkbox'))),
+      closeTo(32, 2),
+    );
     expect(top(title), lessThan(top(identifierField())));
     expect(top(identifierField()), lessThan(top(button)));
     expect(tester.getSize(identifierField()).height, inInclusiveRange(56, 60));
@@ -190,8 +195,9 @@ void main() {
     expect(fieldTop, lessThan(240));
     expect(fieldTop - subtitleBottom, inInclusiveRange(28, 40));
 
-    final consentTop = tester.getTopLeft(legalNotice()).dy;
-    final consentBottom = tester.getBottomLeft(legalNotice()).dy;
+    final consentBox = find.byKey(const Key('auth_consent_sentence'));
+    final consentTop = tester.getTopLeft(consentBox).dy;
+    final consentBottom = tester.getBottomLeft(consentBox).dy;
     final phoneBottom = tester.getBottomLeft(identifierField()).dy;
     final buttonTop = tester.getTopLeft(find.byType(FilledButton)).dy;
     expect(consentTop, greaterThan(phoneBottom));
@@ -367,14 +373,9 @@ void main() {
 
     expect(tester.takeException(), isNull);
     final text = tester.widget<Text>(find.textContaining('Saya menyetujui'));
-    // Wrapped rather than clipped when one line would need tiny type.
-    expect(text.maxLines, isNull);
-    expect(text.softWrap, isNot(false));
-    // Two or more lines means the tail is on screen instead of cut off.
-    expect(
-      tester.getSize(find.textContaining('Saya menyetujui')).height,
-      greaterThan(30),
-    );
+    // One line, scaled to the available width: nothing is clipped.
+    expect(text.maxLines, 1);
+    expect(find.byKey(const Key('auth_consent_sentence')), findsOneWidget);
   });
 
   testWidgets('kalimat persetujuan utuh pada layar sangat sempit', (
@@ -392,7 +393,7 @@ void main() {
     expect(tester.takeException(), isNull);
     final sentence = find.textContaining('I agree');
     expect(sentence, findsOneWidget);
-    expect(tester.getSize(sentence).height, greaterThan(30));
+    expect(tester.widget<Text>(sentence).maxLines, 1);
   });
 
   testWidgets('label kolom tetap terbaca setelah diisi', (tester) async {
