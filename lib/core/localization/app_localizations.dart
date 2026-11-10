@@ -198,7 +198,7 @@ class AppLocalizations {
       // The title lives in the body heading, not the app bar. Email and phone
       // share one page, so the heading is not tied to either field.
       'auth.title': 'Selamat datang kembali',
-      'auth.subtitle': 'Pilih email atau nomor telepon.',
+      'auth.subtitle': 'Masuk dengan email atau nomor telepon.',
       'auth.email.label': 'Email',
       'auth.email.hint': 'nama@email.com',
       'auth.email.invalid': 'Format email tidak valid',
@@ -900,7 +900,8 @@ class AppLocalizations {
       'action.detail.equipmentIntro':
           'Bawa semua perlengkapan ini saat kegiatan berlangsung.',
       'action.detail.equipmentNone': 'Tidak ada perlengkapan khusus.',
-      'action.detail.quotaRemaining': '{joined} dari {total} · sisa {remaining}',
+      'action.detail.quotaRemaining':
+          '{joined} dari {total} · sisa {remaining}',
       'action.detail.quotaFull': '{joined} dari {total} · kuota penuh',
       'action.detail.organizer': 'Penyelenggara',
       'action.detail.viewOrganizer': 'Lihat profil penyelenggara',
@@ -915,8 +916,7 @@ class AppLocalizations {
       'action.detail.confirm': 'Konfirmasi',
       'action.detail.registerSuccess':
           'Pendaftaran berhasil. Sampai jumpa di lokasi!',
-      'action.detail.registerFailed':
-          'Pendaftaran gagal. Silakan coba lagi.',
+      'action.detail.registerFailed': 'Pendaftaran gagal. Silakan coba lagi.',
       'action.detail.cancel': 'Batalkan pendaftaran',
       'action.detail.cancelTitle': 'Batalkan pendaftaran?',
       'action.detail.cancelBody':
@@ -1154,7 +1154,7 @@ class AppLocalizations {
       // The title lives in the body heading, not the app bar. Email and phone
       // share one page, so the heading is not tied to either field.
       'auth.title': 'Welcome back',
-      'auth.subtitle': 'Choose email or phone number.',
+      'auth.subtitle': 'Sign in with your email or phone number',
       'auth.email.label': 'Email',
       'auth.email.hint': 'name@email.com',
       'auth.email.invalid': 'Invalid email format',
