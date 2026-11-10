@@ -767,6 +767,34 @@ class _ConsentNoticeState extends State<_ConsentNotice> {
     super.dispose();
   }
 
+  /// Smallest readable size for the consent sentence.
+  static const double _minConsentFontSize = 9;
+
+  /// Largest size that keeps the consent sentence on one line, or null when
+  /// even [_minConsentFontSize] overflows — then the sentence wraps instead.
+  double? _singleLineFontSize(
+    BuildContext context, {
+    required TextStyle base,
+    required double maxWidth,
+  }) {
+    if (maxWidth <= 0 || !maxWidth.isFinite) return null;
+    final scaler = MediaQuery.textScalerOf(context);
+
+    for (var size = base.fontSize!; size >= _minConsentFontSize; size -= 0.5) {
+      final painter = TextPainter(
+        text: TextSpan(
+          style: base.copyWith(fontSize: size),
+          children: _consentSpans(context, size),
+        ),
+        textDirection: Directionality.of(context),
+        textScaler: scaler,
+        maxLines: 1,
+      )..layout(maxWidth: maxWidth - 1);
+      if (!painter.didExceedMaxLines) return size;
+    }
+    return null;
+  }
+
   /// The consent sentence with tappable policy links at [fontSize].
   List<InlineSpan> _consentSpans(BuildContext context, double fontSize) {
     final link = TextStyle(
@@ -826,15 +854,27 @@ class _ConsentNoticeState extends State<_ConsentNotice> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.only(top: 12),
-                // Wrapping is always allowed: squeezing this sentence onto one
-                // line clipped it on narrow phones, and a clipped legal notice
-                // is worse than a second line.
-                child: Text.rich(
-                  TextSpan(
-                    style: base,
-                    children: _consentSpans(context, base.fontSize!),
-                  ),
-                  textAlign: TextAlign.start,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final fitted = _singleLineFontSize(
+                      context,
+                      base: base,
+                      maxWidth: constraints.maxWidth,
+                    );
+                    final fontSize = fitted ?? base.fontSize!;
+
+                    return Text.rich(
+                      TextSpan(
+                        style: base.copyWith(fontSize: fontSize),
+                        children: _consentSpans(context, fontSize),
+                      ),
+                      textAlign: TextAlign.start,
+                      // One line when it fits without becoming unreadable;
+                      // otherwise wrap instead of clipping the sentence.
+                      maxLines: fitted == null ? null : 1,
+                      softWrap: fitted == null,
+                    );
+                  },
                 ),
               ),
             ),

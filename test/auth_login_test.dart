@@ -279,20 +279,26 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('di ponsel huruf persetujuan tidak mengecil berlebihan', (
+  testWidgets('huruf persetujuan tidak pernah lebih kecil dari 9 sp', (
     tester,
   ) async {
     tester.view.devicePixelRatio = 1;
-    tester.view.physicalSize = const Size(390, 900);
+
+    for (final width in const [320.0, 390.0, 800.0]) {
+      tester.view.physicalSize = Size(width, 900);
+      await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+      await tester.pumpAndSettle();
+
+      final text = tester.widget<Text>(find.textContaining('Saya menyetujui'));
+      final span = text.textSpan! as TextSpan;
+      expect(
+        span.style!.fontSize,
+        greaterThanOrEqualTo(9),
+        reason: 'width $width',
+      );
+      expect(tester.takeException(), isNull, reason: 'width $width');
+    }
     addTearDown(tester.view.reset);
-
-    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
-    await tester.pumpAndSettle();
-
-    final text = tester.widget<Text>(find.textContaining('Saya menyetujui'));
-    final span = text.textSpan! as TextSpan;
-    expect(span.style!.fontSize, greaterThanOrEqualTo(10));
-    expect(tester.takeException(), isNull);
   });
 
   testWidgets('contoh format hilang saat kolom aktif', (tester) async {
