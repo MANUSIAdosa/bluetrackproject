@@ -293,6 +293,77 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('contoh format hilang saat kolom aktif', (tester) async {
+    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('nama@email.com atau 8123456789'), findsOneWidget);
+
+    await tester.tap(identifierField());
+    await tester.pumpAndSettle();
+
+    expect(find.text('nama@email.com atau 8123456789'), findsNothing);
+    // The floating label still says what the field is for.
+    expect(find.text('Email atau nomor telepon'), findsOneWidget);
+  });
+
+  testWidgets('kode negara muncul otomatis saat mengetik angka', (
+    tester,
+  ) async {
+    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('auth_dial_code')), findsNothing);
+
+    await tester.enterText(identifierField(), 'penyayang@contoh.id');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('auth_dial_code')), findsNothing);
+
+    await tester.enterText(identifierField(), '8123456789');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('auth_dial_code')), findsOneWidget);
+    expect(find.text('+62'), findsOneWidget);
+  });
+
+  testWidgets('kode negara terpilih dipakai pada nomor tujuan OTP', (
+    tester,
+  ) async {
+    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(identifierField(), '8123456789');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('auth_dial_code')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('MY  +60'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('auth_consent_checkbox')));
+    await tester.pump();
+    await tester.tap(find.text('Lanjut'));
+    await pumpFrames(tester);
+
+    expect(find.text('Kode dikirim ke +608123456789'), findsOneWidget);
+  });
+
+  testWidgets('kalimat persetujuan tidak terpotong di layar kecil', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(320, 640);
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    final text = tester.widget<Text>(find.textContaining('Saya menyetujui'));
+    // Wrapped rather than clipped when one line would need tiny type.
+    expect(text.maxLines, isNull);
+    expect(text.softWrap, isNot(false));
+  });
+
   testWidgets('label kolom tetap terbaca setelah diisi', (tester) async {
     await tester.pumpWidget(wrapRouter(buildLoginRouter()));
     await tester.pumpAndSettle();

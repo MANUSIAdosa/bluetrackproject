@@ -49,6 +49,17 @@ const double _resendPromptGap = 8;
 /// identifier sent to the mock sign-in can never drift apart.
 const String _countryCode = '+62';
 
+/// Compact country list for the identifier prefix. `+62` stays first because
+/// it is the default; the list is intentionally short instead of a full
+/// worldwide picker, which would need extra data or a dependency.
+const List<({String code, String label})> _dialCodes = [
+  (code: '+62', label: 'ID'),
+  (code: '+60', label: 'MY'),
+  (code: '+65', label: 'SG'),
+  (code: '+61', label: 'AU'),
+  (code: '+63', label: 'PH'),
+];
+
 /// P02 — Login and account verification.
 ///
 /// Email and phone live on one page, separated by a thin "OR" rule: the user
@@ -75,6 +86,7 @@ enum _AuthStage { identifier, otp }
 
 class _LoginPageState extends State<LoginPage> {
   final _identifierController = TextEditingController();
+  final _identifierFocus = FocusNode();
   final _otpControllers = List.generate(6, (_) => TextEditingController());
   final _otpFocusNodes = List.generate(6, (_) => FocusNode());
 
@@ -84,6 +96,13 @@ class _LoginPageState extends State<LoginPage> {
 
   /// Validation error for the single email/phone field.
   String? _identifierErrorKey;
+
+  /// Dial code chosen from the compact list; `+62` unless the reporter picks
+  /// another country after starting with a digit.
+  String _dialCode = _countryCode;
+
+  /// True while the field is focused, so the example hint can step aside.
+  bool _identifierFocused = false;
 
   String? _otpErrorKey;
   String? _consentErrorKey;
@@ -100,9 +119,21 @@ class _LoginPageState extends State<LoginPage> {
   static final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
   @override
+  void initState() {
+    super.initState();
+    _identifierFocus.addListener(_onIdentifierFocusChanged);
+  }
+
+  void _onIdentifierFocusChanged() {
+    setState(() => _identifierFocused = _identifierFocus.hasFocus);
+  }
+
+  @override
   void dispose() {
+    _identifierFocus.removeListener(_onIdentifierFocusChanged);
     _timer?.cancel();
     _identifierController.dispose();
+    _identifierFocus.dispose();
     for (final c in _otpControllers) {
       c.dispose();
     }
@@ -133,6 +164,13 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _identifierErrorKey = null);
   }
 
+  /// The dial-code prefix only makes sense once the input starts with a digit;
+  /// an email address never does.
+  bool get _showsDialCode {
+    final text = _identifierController.text.trimLeft();
+    return text.isNotEmpty && RegExp(r'^[0-9]').hasMatch(text);
+  }
+
   /// `+62` form of [value] when it can be a phone number, otherwise null.
   ///
   /// Accepts `0812…`, `812…`, `62812…` and `+62 812…`; the stored identifier
@@ -141,14 +179,15 @@ class _LoginPageState extends State<LoginPage> {
     final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
     if (digits.isEmpty) return null;
 
+    final dial = _dialCode.substring(1);
     var local = digits;
-    if (local.startsWith('62')) {
-      local = local.substring(2);
+    if (local.startsWith(dial)) {
+      local = local.substring(dial.length);
     } else if (local.startsWith('0')) {
       local = local.substring(1);
     }
-    if (local.length < 8 || local.length > 12) return null;
-    return '$_countryCode$local';
+    if (local.length < 7 || local.length > 12) return null;
+    return '$_dialCode$local';
   }
 
   /// One field, two formats: anything with `@` is an email, the rest must be a
@@ -368,6 +407,7 @@ class _LoginPageState extends State<LoginPage> {
         TextField(
           key: const Key('auth_identifier_field'),
           controller: _identifierController,
+          focusNode: _identifierFocus,
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.done,
           autofillHints: const [AutofillHints.username],
@@ -375,7 +415,19 @@ class _LoginPageState extends State<LoginPage> {
           decoration: InputDecoration(
             contentPadding: _fieldPadding,
             labelText: context.tr('auth.identifier.label'),
-            hintText: context.tr('auth.identifier.hint'),
+            // The example steps aside while the reporter types; the floating
+            // label keeps the field's purpose visible.
+            hintText: _identifierFocused
+                ? null
+                : context.tr('auth.identifier.hint'),
+            prefix: _DialCodePrefix(
+              visible: _showsDialCode,
+              code: _dialCode,
+              onChanged: (code) => setState(() {
+                _dialCode = code;
+                _identifierErrorKey = null;
+              }),
+            ),
             errorText: _identifierErrorKey == null
                 ? null
                 : context.tr(_identifierErrorKey!),
@@ -557,6 +609,72 @@ class _LoginPageState extends State<LoginPage> {
 }
 
 /// Thin rule with the localized "OR" between the email and phone choices.
+/// Dial-code selector that slides in once the input starts with a digit.
+///
+/// The list is short on purpose: a full country picker would add data or a
+/// dependency. The caret may shift as the prefix appears, so the reveal is
+/// animated to read as one movement instead of a flicker.
+class _DialCodePrefix extends StatelessWidget {
+  const _DialCodePrefix({
+    required this.visible,
+    required this.code,
+    required this.onChanged,
+  });
+
+  final bool visible;
+  final String code;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 160),
+      curve: Curves.easeOut,
+      alignment: Alignment.centerLeft,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 120),
+        opacity: visible ? 1 : 0,
+        child: visible
+            ? Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: PopupMenuButton<String>(
+                  key: const Key('auth_dial_code'),
+                  tooltip: context.tr('auth.identifier.countryCode'),
+                  initialValue: code,
+                  onSelected: onChanged,
+                  itemBuilder: (context) => [
+                    for (final entry in _dialCodes)
+                      PopupMenuItem<String>(
+                        value: entry.code,
+                        child: Text('${entry.label}  ${entry.code}'),
+                      ),
+                  ],
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        code,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const Icon(
+                        Icons.arrow_drop_down,
+                        size: 18,
+                        color: AppColors.textSecondary,
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : const SizedBox(width: 0, height: 0),
+      ),
+    );
+  }
+}
+
 class _StepHeading extends StatelessWidget {
   const _StepHeading({required this.title, required this.subtitle});
 
@@ -672,7 +790,7 @@ class _ConsentNoticeState extends State<_ConsentNotice> {
         textDirection: Directionality.of(context),
         textScaler: scaler,
         maxLines: 1,
-      )..layout(maxWidth: maxWidth);
+      )..layout(maxWidth: maxWidth - 1);
       if (!painter.didExceedMaxLines) return size;
     }
     return null;

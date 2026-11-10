@@ -199,6 +199,7 @@ class AppLocalizations {
       // share one page, so the heading is not tied to either field.
       'auth.title': 'Selamat datang kembali',
       'auth.subtitle': 'Masuk dengan email atau nomor telepon.',
+      'auth.identifier.countryCode': 'Kode negara',
       'auth.identifier.label': 'Email atau nomor telepon',
       'auth.identifier.hint': 'nama@email.com atau 8123456789',
       'auth.email.invalid': 'Format email tidak valid',
@@ -1151,6 +1152,7 @@ class AppLocalizations {
       // share one page, so the heading is not tied to either field.
       'auth.title': 'Welcome back',
       'auth.subtitle': 'Sign in with your email or phone number',
+      'auth.identifier.countryCode': 'Country code',
       'auth.identifier.label': 'Email or phone number',
       'auth.identifier.hint': 'name@email.com or 8123456789',
       'auth.email.invalid': 'Invalid email format',
