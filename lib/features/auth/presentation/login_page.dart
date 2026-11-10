@@ -16,9 +16,9 @@ import '../../../shared/widgets/primary_button.dart';
 /// the width on a large phone.
 const double _sidePadding = 24;
 
-/// Clearance under the app bar, so the heading does not crowd it. Matches
-/// the page's 24dp side margin instead of the tighter app-wide 16dp.
-const double _topPadding = 24;
+/// Clearance under the app bar. One 8dp step: the bar's back button already
+/// gives the heading air, so a larger inset only pushed the form down.
+const double _topPadding = 16;
 
 const double _bottomPadding = 24;
 
@@ -31,9 +31,9 @@ const double _regularSectionGap = 24;
 const double _headingToFieldGap = 32;
 const double _compactSectionGap = 16;
 
-/// Spacing for the single-identifier form, in dp: 12 heading→subtitle,
-/// 32 subtitle→input, 24 input→consent, 24 consent→Continue.
-const double _headingToSubtitleGap = 12;
+/// Spacing for the single-identifier form, in dp: 8 heading→subtitle,
+/// 32 subtitle→input, 16 input→consent, 32 consent→Continue.
+const double _headingToSubtitleGap = 8;
 const double _fieldToConsentGap = 16;
 const double _consentToButtonGap = 32;
 

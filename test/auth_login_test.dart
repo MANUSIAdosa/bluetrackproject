@@ -160,7 +160,12 @@ void main() {
     final subtitle = find.text('Masuk dengan email atau nomor telepon.');
     final button = find.byType(FilledButton);
 
-    expect(top(subtitle) - bottom(title), inInclusiveRange(8, 12));
+    // The heading starts one 8dp step under the app bar, not a full 24dp.
+    expect(
+      top(title) - tester.getBottomLeft(find.byType(AppBar)).dy,
+      inInclusiveRange(12, 20),
+    );
+    expect(top(subtitle) - bottom(title), inInclusiveRange(4, 10));
     expect(top(identifierField()) - bottom(subtitle), inInclusiveRange(24, 32));
     expect(
       top(find.byKey(const Key('auth_consent_checkbox'))) -
