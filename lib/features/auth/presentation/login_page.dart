@@ -16,9 +16,9 @@ import '../../../shared/widgets/primary_button.dart';
 /// the width on a large phone.
 const double _sidePadding = 24;
 
-/// Clearance under the app bar, so the heading does not crowd it. Matches
-/// the page's 24dp side margin instead of the tighter app-wide 16dp.
-const double _topPadding = 24;
+/// Clearance under the app bar. One 8dp step: the bar's back button already
+/// gives the heading air, so a larger inset only pushed the form down.
+const double _topPadding = 16;
 
 const double _bottomPadding = 24;
 
@@ -31,17 +31,35 @@ const double _regularSectionGap = 24;
 const double _headingToFieldGap = 32;
 const double _compactSectionGap = 16;
 
-/// Compact spacing around the email/phone separator keeps both options grouped.
-const double _dividerGap = 8;
+/// Spacing for the single-identifier form, in dp: 8 heading→subtitle,
+/// 32 subtitle→input, 8 input→consent, 32 consent→Continue. The checkbox and
+/// the sentence share one centre line, so the text needs no padding of its own.
+const double _headingToSubtitleGap = 8;
+const double _fieldToConsentGap = 8;
+const double _consentToButtonGap = 32;
 
-/// Primary and secondary actions stay grouped but visually distinct.
-const double _consentToButtonGap = 16;
+/// Inputs stay 56–60dp tall: 20sp of text plus 18dp padding above and below.
+const EdgeInsets _fieldPadding = EdgeInsets.symmetric(
+  horizontal: 16,
+  vertical: 18,
+);
 const double _verifyToResendGap = 24;
 const double _resendPromptGap = 8;
 
 /// Indonesian mobile prefix. Kept in one place so the input box and the
 /// identifier sent to the mock sign-in can never drift apart.
 const String _countryCode = '+62';
+
+/// Compact country list for the identifier prefix. `+62` stays first because
+/// it is the default; the list is intentionally short instead of a full
+/// worldwide picker, which would need extra data or a dependency.
+const List<({String code, String label})> _dialCodes = [
+  (code: '+62', label: 'ID'),
+  (code: '+60', label: 'MY'),
+  (code: '+65', label: 'SG'),
+  (code: '+61', label: 'AU'),
+  (code: '+63', label: 'PH'),
+];
 
 /// P02 — Login and account verification.
 ///
@@ -68,8 +86,8 @@ class LoginPage extends StatefulWidget {
 enum _AuthStage { identifier, otp }
 
 class _LoginPageState extends State<LoginPage> {
-  final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
+  final _identifierController = TextEditingController();
+  final _identifierFocus = FocusNode();
   final _otpControllers = List.generate(6, (_) => TextEditingController());
   final _otpFocusNodes = List.generate(6, (_) => FocusNode());
 
@@ -77,11 +95,15 @@ class _LoginPageState extends State<LoginPage> {
   bool _loading = false;
   bool _consentAccepted = false;
 
-  String? _emailErrorKey;
-  String? _phoneErrorKey;
-
-  /// Error for the "nothing filled yet" case, shown once below the phone row.
+  /// Validation error for the single email/phone field.
   String? _identifierErrorKey;
+
+  /// Dial code chosen from the compact list; `+62` unless the reporter picks
+  /// another country after starting with a digit.
+  String _dialCode = _countryCode;
+
+  /// True while the field is focused, so the example hint can step aside.
+  bool _identifierFocused = false;
 
   String? _otpErrorKey;
   String? _consentErrorKey;
@@ -96,13 +118,23 @@ class _LoginPageState extends State<LoginPage> {
   Timer? _timer;
 
   static final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-  static final _phonePattern = RegExp(r'^\d{8,12}$');
+
+  @override
+  void initState() {
+    super.initState();
+    _identifierFocus.addListener(_onIdentifierFocusChanged);
+  }
+
+  void _onIdentifierFocusChanged() {
+    setState(() => _identifierFocused = _identifierFocus.hasFocus);
+  }
 
   @override
   void dispose() {
+    _identifierFocus.removeListener(_onIdentifierFocusChanged);
     _timer?.cancel();
-    _emailController.dispose();
-    _phoneController.dispose();
+    _identifierController.dispose();
+    _identifierFocus.dispose();
     for (final c in _otpControllers) {
       c.dispose();
     }
@@ -127,20 +159,47 @@ class _LoginPageState extends State<LoginPage> {
         : (regularGap ?? _regularSectionGap);
   }
 
-  // --- Combined email + phone form ----------------------------------------
+  // --- Single identifier field ---------------------------------------------
 
-  void _onEmailChanged(String _) {
-    setState(() {
-      _emailErrorKey = null;
-      _identifierErrorKey = null;
-    });
+  void _onIdentifierChanged(String _) {
+    setState(() => _identifierErrorKey = null);
   }
 
-  void _onPhoneChanged(String _) {
-    setState(() {
-      _phoneErrorKey = null;
-      _identifierErrorKey = null;
-    });
+  /// The dial-code prefix only makes sense once the input starts with a digit;
+  /// an email address never does.
+  bool get _showsDialCode {
+    final text = _identifierController.text.trimLeft();
+    return text.isNotEmpty && RegExp(r'^[0-9]').hasMatch(text);
+  }
+
+  /// `+62` form of [value] when it can be a phone number, otherwise null.
+  ///
+  /// Accepts `0812…`, `812…`, `62812…` and `+62 812…`; the stored identifier
+  /// is always `+62` followed by 8–12 digits, as before.
+  String? _phoneAsE164(String value) {
+    final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) return null;
+
+    final dial = _dialCode.substring(1);
+    var local = digits;
+    if (local.startsWith(dial)) {
+      local = local.substring(dial.length);
+    } else if (local.startsWith('0')) {
+      local = local.substring(1);
+    }
+    if (local.length < 7 || local.length > 12) return null;
+    return '$_dialCode$local';
+  }
+
+  /// One field, two formats: anything with `@` is an email, the rest must be a
+  /// phone number. The message names the expected format so the fix is obvious.
+  String? _validateIdentifier(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return 'auth.identifier.missing';
+    if (trimmed.contains('@')) {
+      return _emailPattern.hasMatch(trimmed) ? null : 'auth.email.invalid';
+    }
+    return _phoneAsE164(trimmed) == null ? 'auth.phone.invalid' : null;
   }
 
   void _onConsentChanged(bool accepted) {
@@ -150,34 +209,12 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 
-  /// Validates the selected identifier and consent before opening the OTP step.
-  ///
-  /// The user chooses one contact method. Clearing its field re-enables the
-  /// other method so switching remains straightforward.
+  /// Validates the identifier and the consent before opening the OTP step.
   void _continue() {
-    final email = _emailController.text.trim();
-    final phone = _phoneController.text.trim();
-
-    final emailError = email.isEmpty || _emailPattern.hasMatch(email)
-        ? null
-        : 'auth.email.invalid';
-    final phoneError = phone.isEmpty || _phonePattern.hasMatch(phone)
-        ? null
-        : 'auth.phone.invalid';
-    final nothingFilled = email.isEmpty && phone.isEmpty;
-    final bothFilled = email.isNotEmpty && phone.isNotEmpty;
-
-    if (emailError != null || phoneError != null || nothingFilled) {
-      setState(() {
-        _emailErrorKey = emailError;
-        _phoneErrorKey = phoneError;
-        _identifierErrorKey = nothingFilled ? 'auth.identifier.missing' : null;
-      });
-      return;
-    }
-
-    if (bothFilled) {
-      setState(() => _identifierErrorKey = 'auth.identifier.chooseOne');
+    final value = _identifierController.text.trim();
+    final error = _validateIdentifier(value);
+    if (error != null) {
+      setState(() => _identifierErrorKey = error);
       return;
     }
 
@@ -186,14 +223,13 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    final identifier = email.isNotEmpty ? email : '$_countryCode$phone';
+    final identifier = value.contains('@') ? value : _phoneAsE164(value)!;
+
     setState(() {
       _identifier = identifier;
       _stage = _AuthStage.otp;
       _attemptsLeft = AppConfig.otpMaxAttempts;
       _otpErrorKey = null;
-      _emailErrorKey = null;
-      _phoneErrorKey = null;
       _identifierErrorKey = null;
       _consentErrorKey = null;
       for (final c in _otpControllers) {
@@ -348,11 +384,6 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildIdentifierStep() {
-    final hasEmail = _emailController.text.trim().isNotEmpty;
-    final hasPhone = _phoneController.text.trim().isNotEmpty;
-    final emailEnabled = !hasPhone;
-    final phoneEnabled = !hasEmail;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -364,7 +395,7 @@ class _LoginPageState extends State<LoginPage> {
             height: 1.2,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: _headingToSubtitleGap),
         Text(
           context.tr('auth.subtitle'),
           style: const TextStyle(
@@ -373,97 +404,39 @@ class _LoginPageState extends State<LoginPage> {
             color: AppColors.textSecondary,
           ),
         ),
-        SizedBox(
-          height: _adaptiveSectionGap(context, regularGap: _headingToFieldGap),
-        ),
+        const SizedBox(height: _headingToFieldGap),
         TextField(
-          key: const Key('auth_email_field'),
-          controller: _emailController,
-          enabled: emailEnabled,
+          key: const Key('auth_identifier_field'),
+          controller: _identifierController,
+          focusNode: _identifierFocus,
           keyboardType: TextInputType.emailAddress,
-          textInputAction: TextInputAction.next,
-          autofillHints: const [AutofillHints.email],
+          textInputAction: TextInputAction.done,
+          autofillHints: const [AutofillHints.username],
           autocorrect: false,
           decoration: InputDecoration(
-            labelText: context.tr('auth.email.label'),
-            hintText: context.tr('auth.email.hint'),
-            errorText: _emailErrorKey == null
+            contentPadding: _fieldPadding,
+            labelText: context.tr('auth.identifier.label'),
+            // The example steps aside while the reporter types; the floating
+            // label keeps the field's purpose visible.
+            hintText: _identifierFocused
                 ? null
-                : context.tr(_emailErrorKey!),
-          ),
-          onChanged: _onEmailChanged,
-          // Move to phone only when the user has not started an email.
-          onSubmitted: (_) {
-            if (hasEmail) {
-              FocusScope.of(context).unfocus();
-            } else {
-              FocusScope.of(context).nextFocus();
-            }
-          },
-        ),
-        const SizedBox(height: _dividerGap),
-        const _OrDivider(),
-        const SizedBox(height: _dividerGap),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Opacity(
-              opacity: phoneEnabled ? 1 : 0.5,
-              child: Container(
-                // Matches the field's 14dp content padding, so the prefix box
-                // and the input line up while staying compact.
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppDimens.cardRadius),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Text(
-                  _countryCode,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: phoneEnabled
-                        ? AppColors.textPrimary
-                        : AppColors.textSecondary,
-                  ),
-                ),
-              ),
+                : context.tr('auth.identifier.hint'),
+            prefix: _DialCodePrefix(
+              visible: _showsDialCode,
+              code: _dialCode,
+              onChanged: (code) => setState(() {
+                _dialCode = code;
+                _identifierErrorKey = null;
+              }),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: TextField(
-                key: const Key('auth_phone_field'),
-                controller: _phoneController,
-                enabled: phoneEnabled,
-                keyboardType: TextInputType.phone,
-                textInputAction: TextInputAction.done,
-                autofillHints: const [AutofillHints.telephoneNumber],
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: InputDecoration(
-                  labelText: context.tr('auth.phone.label'),
-                  hintText: context.tr('auth.phone.hint'),
-                  errorText: _phoneErrorKey == null
-                      ? null
-                      : context.tr(_phoneErrorKey!),
-                ),
-                onChanged: _onPhoneChanged,
-                onSubmitted: (_) => _continue(),
-              ),
-            ),
-          ],
-        ),
-        if (_identifierErrorKey != null) ...[
-          const SizedBox(height: 10),
-          _InlineError(
-            key: const Key('auth_identifier_error'),
-            message: context.tr(_identifierErrorKey!),
+            errorText: _identifierErrorKey == null
+                ? null
+                : context.tr(_identifierErrorKey!),
           ),
-        ],
-        SizedBox(height: _adaptiveSectionGap(context)),
+          onChanged: _onIdentifierChanged,
+          onSubmitted: (_) => _continue(),
+        ),
+        const SizedBox(height: _fieldToConsentGap),
         _buildConsentNotice(context),
         const SizedBox(height: _consentToButtonGap),
         PrimaryButton(
@@ -637,37 +610,72 @@ class _LoginPageState extends State<LoginPage> {
 }
 
 /// Thin rule with the localized "OR" between the email and phone choices.
-class _OrDivider extends StatelessWidget {
-  const _OrDivider();
+/// Dial-code selector that slides in once the input starts with a digit.
+///
+/// The list is short on purpose: a full country picker would add data or a
+/// dependency. The caret may shift as the prefix appears, so the reveal is
+/// animated to read as one movement instead of a flicker.
+class _DialCodePrefix extends StatelessWidget {
+  const _DialCodePrefix({
+    required this.visible,
+    required this.code,
+    required this.onChanged,
+  });
+
+  final bool visible;
+  final String code;
+  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Expanded(
-          child: Divider(height: 1, thickness: 1, color: AppColors.border),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text(
-            context.tr('auth.or'),
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.8,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ),
-        const Expanded(
-          child: Divider(height: 1, thickness: 1, color: AppColors.border),
-        ),
-      ],
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 160),
+      curve: Curves.easeOut,
+      alignment: Alignment.centerLeft,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 120),
+        opacity: visible ? 1 : 0,
+        child: visible
+            ? Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: PopupMenuButton<String>(
+                  key: const Key('auth_dial_code'),
+                  tooltip: context.tr('auth.identifier.countryCode'),
+                  initialValue: code,
+                  onSelected: onChanged,
+                  itemBuilder: (context) => [
+                    for (final entry in _dialCodes)
+                      PopupMenuItem<String>(
+                        value: entry.code,
+                        child: Text('${entry.label}  ${entry.code}'),
+                      ),
+                  ],
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        code,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const Icon(
+                        Icons.arrow_drop_down,
+                        size: 18,
+                        color: AppColors.textSecondary,
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : const SizedBox(width: 0, height: 0),
+      ),
     );
   }
 }
 
-/// Title and supporting line used by the OTP step.
 class _StepHeading extends StatelessWidget {
   const _StepHeading({required this.title, required this.subtitle});
 
@@ -701,7 +709,6 @@ class _StepHeading extends StatelessWidget {
   }
 }
 
-/// Small inline error used when neither identifier was filled.
 class _InlineError extends StatelessWidget {
   const _InlineError({super.key, required this.message});
 
@@ -761,35 +768,6 @@ class _ConsentNoticeState extends State<_ConsentNotice> {
     super.dispose();
   }
 
-  /// Smallest size we accept when squeezing the consent sentence onto one
-  /// line; below it the text is allowed to wrap so it stays readable.
-  static const double _minConsentFontSize = 10;
-
-  /// Largest font size that keeps the consent sentence on one line, or null
-  /// when even [_minConsentFontSize] would overflow the available width.
-  double? _fittedFontSize(
-    BuildContext context, {
-    required TextStyle base,
-    required double maxWidth,
-  }) {
-    if (maxWidth <= 0 || !maxWidth.isFinite) return null;
-    final scaler = MediaQuery.textScalerOf(context);
-
-    for (var size = base.fontSize!; size >= _minConsentFontSize; size -= 0.5) {
-      final painter = TextPainter(
-        text: TextSpan(
-          style: base.copyWith(fontSize: size),
-          children: _consentSpans(context, size),
-        ),
-        textDirection: Directionality.of(context),
-        textScaler: scaler,
-        maxLines: 1,
-      )..layout(maxWidth: maxWidth);
-      if (!painter.didExceedMaxLines) return size;
-    }
-    return null;
-  }
-
   /// The consent sentence with tappable policy links at [fontSize].
   List<InlineSpan> _consentSpans(BuildContext context, double fontSize) {
     final link = TextStyle(
@@ -831,7 +809,9 @@ class _ConsentNoticeState extends State<_ConsentNotice> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          // The checkbox glyph is centred in its 48dp tap target, so the text
+          // block is centred with it instead of carrying its own top padding.
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Semantics(
               label: context.tr('auth.consent.semantic'),
@@ -847,28 +827,29 @@ class _ConsentNoticeState extends State<_ConsentNotice> {
             ),
             const SizedBox(width: 4),
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final fitted = _fittedFontSize(
-                      context,
-                      base: base,
-                      maxWidth: constraints.maxWidth,
-                    );
-                    final singleLine = fitted != null;
-                    final fontSize = fitted ?? base.fontSize!;
-
-                    return Text.rich(
+              // Pulled 8dp towards the checkbox: its 48dp tap target already
+              // leaves ~15dp of empty space around the glyph, so the default
+              // gap read much wider than it was.
+              child: Transform.translate(
+                offset: const Offset(-8, 0),
+                child: SizedBox(
+                  height: 20,
+                  // One line that always fits: the sentence is scaled down to
+                  // the width instead of being measured and then clipped.
+                  child: FittedBox(
+                    key: const Key('auth_consent_sentence'),
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text.rich(
                       TextSpan(
-                        style: base.copyWith(fontSize: fontSize),
-                        children: _consentSpans(context, fontSize),
+                        style: base,
+                        children: _consentSpans(context, base.fontSize!),
                       ),
+                      maxLines: 1,
+                      softWrap: false,
                       textAlign: TextAlign.start,
-                      maxLines: singleLine ? 1 : null,
-                      softWrap: !singleLine,
-                    );
-                  },
+                    ),
+                  ),
                 ),
               ),
             ),
