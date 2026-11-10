@@ -178,7 +178,7 @@ void main() {
     // is what the mobile keyboard covers. Top alignment puts it around 178.
     final fieldTop = tester.getTopLeft(emailField()).dy;
     final subtitleBottom = tester
-        .getBottomLeft(find.text('Pilih email atau nomor telepon.'))
+        .getBottomLeft(find.text('Masuk dengan email atau nomor telepon.'))
         .dy;
     expect(fieldTop, greaterThan(100));
     expect(fieldTop, lessThan(240));
@@ -248,6 +248,38 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('kalimat persetujuan satu baris pada layar lebar', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(800, 900);
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+    await tester.pumpAndSettle();
+
+    final sentence = find.textContaining('Saya menyetujui');
+    // One line at 12sp with height 1.4 is roughly 17dp.
+    expect(tester.getSize(sentence).height, lessThan(24));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('di ponsel huruf persetujuan tidak mengecil berlebihan', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 900);
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
+    await tester.pumpAndSettle();
+
+    final text = tester.widget<Text>(find.textContaining('Saya menyetujui'));
+    final span = text.textSpan! as TextSpan;
+    expect(span.style!.fontSize, greaterThanOrEqualTo(10));
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('field punya label yang bertahan setelah diisi', (tester) async {
     await tester.pumpWidget(wrapRouter(buildLoginRouter()));
@@ -433,7 +465,9 @@ void main() {
 
     final identifierGap =
         tester.getTopLeft(emailField()).dy -
-        tester.getBottomLeft(find.text('Pilih email atau nomor telepon.')).dy;
+        tester
+            .getBottomLeft(find.text('Masuk dengan email atau nomor telepon.'))
+            .dy;
 
     await openOtpWithEmail(tester);
 

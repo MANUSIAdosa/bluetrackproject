@@ -761,6 +761,61 @@ class _ConsentNoticeState extends State<_ConsentNotice> {
     super.dispose();
   }
 
+  /// Smallest size we accept when squeezing the consent sentence onto one
+  /// line; below it the text is allowed to wrap so it stays readable.
+  static const double _minConsentFontSize = 10;
+
+  /// Largest font size that keeps the consent sentence on one line, or null
+  /// when even [_minConsentFontSize] would overflow the available width.
+  double? _fittedFontSize(
+    BuildContext context, {
+    required TextStyle base,
+    required double maxWidth,
+  }) {
+    if (maxWidth <= 0 || !maxWidth.isFinite) return null;
+    final scaler = MediaQuery.textScalerOf(context);
+
+    for (var size = base.fontSize!; size >= _minConsentFontSize; size -= 0.5) {
+      final painter = TextPainter(
+        text: TextSpan(
+          style: base.copyWith(fontSize: size),
+          children: _consentSpans(context, size),
+        ),
+        textDirection: Directionality.of(context),
+        textScaler: scaler,
+        maxLines: 1,
+      )..layout(maxWidth: maxWidth);
+      if (!painter.didExceedMaxLines) return size;
+    }
+    return null;
+  }
+
+  /// The consent sentence with tappable policy links at [fontSize].
+  List<InlineSpan> _consentSpans(BuildContext context, double fontSize) {
+    final link = TextStyle(
+      fontSize: fontSize,
+      height: 1.4,
+      color: AppColors.ocean,
+      decoration: TextDecoration.underline,
+      decorationColor: AppColors.ocean,
+    );
+    return [
+      TextSpan(text: '${context.tr('auth.consent.lead')} '),
+      TextSpan(
+        text: context.tr('auth.privacyPolicy'),
+        style: link,
+        recognizer: _policyTap,
+      ),
+      TextSpan(text: ' ${context.tr('auth.privacy.and')} '),
+      TextSpan(
+        text: context.tr('auth.terms'),
+        style: link,
+        recognizer: _termsTap,
+      ),
+      const TextSpan(text: '.'),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     _policyTap.onTap = () => context.push('/legal/privacy');
@@ -770,13 +825,6 @@ class _ConsentNoticeState extends State<_ConsentNotice> {
       fontSize: 12,
       height: 1.4,
       color: AppColors.textSecondary,
-    );
-    const link = TextStyle(
-      fontSize: 12,
-      height: 1.4,
-      color: AppColors.ocean,
-      decoration: TextDecoration.underline,
-      decorationColor: AppColors.ocean,
     );
 
     return Column(
@@ -801,26 +849,26 @@ class _ConsentNoticeState extends State<_ConsentNotice> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.only(top: 12),
-                child: Text.rich(
-                  TextSpan(
-                    style: base,
-                    children: [
-                      TextSpan(text: '${context.tr('auth.consent.lead')} '),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final fitted = _fittedFontSize(
+                      context,
+                      base: base,
+                      maxWidth: constraints.maxWidth,
+                    );
+                    final singleLine = fitted != null;
+                    final fontSize = fitted ?? base.fontSize!;
+
+                    return Text.rich(
                       TextSpan(
-                        text: context.tr('auth.privacyPolicy'),
-                        style: link,
-                        recognizer: _policyTap,
+                        style: base.copyWith(fontSize: fontSize),
+                        children: _consentSpans(context, fontSize),
                       ),
-                      TextSpan(text: ' ${context.tr('auth.privacy.and')} '),
-                      TextSpan(
-                        text: context.tr('auth.terms'),
-                        style: link,
-                        recognizer: _termsTap,
-                      ),
-                      const TextSpan(text: '.'),
-                    ],
-                  ),
-                  textAlign: TextAlign.start,
+                      textAlign: TextAlign.start,
+                      maxLines: singleLine ? 1 : null,
+                      softWrap: !singleLine,
+                    );
+                  },
                 ),
               ),
             ),
