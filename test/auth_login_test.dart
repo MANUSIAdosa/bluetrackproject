@@ -165,9 +165,9 @@ void main() {
     expect(
       top(find.byKey(const Key('auth_consent_checkbox'))) -
           bottom(identifierField()),
-      inInclusiveRange(24, 28),
+      inInclusiveRange(12, 20),
     );
-    expect(top(button) - bottom(legalNotice()), closeTo(24, 2));
+    expect(top(button) - bottom(legalNotice()), closeTo(32, 2));
     expect(top(title), lessThan(top(identifierField())));
     expect(top(identifierField()), lessThan(top(button)));
     expect(tester.getSize(identifierField()).height, inInclusiveRange(56, 60));
@@ -196,8 +196,10 @@ void main() {
     final buttonTop = tester.getTopLeft(find.byType(FilledButton)).dy;
     expect(consentTop, greaterThan(phoneBottom));
     expect(buttonTop, greaterThan(consentBottom));
-    expect(consentTop - phoneBottom, lessThan(56));
-    expect(buttonTop - consentBottom, lessThan(48));
+    expect(consentTop - phoneBottom, inInclusiveRange(20, 36));
+    expect(buttonTop - consentBottom, inInclusiveRange(28, 56));
+    // The notice hugs the field more than the primary action.
+    expect(consentTop - phoneBottom, lessThan(buttonTop - consentBottom));
   });
 
   testWidgets(
@@ -362,6 +364,29 @@ void main() {
     // Wrapped rather than clipped when one line would need tiny type.
     expect(text.maxLines, isNull);
     expect(text.softWrap, isNot(false));
+    // Two or more lines means the tail is on screen instead of cut off.
+    expect(
+      tester.getSize(find.textContaining('Saya menyetujui')).height,
+      greaterThan(30),
+    );
+  });
+
+  testWidgets('kalimat persetujuan utuh pada layar sangat sempit', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(280, 640);
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      wrapRouter(buildLoginRouter(), locale: const Locale('en')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    final sentence = find.textContaining('I agree');
+    expect(sentence, findsOneWidget);
+    expect(tester.getSize(sentence).height, greaterThan(30));
   });
 
   testWidgets('label kolom tetap terbaca setelah diisi', (tester) async {

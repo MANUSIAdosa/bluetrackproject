@@ -34,8 +34,8 @@ const double _compactSectionGap = 16;
 /// Spacing for the single-identifier form, in dp: 12 heading→subtitle,
 /// 32 subtitle→input, 24 input→consent, 24 consent→Continue.
 const double _headingToSubtitleGap = 12;
-const double _fieldToConsentGap = 24;
-const double _consentToButtonGap = 24;
+const double _fieldToConsentGap = 16;
+const double _consentToButtonGap = 32;
 
 /// Inputs stay 56–60dp tall: 20sp of text plus 18dp padding above and below.
 const EdgeInsets _fieldPadding = EdgeInsets.symmetric(
@@ -767,35 +767,6 @@ class _ConsentNoticeState extends State<_ConsentNotice> {
     super.dispose();
   }
 
-  /// Smallest size we accept when squeezing the consent sentence onto one
-  /// line; below it the text is allowed to wrap so it stays readable.
-  static const double _minConsentFontSize = 10;
-
-  /// Largest font size that keeps the consent sentence on one line, or null
-  /// when even [_minConsentFontSize] would overflow the available width.
-  double? _fittedFontSize(
-    BuildContext context, {
-    required TextStyle base,
-    required double maxWidth,
-  }) {
-    if (maxWidth <= 0 || !maxWidth.isFinite) return null;
-    final scaler = MediaQuery.textScalerOf(context);
-
-    for (var size = base.fontSize!; size >= _minConsentFontSize; size -= 0.5) {
-      final painter = TextPainter(
-        text: TextSpan(
-          style: base.copyWith(fontSize: size),
-          children: _consentSpans(context, size),
-        ),
-        textDirection: Directionality.of(context),
-        textScaler: scaler,
-        maxLines: 1,
-      )..layout(maxWidth: maxWidth - 1);
-      if (!painter.didExceedMaxLines) return size;
-    }
-    return null;
-  }
-
   /// The consent sentence with tappable policy links at [fontSize].
   List<InlineSpan> _consentSpans(BuildContext context, double fontSize) {
     final link = TextStyle(
@@ -855,26 +826,15 @@ class _ConsentNoticeState extends State<_ConsentNotice> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.only(top: 12),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final fitted = _fittedFontSize(
-                      context,
-                      base: base,
-                      maxWidth: constraints.maxWidth,
-                    );
-                    final singleLine = fitted != null;
-                    final fontSize = fitted ?? base.fontSize!;
-
-                    return Text.rich(
-                      TextSpan(
-                        style: base.copyWith(fontSize: fontSize),
-                        children: _consentSpans(context, fontSize),
-                      ),
-                      textAlign: TextAlign.start,
-                      maxLines: singleLine ? 1 : null,
-                      softWrap: !singleLine,
-                    );
-                  },
+                // Wrapping is always allowed: squeezing this sentence onto one
+                // line clipped it on narrow phones, and a clipped legal notice
+                // is worse than a second line.
+                child: Text.rich(
+                  TextSpan(
+                    style: base,
+                    children: _consentSpans(context, base.fontSize!),
+                  ),
+                  textAlign: TextAlign.start,
                 ),
               ),
             ),
