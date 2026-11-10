@@ -12,8 +12,7 @@ import 'support/test_harness.dart';
 
 const _privacyLabel = 'Kebijakan Privasi';
 const _termsLabel = 'Syarat\u00a0&\u00a0Ketentuan';
-const _emailKey = Key('auth_email_field');
-const _phoneKey = Key('auth_phone_field');
+const _identifierKey = Key('auth_identifier_field');
 
 /// Mirrors the real `/auth` entry point plus the destinations it navigates to.
 GoRouter buildLoginRouter({String initialLocation = '/auth'}) {
@@ -63,8 +62,7 @@ Finder legalNotice() => find.byWidgetPredicate(
   description: 'inline legal notice sentence',
 );
 
-Finder emailField() => find.byKey(_emailKey);
-Finder phoneField() => find.byKey(_phoneKey);
+Finder identifierField() => find.byKey(_identifierKey);
 Finder otpField(int index) => find.byKey(ValueKey('auth_otp_$index'));
 
 /// The login flow ticks the OTP resend countdown every second, so
@@ -81,7 +79,7 @@ Future<void> openOtpWithEmail(
   WidgetTester tester, {
   String email = 'penyayang@contoh.id',
 }) async {
-  await tester.enterText(emailField(), email);
+  await tester.enterText(identifierField(), email);
   await tester.tap(find.byKey(const Key('auth_consent_checkbox')));
   await tester.pump();
   await tester.tap(find.text('Lanjut'));
@@ -118,54 +116,62 @@ void main() {
     AuthController.instance.setSignedIn(false);
   });
 
-  testWidgets('email dan nomor telepon tampil di satu halaman dengan pemisah', (
-    tester,
-  ) async {
+  testWidgets('satu kolom untuk email atau nomor telepon', (tester) async {
     await tester.pumpWidget(wrapRouter(buildLoginRouter()));
     await tester.pumpAndSettle();
 
     expect(find.text('Selamat datang kembali'), findsOneWidget);
-    expect(emailField(), findsOneWidget);
-    expect(find.text('ATAU'), findsOneWidget);
-    expect(phoneField(), findsOneWidget);
-    expect(find.text('+62'), findsOneWidget);
+    expect(identifierField(), findsOneWidget);
+    expect(find.text('Email atau nomor telepon'), findsOneWidget);
+    // No second field, no separator, no country prefix.
+    expect(find.text('ATAU'), findsNothing);
+    expect(find.text('+62'), findsNothing);
+    expect(find.byType(TextField), findsOneWidget);
     expect(find.text('Lanjut'), findsOneWidget);
     expect(otpField(0), findsNothing);
   });
 
-  testWidgets('versi Inggris memakai Welcome back dan OR', (tester) async {
+  testWidgets('versi Inggris memakai satu kolom identifier', (tester) async {
     await tester.pumpWidget(
       wrapRouter(buildLoginRouter(), locale: const Locale('en')),
     );
     await tester.pumpAndSettle();
 
     expect(find.text('Welcome back'), findsOneWidget);
-    expect(find.text('OR'), findsOneWidget);
-    expect(find.text('Email'), findsOneWidget);
-    expect(find.text('Phone number'), findsOneWidget);
+    expect(find.text('Email or phone number'), findsOneWidget);
+    expect(find.text('OR'), findsNothing);
     expect(find.text('Continue'), findsOneWidget);
   });
 
-  testWidgets('urutannya judul, email, OR, telepon, persetujuan, lalu tombol', (
+  testWidgets('urutan dan jarak: judul, subjudul, kolom, persetujuan, tombol', (
     tester,
   ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 900);
+    addTearDown(tester.view.reset);
+
     await tester.pumpWidget(wrapRouter(buildLoginRouter()));
     await tester.pumpAndSettle();
 
-    double top(Finder finder) => tester.getTopLeft(finder).dy;
-    double bottom(Finder finder) => tester.getBottomLeft(finder).dy;
+    double top(Finder f) => tester.getTopLeft(f).dy;
+    double bottom(Finder f) => tester.getBottomLeft(f).dy;
 
-    final orLabel = find.text('ATAU');
-    expect(top(orLabel) - bottom(emailField()), inInclusiveRange(6, 10));
-    expect(top(phoneField()) - bottom(orLabel), inInclusiveRange(6, 10));
+    final title = find.text('Selamat datang kembali');
+    final subtitle = find.text('Masuk dengan email atau nomor telepon.');
+    final button = find.byType(FilledButton);
+
+    expect(top(subtitle) - bottom(title), inInclusiveRange(8, 12));
+    expect(top(identifierField()) - bottom(subtitle), inInclusiveRange(24, 32));
     expect(
-      top(find.text('Selamat datang kembali')),
-      lessThan(top(emailField())),
+      top(find.byKey(const Key('auth_consent_checkbox'))) -
+          bottom(identifierField()),
+      inInclusiveRange(24, 28),
     );
-    expect(top(emailField()), lessThan(top(find.text('ATAU'))));
-    expect(top(find.text('ATAU')), lessThan(top(phoneField())));
-    expect(top(phoneField()), lessThan(top(legalNotice())));
-    expect(top(legalNotice()), lessThan(top(find.byType(FilledButton))));
+    expect(top(button) - bottom(legalNotice()), closeTo(24, 2));
+    expect(top(title), lessThan(top(identifierField())));
+    expect(top(identifierField()), lessThan(top(button)));
+    expect(tester.getSize(identifierField()).height, inInclusiveRange(56, 60));
+    expect(tester.getSize(button).height, inInclusiveRange(52, 56));
   });
 
   testWidgets('form tetap di atas dengan persetujuan tepat sebelum tombol', (
@@ -176,7 +182,7 @@ void main() {
 
     // Dead centring put the field at 261, then 296 — a vertically centred field
     // is what the mobile keyboard covers. Top alignment puts it around 178.
-    final fieldTop = tester.getTopLeft(emailField()).dy;
+    final fieldTop = tester.getTopLeft(identifierField()).dy;
     final subtitleBottom = tester
         .getBottomLeft(find.text('Masuk dengan email atau nomor telepon.'))
         .dy;
@@ -186,7 +192,7 @@ void main() {
 
     final consentTop = tester.getTopLeft(legalNotice()).dy;
     final consentBottom = tester.getBottomLeft(legalNotice()).dy;
-    final phoneBottom = tester.getBottomLeft(phoneField()).dy;
+    final phoneBottom = tester.getBottomLeft(identifierField()).dy;
     final buttonTop = tester.getTopLeft(find.byType(FilledButton)).dy;
     expect(consentTop, greaterThan(phoneBottom));
     expect(buttonTop, greaterThan(consentBottom));
@@ -208,8 +214,14 @@ void main() {
       final viewport = tester.getRect(find.byType(SingleChildScrollView));
 
       // Both fields and the CTA stay above the keyboard on a normal phone.
-      expect(tester.getBottomLeft(emailField()).dy, lessThan(viewport.bottom));
-      expect(tester.getBottomLeft(phoneField()).dy, lessThan(viewport.bottom));
+      expect(
+        tester.getBottomLeft(identifierField()).dy,
+        lessThan(viewport.bottom),
+      );
+      expect(
+        tester.getBottomLeft(identifierField()).dy,
+        lessThan(viewport.bottom),
+      );
       expect(
         tester.getBottomLeft(find.byType(FilledButton)).dy,
         lessThan(viewport.bottom),
@@ -281,20 +293,16 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('field punya label yang bertahan setelah diisi', (tester) async {
+  testWidgets('label kolom tetap terbaca setelah diisi', (tester) async {
     await tester.pumpWidget(wrapRouter(buildLoginRouter()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Email'), findsOneWidget);
-    expect(find.text('Nomor telepon'), findsOneWidget);
+    expect(find.text('Email atau nomor telepon'), findsOneWidget);
 
-    await tester.enterText(emailField(), 'penyayang@contoh.id');
+    await tester.enterText(identifierField(), 'penyayang@contoh.id');
     await tester.pumpAndSettle();
 
-    // The label floats up and stays put once the field has content. The hint
-    // widget lingers in the tree at zero opacity, so only the label is
-    // asserted here.
-    expect(find.text('Email'), findsOneWidget);
+    expect(find.text('Email atau nomor telepon'), findsOneWidget);
   });
 
   testWidgets('tanpa isian, lanjut menampilkan error dan tidak membuka OTP', (
@@ -307,7 +315,6 @@ void main() {
     await tester.pump();
 
     expect(find.text('Masukkan email atau nomor telepon.'), findsOneWidget);
-    expect(find.byKey(const Key('auth_identifier_error')), findsOneWidget);
     expect(otpField(0), findsNothing);
   });
 
@@ -317,7 +324,7 @@ void main() {
     await tester.pumpWidget(wrapRouter(buildLoginRouter()));
     await tester.pumpAndSettle();
 
-    await tester.enterText(emailField(), 'penyayang@contoh.id');
+    await tester.enterText(identifierField(), 'penyayang@contoh.id');
     await tester.tap(find.text('Lanjut'));
     await tester.pump();
 
@@ -331,7 +338,7 @@ void main() {
     await tester.pumpWidget(wrapRouter(buildLoginRouter()));
     await tester.pumpAndSettle();
 
-    await tester.enterText(emailField(), 'penyayang@contoh.id');
+    await tester.enterText(identifierField(), 'penyayang@contoh.id');
     await tester.tap(find.text('Lanjut'));
     await tester.pump();
     expect(find.byKey(const Key('auth_consent_error')), findsOneWidget);
@@ -347,7 +354,7 @@ void main() {
     await tester.pumpWidget(wrapRouter(buildLoginRouter()));
     await tester.pumpAndSettle();
 
-    await tester.enterText(emailField(), 'penyayang@contoh.id');
+    await tester.enterText(identifierField(), 'penyayang@contoh.id');
     await tester.tap(find.byKey(const Key('auth_consent_checkbox')));
     await tester.pump();
     await tester.tap(find.text('Lanjut'));
@@ -464,7 +471,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final identifierGap =
-        tester.getTopLeft(emailField()).dy -
+        tester.getTopLeft(identifierField()).dy -
         tester
             .getBottomLeft(find.text('Masuk dengan email atau nomor telepon.'))
             .dy;
@@ -507,7 +514,7 @@ void main() {
     await tester.pumpWidget(wrapRouter(buildLoginRouter()));
     await tester.pumpAndSettle();
 
-    await tester.enterText(emailField(), 'bukan-email');
+    await tester.enterText(identifierField(), 'bukan@email');
     await tester.tap(find.text('Lanjut'));
     await tester.pump();
 
@@ -521,7 +528,7 @@ void main() {
     await tester.pumpWidget(wrapRouter(buildLoginRouter()));
     await tester.pumpAndSettle();
 
-    await tester.enterText(phoneField(), '123');
+    await tester.enterText(identifierField(), '123');
     await tester.tap(find.text('Lanjut'));
     await tester.pump();
 
@@ -535,12 +542,12 @@ void main() {
     await tester.pumpWidget(wrapRouter(buildLoginRouter()));
     await tester.pumpAndSettle();
 
-    await tester.enterText(emailField(), 'bukan-email');
+    await tester.enterText(identifierField(), 'bukan@email');
     await tester.tap(find.text('Lanjut'));
     await tester.pump();
     expect(find.text('Format email tidak valid'), findsOneWidget);
 
-    await tester.enterText(emailField(), 'penyayang@contoh.id');
+    await tester.enterText(identifierField(), 'penyayang@contoh.id');
     await tester.pump();
 
     expect(find.text('Format email tidak valid'), findsNothing);
@@ -564,7 +571,7 @@ void main() {
     await tester.pumpWidget(wrapRouter(buildLoginRouter()));
     await tester.pumpAndSettle();
 
-    await tester.enterText(phoneField(), '8123456789');
+    await tester.enterText(identifierField(), '8123456789');
     await tester.tap(find.byKey(const Key('auth_consent_checkbox')));
     await tester.pump();
     await tester.tap(find.text('Lanjut'));
@@ -573,38 +580,6 @@ void main() {
     expect(find.text('Masukkan kode verifikasi'), findsOneWidget);
     expect(find.text('Kode dikirim ke +628123456789'), findsOneWidget);
     expect(otpField(0), findsOneWidget);
-  });
-
-  testWidgets('metode masuk saling eksklusif dan dapat diganti', (
-    tester,
-  ) async {
-    await tester.pumpWidget(wrapRouter(buildLoginRouter()));
-    await tester.pumpAndSettle();
-
-    expect(tester.widget<TextField>(emailField()).enabled, isTrue);
-    expect(tester.widget<TextField>(phoneField()).enabled, isTrue);
-
-    await tester.enterText(emailField(), 'penyayang@contoh.id');
-    await tester.pump();
-    expect(tester.widget<TextField>(emailField()).enabled, isTrue);
-    expect(tester.widget<TextField>(phoneField()).enabled, isFalse);
-    expect(find.byIcon(Icons.clear_rounded), findsNothing);
-
-    await tester.enterText(emailField(), '');
-    await tester.pump();
-    expect(tester.widget<TextField>(emailField()).enabled, isTrue);
-    expect(tester.widget<TextField>(phoneField()).enabled, isTrue);
-
-    await tester.enterText(phoneField(), '8123456789');
-    await tester.pump();
-    expect(tester.widget<TextField>(emailField()).enabled, isFalse);
-    expect(tester.widget<TextField>(phoneField()).enabled, isTrue);
-    expect(find.byIcon(Icons.clear_rounded), findsNothing);
-
-    await tester.enterText(phoneField(), '');
-    await tester.pump();
-    expect(tester.widget<TextField>(emailField()).enabled, isTrue);
-    expect(tester.widget<TextField>(phoneField()).enabled, isTrue);
   });
 
   testWidgets('di layar pendek halaman tetap bisa di-scroll tanpa overflow', (
@@ -730,9 +705,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Masukkan kode verifikasi'), findsNothing);
-    expect(emailField(), findsOneWidget);
-    expect(phoneField(), findsOneWidget);
-    expect(find.text('+62'), findsOneWidget);
+    expect(identifierField(), findsOneWidget);
     expect(
       tester
           .widget<Checkbox>(find.byKey(const Key('auth_consent_checkbox')))
@@ -740,7 +713,7 @@ void main() {
       isTrue,
     );
     expect(
-      tester.widget<TextField>(emailField()).controller?.text,
+      tester.widget<TextField>(identifierField()).controller?.text,
       'penyayang@contoh.id',
     );
   });
@@ -801,7 +774,7 @@ void main() {
       await tester.pumpWidget(wrapRouter(buildLoginRouter()));
       await tester.pumpAndSettle();
 
-      await tester.enterText(phoneField(), '8123456789');
+      await tester.enterText(identifierField(), '8123456789');
       await tester.tap(find.byKey(const Key('auth_consent_checkbox')));
       await tester.pump();
       await tester.tap(find.text('Lanjut'));
