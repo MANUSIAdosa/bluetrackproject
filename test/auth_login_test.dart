@@ -178,6 +178,12 @@ void main() {
       top(button) - bottom(find.byKey(const Key('auth_consent_checkbox'))),
       closeTo(32, 2),
     );
+    // Sentence and checkbox read as one row, ~24dp under the input.
+    expect(
+      top(find.byKey(const Key('auth_consent_sentence'))) -
+          bottom(identifierField()),
+      inInclusiveRange(20, 28),
+    );
     expect(top(title), lessThan(top(identifierField())));
     expect(top(identifierField()), lessThan(top(button)));
     expect(tester.getSize(identifierField()).height, inInclusiveRange(56, 60));

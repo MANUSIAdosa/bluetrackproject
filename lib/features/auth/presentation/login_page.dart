@@ -32,9 +32,11 @@ const double _headingToFieldGap = 32;
 const double _compactSectionGap = 16;
 
 /// Spacing for the single-identifier form, in dp: 8 heading→subtitle,
-/// 32 subtitle→input, 16 input→consent, 32 consent→Continue.
+/// 32 subtitle→input, 12 input→consent, 32 consent→Continue. The consent text
+/// keeps its own 12dp top padding so the sentence lines up with the checkbox
+/// glyph, which makes both start visually ~24dp under the input.
 const double _headingToSubtitleGap = 8;
-const double _fieldToConsentGap = 16;
+const double _fieldToConsentGap = 12;
 const double _consentToButtonGap = 32;
 
 /// Inputs stay 56–60dp tall: 20sp of text plus 18dp padding above and below.
@@ -825,6 +827,8 @@ class _ConsentNoticeState extends State<_ConsentNotice> {
             const SizedBox(width: 4),
             Expanded(
               child: Padding(
+                // 12dp keeps the sentence on the checkbox glyph's baseline; the
+                // group itself starts 12dp under the field.
                 padding: const EdgeInsets.only(top: 12),
                 // One line that always fits: the sentence is scaled down to the
                 // available width instead of being measured and then clipped.
