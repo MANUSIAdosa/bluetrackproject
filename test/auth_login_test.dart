@@ -120,7 +120,7 @@ void main() {
     await tester.pumpWidget(wrapRouter(buildLoginRouter()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Selamat datang kembali'), findsOneWidget);
+    expect(find.text('Selamat datang di BlueTrack'), findsOneWidget);
     expect(identifierField(), findsOneWidget);
     expect(find.text('Email atau nomor telepon'), findsOneWidget);
     // No second field, no separator, no country prefix.
@@ -137,7 +137,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Welcome back'), findsOneWidget);
+    expect(find.text('Welcome to BlueTrack'), findsOneWidget);
     expect(find.text('Email or phone number'), findsOneWidget);
     expect(find.text('OR'), findsNothing);
     expect(find.text('Continue'), findsOneWidget);
@@ -156,8 +156,8 @@ void main() {
     double top(Finder f) => tester.getTopLeft(f).dy;
     double bottom(Finder f) => tester.getBottomLeft(f).dy;
 
-    final title = find.text('Selamat datang kembali');
-    final subtitle = find.text('Masuk dengan email atau nomor telepon.');
+    final title = find.text('Selamat datang di BlueTrack');
+    final subtitle = find.text('Lanjutkan dengan email atau nomor telepon.');
     final button = find.byType(FilledButton);
 
     // The heading starts one 8dp step under the app bar, not a full 24dp.
@@ -170,13 +170,13 @@ void main() {
     expect(
       top(find.byKey(const Key('auth_consent_checkbox'))) -
           bottom(identifierField()),
-      inInclusiveRange(4, 12),
+      inInclusiveRange(16, 32),
     );
     // The checkbox is the tallest element of the consent row, so it marks the
     // group's bottom edge.
     expect(
       top(button) - bottom(find.byKey(const Key('auth_consent_checkbox'))),
-      closeTo(32, 2),
+      closeTo(12, 2),
     );
     // The sentence is pulled towards the checkbox glyph, not left dangling
     // after its 48dp tap target.
@@ -191,7 +191,7 @@ void main() {
     expect(
       top(find.byKey(const Key('auth_consent_sentence'))) -
           bottom(identifierField()),
-      inInclusiveRange(20, 28),
+      inInclusiveRange(30, 46),
     );
     expect(top(title), lessThan(top(identifierField())));
     expect(top(identifierField()), lessThan(top(button)));
@@ -209,7 +209,7 @@ void main() {
     // is what the mobile keyboard covers. Top alignment puts it around 178.
     final fieldTop = tester.getTopLeft(identifierField()).dy;
     final subtitleBottom = tester
-        .getBottomLeft(find.text('Masuk dengan email atau nomor telepon.'))
+        .getBottomLeft(find.text('Lanjutkan dengan email atau nomor telepon.'))
         .dy;
     expect(fieldTop, greaterThan(100));
     expect(fieldTop, lessThan(240));
@@ -222,10 +222,10 @@ void main() {
     final buttonTop = tester.getTopLeft(find.byType(FilledButton)).dy;
     expect(consentTop, greaterThan(phoneBottom));
     expect(buttonTop, greaterThan(consentBottom));
-    expect(consentTop - phoneBottom, inInclusiveRange(16, 28));
-    expect(buttonTop - consentBottom, inInclusiveRange(32, 48));
-    // The notice stays closer to the field than to the primary action.
-    expect(consentTop - phoneBottom, lessThan(buttonTop - consentBottom));
+    expect(consentTop - phoneBottom, inInclusiveRange(30, 46));
+    expect(buttonTop - consentBottom, inInclusiveRange(18, 34));
+    // The notice sits with the action it enables, as in classic forms.
+    expect(buttonTop - consentBottom, lessThan(consentTop - phoneBottom));
   });
 
   testWidgets(
@@ -596,7 +596,9 @@ void main() {
     final identifierGap =
         tester.getTopLeft(identifierField()).dy -
         tester
-            .getBottomLeft(find.text('Masuk dengan email atau nomor telepon.'))
+            .getBottomLeft(
+              find.text('Lanjutkan dengan email atau nomor telepon.'),
+            )
             .dy;
 
     await openOtpWithEmail(tester);
@@ -685,7 +687,7 @@ void main() {
     expect(find.text('Masukkan kode verifikasi'), findsOneWidget);
     expect(find.text('Kode dikirim ke penyayang@contoh.id'), findsOneWidget);
     expect(otpField(0), findsOneWidget);
-    expect(find.text('Selamat datang kembali'), findsNothing);
+    expect(find.text('Selamat datang di BlueTrack'), findsNothing);
   });
 
   testWidgets('nomor telepon saja membuka OTP dengan awalan +62', (
