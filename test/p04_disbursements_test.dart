@@ -192,12 +192,16 @@ void main() {
       await _pumpLedger(tester);
       expect(_chipSelected(tester, 'Penyaluran Dana'), isTrue);
 
+      await tester.ensureVisible(find.text('Kondisi Lapangan'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Kondisi Lapangan'));
       await tester.pumpAndSettle();
 
       expect(_chipSelected(tester, 'Kondisi Lapangan'), isTrue);
       expect(find.text('Ringkasan kondisi'), findsOneWidget);
 
+      await tester.ensureVisible(find.text('Penyaluran Dana'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Penyaluran Dana'));
       await tester.pumpAndSettle();
       expect(find.text('Dana terkumpul'), findsOneWidget);

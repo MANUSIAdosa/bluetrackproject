@@ -208,142 +208,144 @@ class _P04ReportsTabState extends State<P04ReportsTab>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final lang = Localizations.localeOf(context).languageCode;
-    final options = [
-      ChipOption(
-        id: ReportPeriod.oneMonth.name,
-        label: context.tr('p04_period_1m'),
-      ),
-      ChipOption(
-        id: ReportPeriod.threeMonths.name,
-        label: context.tr('p04_period_3m'),
-      ),
-      ChipOption(
-        id: ReportPeriod.sixMonths.name,
-        label: context.tr('p04_period_6m'),
-      ),
-      ChipOption(
-        id: ReportPeriod.all.name,
-        label: context.tr('p04_period_all'),
-      ),
-    ];
+    return _buildBody(Localizations.localeOf(context).languageCode);
+  }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Flexible + scroll view keeps the chip row from overflowing while the
-        // TabBarView animates to a very short height between tabs.
-        Flexible(
-          fit: FlexFit.loose,
-          child: SingleChildScrollView(
-            primary: false,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppDimens.padding,
-                    8,
-                    AppDimens.padding,
-                    8,
-                  ),
-                  child: FilterChipRow(
-                    options: [
-                      ChipOption(
-                        id: 'penyaluran',
-                        label: context.tr('p04_disbursement_title'),
-                      ),
-                      ChipOption(
-                        id: 'kondisi',
-                        label: context.tr('p04_field_conditions_title'),
-                      ),
-                    ],
-                    selectedId: _section.id,
-                    onSelected: _selectSection,
-                  ),
-                ),
-                if (_section == _ReportsSectionFilter.kondisiLapangan) ...[
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppDimens.padding,
-                      12,
-                      AppDimens.padding,
-                      8,
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.date_range_outlined,
-                          size: 16,
-                          color: AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          context.tr('p04_period_label'),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  FilterChipRow(
-                    options: options,
-                    selectedId: widget.period.name,
-                    onSelected: _selectPeriod,
-                  ),
-                  const SizedBox(height: 4),
-                ],
-              ],
+  /// Section chips, plus the period chips while Field Conditions is active.
+  List<Widget> _sectionHeader() {
+    return [
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: FilterChipRow(
+          // The enclosing list already applies the 16dp page inset, so the row
+          // must not pad again.
+          padding: EdgeInsets.zero,
+          options: [
+            ChipOption(
+              id: 'penyaluran',
+              label: context.tr('p04_disbursement_title'),
             ),
+            ChipOption(
+              id: 'kondisi',
+              label: context.tr('p04_field_conditions_title'),
+            ),
+          ],
+          selectedId: _section.id,
+          onSelected: _selectSection,
+        ),
+      ),
+      if (_section == _ReportsSectionFilter.kondisiLapangan) ...[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(0, 12, 0, 8),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.date_range_outlined,
+                size: 16,
+                color: AppColors.textSecondary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                context.tr('p04_period_label'),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
           ),
         ),
-        Expanded(child: _buildBody(lang)),
+        FilterChipRow(
+          padding: EdgeInsets.zero,
+          options: [
+            ChipOption(
+              id: ReportPeriod.oneMonth.name,
+              label: context.tr('p04_period_1m'),
+            ),
+            ChipOption(
+              id: ReportPeriod.threeMonths.name,
+              label: context.tr('p04_period_3m'),
+            ),
+            ChipOption(
+              id: ReportPeriod.sixMonths.name,
+              label: context.tr('p04_period_6m'),
+            ),
+            ChipOption(
+              id: ReportPeriod.all.name,
+              label: context.tr('p04_period_all'),
+            ),
+          ],
+          selectedId: widget.period.name,
+          onSelected: _selectPeriod,
+        ),
+        const SizedBox(height: 4),
       ],
+    ];
+  }
+
+  /// One scroll view for the whole tab, chips included. A scrollable never
+  /// overflows, so the tiny height the TabBarView animates through is safe, and
+  /// the body keeps the full tab height instead of half of it. Left
+  /// un-flagged on purpose: inside P04's NestedScrollView the list then joins
+  /// the page scroll (matching the injected PrimaryScrollController).
+  Widget _scrollable(List<Widget> body) {
+    return ListView(
+      key: const PageStorageKey('p04-reports-scroll'),
+      padding: const EdgeInsets.fromLTRB(
+        AppDimens.padding,
+        8,
+        AppDimens.padding,
+        24,
+      ),
+      children: [..._sectionHeader(), ...body],
     );
   }
 
+  static const List<Widget> _skeletonBody = [
+    Skeleton(height: 118, radius: 16),
+    SizedBox(height: 12),
+    Skeleton(height: 280, radius: 16),
+    SizedBox(height: 12),
+    Skeleton(height: 96, radius: 16),
+    SizedBox(height: 12),
+    Skeleton(height: 96, radius: 16),
+    SizedBox(height: 12),
+    Skeleton(height: 96, radius: 16),
+  ];
+
   Widget _buildBody(String lang) {
-    if (_loading) return const _ReportsSkeleton();
-    if (_error) return Center(child: ErrorState(onRetry: _load));
+    if (_loading) return _scrollable(_skeletonBody);
+    if (_error) {
+      return _scrollable([
+        SizedBox(height: 240, child: ErrorState(onRetry: _load)),
+      ]);
+    }
 
     if (_section == _ReportsSectionFilter.penyaluranDana) {
       final summary = _disbursementSummary;
-      if (summary == null) return const _ReportsSkeleton();
-      return ListView(
-        key: const PageStorageKey('p04-reports-scroll'),
-        primary: false,
-        padding: const EdgeInsets.fromLTRB(
-          AppDimens.padding,
-          8,
-          AppDimens.padding,
-          24,
-        ),
-        children: [
-          _DisbursementSummaryCard(summary: summary, lang: lang),
-          const SizedBox(height: AppDimens.gap),
-          if (_disbursements.isEmpty)
-            SizedBox(
-              height: 240,
-              child: EmptyState(
-                icon: Icons.payments_outlined,
-                message: context.tr('p04_disbursement_empty'),
-              ),
-            )
-          else ...[
-            for (final entry in _disbursements) ...[
-              _DisbursementEntryCard(
-                entry: entry,
-                repository: _disbursementRepository,
-                lang: lang,
-              ),
-              const SizedBox(height: AppDimens.gap),
-            ],
+      if (summary == null) return _scrollable(_skeletonBody);
+      return _scrollable([
+        _DisbursementSummaryCard(summary: summary, lang: lang),
+        const SizedBox(height: AppDimens.gap),
+        if (_disbursements.isEmpty)
+          SizedBox(
+            height: 240,
+            child: EmptyState(
+              icon: Icons.payments_outlined,
+              message: context.tr('p04_disbursement_empty'),
+            ),
+          )
+        else
+          for (final entry in _disbursements) ...[
+            _DisbursementEntryCard(
+              entry: entry,
+              repository: _disbursementRepository,
+              lang: lang,
+            ),
+            const SizedBox(height: AppDimens.gap),
           ],
-        ],
-      );
+      ]);
     }
 
     final summary = _summary;
@@ -353,32 +355,22 @@ class _P04ReportsTabState extends State<P04ReportsTab>
             summary.totalAreaM2 > 0 ||
             summary.verifiedReportCount > 0);
 
-    return ListView(
-      key: const PageStorageKey('p04-reports-scroll'),
-      primary: false,
-      padding: const EdgeInsets.fromLTRB(
-        AppDimens.padding,
-        8,
-        AppDimens.padding,
-        24,
-      ),
-      children: [
-        if (hasMetrics) ...[
-          _MetricsCard(summary: summary, lang: lang),
-          const SizedBox(height: AppDimens.gap),
-        ],
-        P04ConditionChart(points: _trend),
+    return _scrollable([
+      if (hasMetrics) ...[
+        _MetricsCard(summary: summary, lang: lang),
         const SizedBox(height: AppDimens.gap),
-        _ReportsSection(
-          reports: _reports,
-          visibleCount: _visibleCount,
-          locationName: widget.locationName,
-          repository: widget.repository,
-          lang: lang,
-          onLoadMore: _showMore,
-        ),
       ],
-    );
+      P04ConditionChart(points: _trend),
+      const SizedBox(height: AppDimens.gap),
+      _ReportsSection(
+        reports: _reports,
+        visibleCount: _visibleCount,
+        locationName: widget.locationName,
+        repository: widget.repository,
+        lang: lang,
+        onLoadMore: _showMore,
+      ),
+    ]);
   }
 }
 
@@ -786,34 +778,6 @@ class _ReportChip extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _ReportsSkeleton extends StatelessWidget {
-  const _ReportsSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      primary: false,
-      padding: const EdgeInsets.fromLTRB(
-        AppDimens.padding,
-        8,
-        AppDimens.padding,
-        24,
-      ),
-      children: const [
-        Skeleton(height: 118, radius: 16),
-        SizedBox(height: 12),
-        Skeleton(height: 280, radius: 16),
-        SizedBox(height: 12),
-        Skeleton(height: 96, radius: 16),
-        SizedBox(height: 12),
-        Skeleton(height: 96, radius: 16),
-        SizedBox(height: 12),
-        Skeleton(height: 96, radius: 16),
-      ],
     );
   }
 }
