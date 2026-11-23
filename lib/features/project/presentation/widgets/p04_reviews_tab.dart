@@ -444,7 +444,11 @@ class _ReviewCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            _ExpandableComment(reviewId: review.id, text: review.comment),
+            _ExpandableComment(
+              reviewId: review.id,
+              text:
+                  lang == 'en' ? review.commentEn ?? review.comment : review.comment,
+            ),
           ],
         ),
       ),

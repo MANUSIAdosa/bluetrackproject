@@ -25,6 +25,7 @@ Future<void> _pumpDetail(
           buildProject(location: 'Pantai Sukamade, Jawa Timur'),
         ]),
         reportRepository: repository ?? InMemoryReportRepository(),
+        initialReportSection: 'kondisi',
       ),
       locale: locale,
     ),
@@ -117,6 +118,8 @@ void main() {
     expect(_chipSelected(tester, '3 bulan'), isTrue);
     expect(find.text('49,5 kg'), findsOneWidget);
 
+    await tester.ensureVisible(find.text('1 bulan'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('1 bulan'));
     await tester.pumpAndSettle();
 

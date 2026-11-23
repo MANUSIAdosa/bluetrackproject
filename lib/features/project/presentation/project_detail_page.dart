@@ -11,6 +11,7 @@ import '../../../shared/widgets/progress_bar.dart';
 import '../../../shared/widgets/skeleton.dart';
 import '../../../shared/widgets/verification_sheet.dart';
 import '../../../shared/widgets/verified_badge.dart';
+import '../../explore/data/disbursement_repository.dart';
 import '../../explore/data/project_repository.dart';
 import '../../explore/data/saved_project_store.dart';
 import '../../explore/domain/project.dart';
@@ -32,7 +33,9 @@ class ProjectDetailPage extends StatefulWidget {
     this.initialTab,
     this.projectRepository,
     this.reportRepository,
+    this.disbursementRepository,
     this.reviewRepository,
+    this.initialReportSection = 'penyaluran',
   });
 
   final String projectId;
@@ -46,8 +49,15 @@ class ProjectDetailPage extends StatefulWidget {
   /// Test/demo override for the reports data source.
   final ReportRepository? reportRepository;
 
+  /// Test/demo override for the fund disbursements.
+  final DisbursementRepository? disbursementRepository;
+
   /// Test/demo override for the reviews data source.
   final ReviewRepository? reviewRepository;
+
+  /// Main section the reports tab opens on. Defaults to the fund disbursement
+  /// ledger; tests can start on 'kondisi' without reaching behind the donate bar.
+  final String initialReportSection;
 
   @override
   State<ProjectDetailPage> createState() => _ProjectDetailPageState();
@@ -202,6 +212,10 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
               locationName: project.location,
               repository:
                   widget.reportRepository ?? ProjectDataRepositories.reports,
+              disbursementRepository:
+                  widget.disbursementRepository ??
+                  ProjectDataRepositories.disbursements,
+              initialSection: widget.initialReportSection,
               period: _reportPeriod,
               onPeriodChanged: (period) =>
                   setState(() => _reportPeriod = period),
@@ -339,15 +353,25 @@ class _FundingCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              context.tr('project.percent_reached', {
-                'n': Formatters.percent(project.progress, lang),
-              }),
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                color: AppColors.ocean,
-              ),
+            // Percent row: the percent plus its "tercapai"/"reached" suffix
+            // leads the row; the right slot stays empty so no secondary figure
+            // competes with the leading percentage.
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    context.tr('project.percent_reached', {
+                      'n': Formatters.percent(project.progress, lang),
+                    }),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.ocean,
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 6),
             ProgressBar(value: project.progress),
@@ -428,27 +452,38 @@ class _FundingCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      context.tr('project.remaining'),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        context.tr('project.remaining'),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                    ),
-                    Text(
-                      Formatters.currency(remaining, lang),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.teal,
+                      Text(
+                        Formatters.currency(remaining, lang),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.teal,
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 2),
+                      Text(
+                        context.tr('project.remaining_hint'),
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

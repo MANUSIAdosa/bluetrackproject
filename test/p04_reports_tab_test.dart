@@ -26,6 +26,8 @@ class _ReportsHost extends StatefulWidget {
   final String locationName;
   final ReportPeriod initialPeriod;
 
+  /// Mirrors the repository-injection seam of the page: the bundled mock is
+  /// used when no disbursement repository is provided.
   @override
   State<_ReportsHost> createState() => _ReportsHostState();
 }
@@ -39,6 +41,7 @@ class _ReportsHostState extends State<_ReportsHost> {
       projectId: widget.projectId,
       locationName: widget.locationName,
       repository: widget.repository,
+      initialSection: 'kondisi',
       period: _period,
       onPeriodChanged: (period) => setState(() => _period = period),
     );
@@ -523,6 +526,36 @@ void main() {
   });
 
   group('P04 report detail', () {
+    testWidgets('report cards expose a whole-item detail affordance', (
+      tester,
+    ) async {
+      await _pumpReports(tester);
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('p04-report-r004')),
+        300,
+        scrollable: _reportsScrollable(),
+      );
+      await tester.pumpAndSettle();
+
+      final card = find.byKey(const ValueKey('p04-report-r004'));
+      expect(
+        find.descendant(of: card, matching: find.text('Lihat detail')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: card, matching: find.byIcon(Icons.chevron_right)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: card, matching: find.byType(InkWell)),
+        findsOneWidget,
+      );
+
+      await tester.tap(card);
+      await tester.pumpAndSettle();
+      expect(find.text('Detail laporan'), findsOneWidget);
+    });
+
     testWidgets('opens a modal sheet with all report metadata', (tester) async {
       await _pumpReports(tester);
       await tester.scrollUntilVisible(
@@ -530,6 +563,7 @@ void main() {
         300,
         scrollable: _reportsScrollable(),
       );
+      await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const ValueKey('p04-report-r004')));
       await tester.pumpAndSettle();
@@ -568,6 +602,7 @@ void main() {
         300,
         scrollable: _reportsScrollable(),
       );
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('p04-report-r004')));
       await tester.pumpAndSettle();
 

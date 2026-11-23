@@ -1,0 +1,62 @@
+[
+  {
+    "id": "dis001",
+    "locationId": "p01",
+    "category": "Patroli dan penjagaan sarang",
+    "amount": 6000000,
+    "status": "disalurkan",
+    "dueDate": "2026-10-05T08:00:00Z",
+    "executor": "Yayasan Laut Biru",
+    "proofPhoto": "assets/mock/report_photo_wildlife.png"
+  },
+  {
+    "id": "dis002",
+    "locationId": "p01",
+    "category": "Pelatihan relawan lokal",
+    "amount": 4500000,
+    "status": "disalurkan",
+    "dueDate": "2026-09-12T09:00:00Z",
+    "executor": "Yayasan Laut Biru",
+    "proofPhoto": "assets/mock/report_photo_marine_debris.png"
+  },
+  {
+    "id": "dis003",
+    "locationId": "p01",
+    "category": "Peralatan penandaan dan pencatatan",
+    "amount": 3000000,
+    "status": "menunggu",
+    "dueDate": "2026-11-10T07:00:00Z",
+    "executor": "Yayasan Laut Biru",
+    "proofPhoto": "assets/mock/report_photo_wildlife.png"
+  },
+  {
+    "id": "dis004",
+    "locationId": "p06",
+    "category": "Pelatihan relawan lokal",
+    "amount": 2000000,
+    "status": "disalurkan",
+    "dueDate": "2026-10-22T07:30:00Z",
+    "executor": "Konsorsium Pesisir Hijau",
+    "proofPhoto": "assets/mock/report_photo_mangrove.png"
+  },
+  {
+    "id": "dis005",
+    "locationId": "p06",
+    "category": "Pelaporan dan monitoring",
+    "amount": 800000,
+    "status": "menunggu",
+    "dueDate": "2026-11-06T06:00:00Z",
+    "executor": "Konsorsium Pesisir Hijau",
+    "proofPhoto": "assets/mock/report_photo_coral_reef.png"
+  },
+  {
+    "id": "dis006",
+    "locationId": "p08",
+    "category": "Patroli dan penjagaan sarang",
+    "amount": 3000000,
+    "status": "disalurkan",
+    "dueDate": "2026-08-20T05:00:00Z",
+    "executor": "Yayasan Laut Biru",
+    "proofPhoto": "assets/mock/report_photo_wildlife.png"
+  }
+]

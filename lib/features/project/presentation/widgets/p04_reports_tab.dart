@@ -4,30 +4,51 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/formatters.dart';
+import '../../../explore/data/disbursement_repository.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/filter_chip_row.dart';
 import '../../../../shared/widgets/skeleton.dart';
 import '../../data/report_repository.dart';
+import '../../domain/disbursement.dart';
 import '../../domain/report.dart';
 import '../p04_format.dart';
 import '../p04_report_visuals.dart';
 import 'p04_condition_chart.dart';
+import 'p04_disbursement_detail_sheet.dart';
 import 'p04_report_detail_sheet.dart';
+
+/// Main section of the P04 reports tab, switchable through the chip row.
+enum _ReportsSectionFilter {
+  /// Fund disbursement ledger (Penyaluran Dana).
+  penyaluranDana('penyaluran'),
+
+  /// Field condition view (Kondisi Lapangan).
+  kondisiLapangan('kondisi');
+
+  const _ReportsSectionFilter(this.id);
+
+  final String id;
+}
 
 /// Reports tab of P04.
 ///
-/// The tab owns only presentation state (loading, error, visible page size).
-/// [ReportPeriod] is held by the page so switching tabs cannot reset the
-/// selected period, and every number/trend comes from [ReportRepository].
+/// The tab owns only presentation state (loading, error, visible page size)
+/// plus the main section switch. [ReportPeriod] is held by the page so switching
+/// tabs cannot reset the selected period, and every number/trend comes from
+/// [ReportRepository]. The fund disbursement ledger ([DisbursementRepository])
+/// backs the default Penyaluran Dana section.
 class P04ReportsTab extends StatefulWidget {
   const P04ReportsTab({
     super.key,
     required this.projectId,
     required this.locationName,
     required this.repository,
+    this.disbursementRepository,
     required this.period,
     required this.onPeriodChanged,
+    this.initialSection = 'penyaluran',
   });
 
   /// Location/project id shared with the report mock data.
@@ -37,6 +58,15 @@ class P04ReportsTab extends StatefulWidget {
   final String locationName;
 
   final ReportRepository repository;
+
+  /// Section selected on first build. Defaults to the fund disbursement ledger.
+  final String initialSection;
+
+  /// Fund disbursement source for the Penyaluran Dana section.
+  ///
+  /// Optional so existing callers/tests can keep the report-only behaviour;
+  /// the default is the bundled mock repository.
+  final DisbursementRepository? disbursementRepository;
 
   /// Currently selected period, owned by the parent page.
   final ReportPeriod period;
@@ -54,10 +84,15 @@ class _P04ReportsTabState extends State<P04ReportsTab>
   ReportSummary? _summary;
   List<MonthlyConditionPoint> _trend = const [];
   List<Report> _reports = const [];
+  DisbursementSummary? _disbursementSummary;
+  List<Disbursement> _disbursements = const [];
   bool _loading = true;
   bool _error = false;
   int _visibleCount = _pageSize;
   int _requestId = 0;
+
+  /// Main section of the tab; defaults to the fund disbursement ledger.
+  late _ReportsSectionFilter _section;
 
   @override
   bool get wantKeepAlive => true;
@@ -65,6 +100,10 @@ class _P04ReportsTabState extends State<P04ReportsTab>
   @override
   void initState() {
     super.initState();
+    _section = _ReportsSectionFilter.values.firstWhere(
+      (section) => section.id == widget.initialSection,
+      orElse: () => _ReportsSectionFilter.penyaluranDana,
+    );
     _load();
   }
 
@@ -73,10 +112,17 @@ class _P04ReportsTabState extends State<P04ReportsTab>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.projectId != widget.projectId ||
         oldWidget.repository != widget.repository ||
-        oldWidget.period != widget.period) {
+        oldWidget.period != widget.period ||
+        oldWidget.disbursementRepository != widget.disbursementRepository) {
       _load();
     }
   }
+
+  /// Fund disbursement source used by the Penyaluran Dana section, falling
+  /// back to the bundled mock when the page did not inject one.
+  DisbursementRepository get _disbursementRepository =>
+      widget.disbursementRepository ??
+      MockDisbursementRepository(latency: Duration.zero);
 
   Future<void> _load() async {
     final requestId = ++_requestId;
@@ -87,19 +133,36 @@ class _P04ReportsTabState extends State<P04ReportsTab>
     });
 
     try {
-      final repository = widget.repository;
+      final disbursementRepository = _disbursementRepository;
       final projectId = widget.projectId;
-      final period = widget.period;
+
+      if (_section == _ReportsSectionFilter.penyaluranDana) {
+        final (summary, entries) = await (
+          disbursementRepository.getDisbursementSummary(projectId),
+          disbursementRepository.getDisbursementsByLocation(projectId),
+        ).wait;
+        if (!mounted || requestId != _requestId) return;
+        setState(() {
+          _disbursementSummary = summary;
+          _disbursements = entries;
+          _loading = false;
+        });
+        return;
+      }
+
       final (summary, trend, reports) = await (
-        repository.getReportSummary(
+        widget.repository.getReportSummary(
           projectId,
-          period: period,
+          period: widget.period,
           verifiedOnly: true,
         ),
-        repository.getMonthlyConditionTrend(projectId, period: period),
-        repository.getReportsByLocation(
+        widget.repository.getMonthlyConditionTrend(
           projectId,
-          period: period,
+          period: widget.period,
+        ),
+        widget.repository.getReportsByLocation(
+          projectId,
+          period: widget.period,
           verifiedOnly: true,
         ),
       ).wait;
@@ -126,6 +189,16 @@ class _P04ReportsTabState extends State<P04ReportsTab>
     );
     if (next == widget.period) return;
     widget.onPeriodChanged(next);
+  }
+
+  void _selectSection(String id) {
+    final next = _ReportsSectionFilter.values.firstWhere(
+      (section) => section.id == id,
+      orElse: () => _ReportsSectionFilter.penyaluranDana,
+    );
+    if (next == _section) return;
+    setState(() => _section = next);
+    _load();
   }
 
   void _showMore() {
@@ -158,38 +231,75 @@ class _P04ReportsTabState extends State<P04ReportsTab>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppDimens.padding,
-            12,
-            AppDimens.padding,
-            8,
-          ),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.date_range_outlined,
-                size: 16,
-                color: AppColors.textSecondary,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                context.tr('p04_period_label'),
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textSecondary,
+        // Flexible + scroll view keeps the chip row from overflowing while the
+        // TabBarView animates to a very short height between tabs.
+        Flexible(
+          fit: FlexFit.loose,
+          child: SingleChildScrollView(
+            primary: false,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppDimens.padding,
+                    8,
+                    AppDimens.padding,
+                    8,
+                  ),
+                  child: FilterChipRow(
+                    options: [
+                      ChipOption(
+                        id: 'penyaluran',
+                        label: context.tr('p04_disbursement_title'),
+                      ),
+                      ChipOption(
+                        id: 'kondisi',
+                        label: context.tr('p04_field_conditions_title'),
+                      ),
+                    ],
+                    selectedId: _section.id,
+                    onSelected: _selectSection,
+                  ),
                 ),
-              ),
-            ],
+                if (_section == _ReportsSectionFilter.kondisiLapangan) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppDimens.padding,
+                      12,
+                      AppDimens.padding,
+                      8,
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.date_range_outlined,
+                          size: 16,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          context.tr('p04_period_label'),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  FilterChipRow(
+                    options: options,
+                    selectedId: widget.period.name,
+                    onSelected: _selectPeriod,
+                  ),
+                  const SizedBox(height: 4),
+                ],
+              ],
+            ),
           ),
         ),
-        FilterChipRow(
-          options: options,
-          selectedId: widget.period.name,
-          onSelected: _selectPeriod,
-        ),
-        const SizedBox(height: 4),
         Expanded(child: _buildBody(lang)),
       ],
     );
@@ -198,6 +308,43 @@ class _P04ReportsTabState extends State<P04ReportsTab>
   Widget _buildBody(String lang) {
     if (_loading) return const _ReportsSkeleton();
     if (_error) return Center(child: ErrorState(onRetry: _load));
+
+    if (_section == _ReportsSectionFilter.penyaluranDana) {
+      final summary = _disbursementSummary;
+      if (summary == null) return const _ReportsSkeleton();
+      return ListView(
+        key: const PageStorageKey('p04-reports-scroll'),
+        primary: false,
+        padding: const EdgeInsets.fromLTRB(
+          AppDimens.padding,
+          8,
+          AppDimens.padding,
+          24,
+        ),
+        children: [
+          _DisbursementSummaryCard(summary: summary, lang: lang),
+          const SizedBox(height: AppDimens.gap),
+          if (_disbursements.isEmpty)
+            SizedBox(
+              height: 240,
+              child: EmptyState(
+                icon: Icons.payments_outlined,
+                message: context.tr('p04_disbursement_empty'),
+              ),
+            )
+          else ...[
+            for (final entry in _disbursements) ...[
+              _DisbursementEntryCard(
+                entry: entry,
+                repository: _disbursementRepository,
+                lang: lang,
+              ),
+              const SizedBox(height: AppDimens.gap),
+            ],
+          ],
+        ],
+      );
+    }
 
     final summary = _summary;
     final hasMetrics =
@@ -667,6 +814,211 @@ class _ReportsSkeleton extends StatelessWidget {
         SizedBox(height: 12),
         Skeleton(height: 96, radius: 16),
       ],
+    );
+  }
+}
+
+class _DisbursementSummaryCard extends StatelessWidget {
+  const _DisbursementSummaryCard({required this.summary, required this.lang});
+
+  final DisbursementSummary summary;
+  final String lang;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimens.padding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _DisbursementTotalRow(
+              label: context.tr('p04_disbursement_collected'),
+              value: Formatters.currency(summary.collected, lang),
+            ),
+            const Divider(height: 20),
+            _DisbursementTotalRow(
+              label: context.tr('p04_disbursement_disbursed'),
+              value: Formatters.currency(summary.disbursed, lang),
+            ),
+            const Divider(height: 20),
+            _DisbursementTotalRow(
+              label: context.tr('p04_disbursement_pending'),
+              value: Formatters.currency(summary.pending, lang),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DisbursementTotalRow extends StatelessWidget {
+  const _DisbursementTotalRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: AppColors.ocean,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DisbursementEntryCard extends StatelessWidget {
+  const _DisbursementEntryCard({
+    required this.entry,
+    required this.repository,
+    required this.lang,
+  });
+
+  final Disbursement entry;
+  final DisbursementRepository repository;
+  final String lang;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      key: ValueKey('p04-disbursement-${entry.id}'),
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => showP04DisbursementDetailSheet(
+          context,
+          disbursementId: entry.id,
+          repository: repository,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      entry.category,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  _DisbursementStatusChip(status: entry.status),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                P04Format.date(entry.dueDate.toLocal(), lang),
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      entry.executor,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    Formatters.currency(entry.amount, lang),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.ocean,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _ReportThumbnail(photoPath: entry.proofPhoto),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DisbursementStatusChip extends StatelessWidget {
+  const _DisbursementStatusChip({required this.status});
+
+  final DisbursementStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (status) {
+      DisbursementStatus.disalurkan => AppColors.success,
+      DisbursementStatus.menunggu => AppColors.warning,
+    };
+    final label = context.tr(
+      status == DisbursementStatus.disalurkan
+          ? 'p04_disbursement_status_disbursed'
+          : 'p04_disbursement_status_pending',
+    );
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppDimens.cardRadius),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            status == DisbursementStatus.disalurkan
+                ? Icons.check_circle_outline
+                : Icons.schedule_outlined,
+            size: 13,
+            color: color,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

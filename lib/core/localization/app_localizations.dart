@@ -286,7 +286,8 @@ class AppLocalizations {
       'project.raised': 'Terkumpul',
       'project.percent_reached': '{n} tercapai',
       'project.target': 'Target',
-      'project.remaining': 'Sisa dana',
+      'project.remaining': 'Masih dibutuhkan',
+      'project.remaining_hint': 'Target dikurangi dana terkumpul',
       'project.donate': 'Donasi',
       'project.location': 'Lokasi proyek',
       'project.funding.item': 'Pos pendanaan',
@@ -387,6 +388,21 @@ class AppLocalizations {
       'p04_reviews_read_less': 'Sembunyikan',
       'p04_reviews_empty': 'Belum ada ulasan',
       'p04_reviews_error': 'Gagal memuat ulasan.',
+
+      // --- P04 disbursements (Penyaluran Dana) ---
+      'p04_disbursement_title': 'Penyaluran Dana',
+      'p04_disbursement_empty': 'Belum ada penyaluran dana.',
+      'p04_disbursement_error': 'Gagal memuat penyaluran dana.',
+      'p04_disbursement_collected': 'Dana terkumpul',
+      'p04_disbursement_disbursed': 'Dana disalurkan',
+      'p04_disbursement_pending': 'Belum disalurkan',
+      'p04_disbursement_status_disbursed': 'Disalurkan',
+      'p04_disbursement_status_pending': 'Menunggu',
+      'p04_disbursement_detail_title': 'Detail Penyaluran',
+      'p04_disbursement_detail_amount': 'Nominal',
+      'p04_disbursement_detail_executor': 'Pelaksanaan',
+      'p04_disbursement_detail_date': 'Tanggal',
+      'p04_field_conditions_title': 'Kondisi Lapangan',
 
       // --- Organization (P05) ---
       'org.verified': 'Terverifikasi',
@@ -1042,7 +1058,8 @@ class AppLocalizations {
       'project.raised': 'Raised',
       'project.percent_reached': '{n} reached',
       'project.target': 'Target',
-      'project.remaining': 'Remaining',
+      'project.remaining': 'Still needed',
+      'project.remaining_hint': 'Target minus funds raised',
       'project.donate': 'Donate',
       'project.location': 'Project location',
       'project.funding.item': 'Funding item',
@@ -1142,6 +1159,21 @@ class AppLocalizations {
       'p04_reviews_read_less': 'Show less',
       'p04_reviews_empty': 'No reviews yet',
       'p04_reviews_error': 'Failed to load reviews.',
+
+      // --- P04 disbursements (Disbursement) ---
+      'p04_disbursement_title': 'Disbursement',
+      'p04_disbursement_empty': 'No fund disbursements yet.',
+      'p04_disbursement_error': 'Failed to load fund disbursements.',
+      'p04_disbursement_collected': 'Funds raised',
+      'p04_disbursement_disbursed': 'Funds disbursed',
+      'p04_disbursement_pending': 'Not disbursed yet',
+      'p04_disbursement_status_disbursed': 'Disbursed',
+      'p04_disbursement_status_pending': 'Pending',
+      'p04_disbursement_detail_title': 'Disbursement details',
+      'p04_disbursement_detail_amount': 'Amount',
+      'p04_disbursement_detail_executor': 'Execution',
+      'p04_disbursement_detail_date': 'Date',
+      'p04_field_conditions_title': 'Field Conditions',
 
       // --- Organization (P05) ---
       'org.verified': 'Verified',
