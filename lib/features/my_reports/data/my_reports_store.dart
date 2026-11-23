@@ -2,15 +2,11 @@ import 'package:flutter/foundation.dart';
 
 import '../../project/domain/report.dart';
 
-/// Session-only store for reports submitted from "Lapor Temuan".
+/// Session-level source for the personal report list and wizard submissions.
 ///
-/// SIMULATION ONLY: the report is kept in memory until the save-report API
-/// exists, so killing the app empties this list. Once the backend lands,
-/// replace [add] with `ReportRepository.submitReport` and read "Laporan Saya"
-/// from the repository instead.
-///
-/// TODO(lapor): remove this store and wire the wizard to ReportRepository
-/// when the submit endpoint is available.
+/// The mock report repository supplies bundled examples on first load; those
+/// reports and new wizard submissions are then kept together here for the
+/// current session. A process restart clears this simulation store.
 class MyReportsStore extends ChangeNotifier {
   MyReportsStore();
 
@@ -37,8 +33,23 @@ class MyReportsStore extends ChangeNotifier {
   }
 
   void add(Report report) {
+    _reports.removeWhere((existing) => existing.id == report.id);
     _reports.insert(0, report);
     notifyListeners();
+  }
+
+  /// Adds repository seed reports without duplicating submissions already in
+  /// the session store.
+  void addAllIfMissing(Iterable<Report> reports) {
+    final knownIds = _reports.map((report) => report.id).toSet();
+    var changed = false;
+    for (final report in reports) {
+      if (knownIds.add(report.id)) {
+        _reports.add(report);
+        changed = true;
+      }
+    }
+    if (changed) notifyListeners();
   }
 
   /// Clears the session list. Used by tests; production data disappears when

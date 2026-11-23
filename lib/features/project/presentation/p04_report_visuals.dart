@@ -73,4 +73,18 @@ extension P04ReportVisuals on BuildContext {
     ReportStatus.followedUp => AppColors.ocean,
     ReportStatus.completed => AppColors.success,
   };
+
+  /// Text and icon colour for status chips and labels.
+  ///
+  /// [p04StatusColor] stays the accent for bars, fills and tints. As text on
+  /// its own 10% tint the accent only reaches 2.3-3.6:1, so this darker shade
+  /// of the same hue is used for anything that must be read. Against the 10%
+  /// tint of the matching accent the ratios are: submitted 6.99:1, verified
+  /// 5.00:1, followed up 5.24:1, completed 6.40:1 (WCAG 1.4.3, minimum 4.5:1).
+  Color p04StatusForeground(ReportStatus status) => switch (status) {
+    ReportStatus.submitted => const Color(0xFF475569),
+    ReportStatus.verified => const Color(0xFF0F766E),
+    ReportStatus.followedUp => const Color(0xFF0369A1),
+    ReportStatus.completed => const Color(0xFF166534),
+  };
 }

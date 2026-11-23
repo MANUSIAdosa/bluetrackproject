@@ -101,6 +101,13 @@ abstract final class Formatters {
     return NumberFormat.decimalPattern(locale).format(value);
   }
 
+  /// Clock time, for example `07.00` in Indonesian or `7:00 AM` in English.
+  static String time(DateTime date, String localeLanguageCode) {
+    _ensureDateSymbols();
+    final locale = _locale(localeLanguageCode);
+    return DateFormat.jm(locale).format(date.toLocal());
+  }
+
   /// Date and time, for example `31 Okt 2026 14.05` in Indonesian.
   static String dateTime(DateTime date, String localeLanguageCode) {
     _ensureDateSymbols();

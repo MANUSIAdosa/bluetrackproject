@@ -74,8 +74,8 @@ abstract final class AppConfig {
   /// session exposes the signed-in user.
   ///
   /// TODO(lapor): read the user id and display name from the auth session.
-  static const String reportCurrentUserId = 'u-me';
-  static const String reportCurrentUserName = 'Pengguna BlueTrack';
+  static const String reportCurrentUserId = 'u01';
+  static const String reportCurrentUserName = 'Ayu Lestari';
 
   /// Location the simulated report is attached to.
   ///

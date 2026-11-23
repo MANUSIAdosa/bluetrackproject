@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,6 +11,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/error_state.dart';
 import '../../../shared/widgets/skeleton.dart';
 import '../data/ocean_facts_repository.dart';
+import 'widgets/interest_info_sheet.dart';
 
 /// P01 — Onboarding: 3 slides introducing the reporting / community-action
 /// flow + interest selection.
@@ -446,6 +449,155 @@ class _OnboardingPageState extends State<OnboardingPage> {
     );
   }
 
+  /// The explanation replaced a shorter sentence that is still used on
+  /// Profile. If the new copy wraps extra lines, take them out of the gap
+  /// before the gallery so the gallery keeps its previous position. The
+  /// gallery's own layout and size are untouched.
+  double _introGap(BuildContext context, double width) {
+    const style = TextStyle(fontSize: 15, color: AppColors.textSecondary);
+    double heightOf(String text) {
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: style),
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+      )..layout(maxWidth: width);
+      final height = painter.height;
+      painter.dispose();
+      return height;
+    }
+
+    final extra =
+        heightOf(context.tr('p01.interests.intro')) -
+        heightOf(context.tr('p01.interests.later'));
+    return (24 - extra).clamp(0.0, 24.0);
+  }
+
+  /// The five categories shown in the info sheet. Labels and images come from
+  /// the same source as the picker, so the sheet cannot drift from the grid.
+  List<InterestInfoEntry> _interestInfoEntries(BuildContext context) {
+    return [
+      for (final id in AppConfig.interestIds)
+        InterestInfoEntry(
+          id: id,
+          label: context.tr('cat.$id'),
+          description: context.tr('p01.interests.info.$id'),
+          imagePath: _interestImages[id]!,
+        ),
+    ];
+  }
+
+  /// Title block of the interests step: the heading on the left and the info
+  /// action overlaid on the right. The action shows a visible label — not just
+  /// an icon — so users can tell it opens the details of every interest.
+  ///
+  /// The action is absolutely positioned (like the icon-only version it
+  /// replaces), so the header height stays exactly the title's height and the
+  /// gallery never shifts. The title reserves the action's measured width:
+  /// [TextPainter] measures the label at the live text scale, so large-text
+  /// users still get a wide-enough reservation and the title wraps on its own
+  /// terms instead of being squeezed to zero width by the button.
+  ///
+  /// The label degrades gracefully: full label when it leaves the title one
+  /// full line, short label on narrower layouts, and icon-only when even the
+  /// short label would crush the title (very narrow screens or very large
+  /// accessibility text scales).
+  Widget _buildTitleHeader(BuildContext context, double maxWidth) {
+    const titleStyle = TextStyle(fontSize: 26, fontWeight: FontWeight.w800);
+    const labelStyle = TextStyle(fontSize: 12, fontWeight: FontWeight.w600);
+    // Icon (20) + icon-label gap + horizontal button padding (8 + 8).
+    const actionChrome = 44.0;
+    /// Width the title always keeps for itself, whatever the action shows.
+    const minTitleWidth = 120.0;
+
+    double textWidth(String key, TextStyle style) {
+      final painter = TextPainter(
+        text: TextSpan(text: context.tr(key), style: style),
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+      )..layout();
+      final width = painter.width;
+      painter.dispose();
+      return width;
+    }
+
+    double reservedFor(String labelKey) =>
+        textWidth(labelKey, labelStyle) + actionChrome + 8;
+
+    const fullKey = 'p01.interests.info.label';
+    const shortKey = 'p01.interests.info.labelShort';
+    final titleWidth = textWidth('p01.interests.title', titleStyle);
+    final fullReserved = reservedFor(fullKey);
+    final shortReserved = reservedFor(shortKey);
+
+    String? labelKey;
+    var reserved = actionChrome + 8; // icon-only reservation
+    if (maxWidth - fullReserved >= max(titleWidth, minTitleWidth)) {
+      labelKey = fullKey;
+      reserved = fullReserved;
+    } else if (maxWidth - shortReserved >= minTitleWidth) {
+      labelKey = shortKey;
+      reserved = shortReserved;
+    }
+
+    final action = labelKey == null
+        ? TextButton(
+            key: const ValueKey('p01.interests.infoButton'),
+            onPressed: _saving
+                ? null
+                : () => showInterestInfoSheet(
+                    context,
+                    entries: _interestInfoEntries(context),
+                  ),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.ocean,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: const Size(0, 40),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Icon(Icons.info_outline, size: 20),
+          )
+        : TextButton.icon(
+            key: const ValueKey('p01.interests.infoButton'),
+            onPressed: _saving
+                ? null
+                : () => showInterestInfoSheet(
+                    context,
+                    entries: _interestInfoEntries(context),
+                  ),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.ocean,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: const Size(0, 40),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            icon: const Icon(Icons.info_outline, size: 20),
+            label: Text(context.tr(labelKey), style: labelStyle),
+          );
+
+    return Stack(
+      key: const ValueKey('p01.interests.titleHeader'),
+      clipBehavior: Clip.none,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(right: reserved),
+          child: Text(context.tr('p01.interests.title'), style: titleStyle),
+        ),
+        Positioned(
+          right: 0,
+          top: 0,
+          bottom: 0,
+          child: Center(
+            widthFactor: 1,
+            child: Tooltip(
+              message: context.tr('p01.interests.info.button'),
+              child: action,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildInterests(BuildContext context) {
     final canStart = widget.editInterests || _selectedInterests.isNotEmpty;
     return PopScope<Object?>(
@@ -458,157 +610,159 @@ class _OnboardingPageState extends State<OnboardingPage> {
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(AppDimens.padding),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Secondary control, not a second primary button.
-                Row(
-                  children: [
-                    IconButton(
-                      tooltip: MaterialLocalizations.of(context)
-                          .backButtonTooltip,
-                      icon: const Icon(Icons.arrow_back),
-                      color: AppColors.ocean,
-                      onPressed: _saving ? null : _backToSlides,
-                    ),
-                    const Spacer(),
-                    if (!widget.editInterests)
-                      TextButton(
-                        onPressed: _saving ? null : () => _finish([]),
-                        child: Text(context.tr('p01.skip')),
+            child: LayoutBuilder(
+              builder: (context, constraints) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Secondary control, not a second primary button.
+                  Row(
+                    children: [
+                      IconButton(
+                        tooltip: MaterialLocalizations.of(context)
+                            .backButtonTooltip,
+                        icon: const Icon(Icons.arrow_back),
+                        color: AppColors.ocean,
+                        onPressed: _saving ? null : _backToSlides,
                       ),
-                  ],
-                ),
-                Text(
-                  context.tr('p01.interests.title'),
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
+                      const Spacer(),
+                      if (!widget.editInterests)
+                        TextButton(
+                          onPressed: _saving ? null : () => _finish([]),
+                          child: Text(context.tr('p01.skip')),
+                        ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  context.tr('p01.interests.later'),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: AppColors.textSecondary,
+                  // The info action is an overlay, so the title block keeps the
+                  // same height and the gallery never shifts.
+                  _buildTitleHeader(context, constraints.maxWidth),
+                  const SizedBox(height: 8),
+                  Text(
+                    context.tr('p01.interests.intro'),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, viewport) {
-                      // Keep captions reachable on short/wide screens. Large
-                      // text can still scroll instead of clipping the gallery.
-                      return SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 760),
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                final columnWidth =
-                                    (constraints.maxWidth -
-                                        _gallerySpacing *
-                                            (AppConfig.interestIds.length -
-                                                1)) /
-                                    AppConfig.interestIds.length;
-                                // Measure translated captions at the current
-                                // text scale; bottom-align them without ellipses.
-                                var labelHeight = 0.0;
-                                for (final id in AppConfig.interestIds) {
-                                  final painter = TextPainter(
-                                    text: TextSpan(
-                                      text: context.tr('cat.$id'),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelSmall
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                    ),
-                                    textDirection: Directionality.of(context),
-                                    textScaler: MediaQuery.textScalerOf(
-                                      context,
-                                    ),
-                                  )..layout(maxWidth: columnWidth);
-                                  if (painter.height > labelHeight) {
-                                    labelHeight = painter.height;
-                                  }
-                                  painter.dispose();
-                                }
-                                final maxBlockHeight =
-                                    (viewport.maxHeight - labelHeight - 40)
-                                        .clamp(100.0, 420.0);
-                                final galleryHeight = (columnWidth * 4.2).clamp(
-                                  100.0,
-                                  maxBlockHeight,
-                                );
-
-                                return Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    for (
-                                      var i = 0;
-                                      i < AppConfig.interestIds.length;
-                                      i++
-                                    ) ...[
-                                      if (i > 0)
-                                        const SizedBox(width: _gallerySpacing),
-                                      _buildInterestCard(
-                                        context,
-                                        i,
-                                        galleryHeight: galleryHeight,
-                                        labelHeight: labelHeight,
+                  SizedBox(height: _introGap(context, constraints.maxWidth)),
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (context, viewport) {
+                        // Keep captions reachable on short/wide screens. Large
+                        // text can still scroll instead of clipping the gallery.
+                        return SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 760),
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final columnWidth =
+                                      (constraints.maxWidth -
+                                          _gallerySpacing *
+                                              (AppConfig.interestIds.length -
+                                                  1)) /
+                                      AppConfig.interestIds.length;
+                                  // Measure translated captions at the current
+                                  // text scale; bottom-align them without ellipses.
+                                  var labelHeight = 0.0;
+                                  for (final id in AppConfig.interestIds) {
+                                    final painter = TextPainter(
+                                      text: TextSpan(
+                                        text: context.tr('cat.$id'),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                       ),
+                                      textDirection: Directionality.of(context),
+                                      textScaler: MediaQuery.textScalerOf(
+                                        context,
+                                      ),
+                                    )..layout(maxWidth: columnWidth);
+                                    if (painter.height > labelHeight) {
+                                      labelHeight = painter.height;
+                                    }
+                                    painter.dispose();
+                                  }
+                                  final maxBlockHeight =
+                                      (viewport.maxHeight - labelHeight - 40)
+                                          .clamp(100.0, 420.0);
+                                  final galleryHeight = (columnWidth * 4.2)
+                                      .clamp(100.0, maxBlockHeight);
+
+                                  return Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      for (
+                                        var i = 0;
+                                        i < AppConfig.interestIds.length;
+                                        i++
+                                      ) ...[
+                                        if (i > 0)
+                                          const SizedBox(
+                                            width: _gallerySpacing,
+                                          ),
+                                        _buildInterestCard(
+                                          context,
+                                          i,
+                                          galleryHeight: galleryHeight,
+                                          labelHeight: labelHeight,
+                                        ),
+                                      ],
                                     ],
-                                  ],
-                                );
-                              },
+                                  );
+                                },
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                if (!canStart) ...[
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Text(
-                        context.tr('p01.interests.subtitle'),
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
+                  // Large text needs this space for the header; the gallery
+                  // still scrolls inside its own area.
+                  if (MediaQuery.textScalerOf(context).scale(1) < 1.5)
+                    const SizedBox(height: 16),
+                  if (!canStart) ...[
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          context.tr('p01.interests.subtitle'),
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
+                    ),
+                  ],
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: canStart && !_saving
+                          ? () => _finish(_selectedInterests.toList())
+                          : null,
+                      child: _saving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(
+                              context.tr(
+                                widget.editInterests
+                                    ? 'p01.interests.save'
+                                    : 'p01.start',
+                              ),
+                            ),
                     ),
                   ),
                 ],
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: canStart && !_saving
-                        ? () => _finish(_selectedInterests.toList())
-                        : null,
-                    child: _saving
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(
-                            context.tr(
-                              widget.editInterests
-                                  ? 'p01.interests.save'
-                                  : 'p01.start',
-                            ),
-                          ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),

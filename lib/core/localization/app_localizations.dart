@@ -35,6 +35,7 @@ class AppLocalizations {
       'common.continue': 'Lanjut',
       'common.next': 'Berikutnya',
       'common.cancel': 'Batal',
+      'common.close': 'Tutup',
       'common.comingSoon':
           'Halaman ini akan tersedia pada subproyek berikutnya.',
       'common.error': 'Terjadi kesalahan.',
@@ -163,25 +164,47 @@ class AppLocalizations {
       'p01.interests.title': 'Pilih Minatmu',
       'p01.interests.manage': 'Preferensi Minat',
       'p01.interests.later': 'Minat bisa diubah kapan saja melalui Profil.',
+      'p01.interests.intro':
+          'Pilih topik lautmu agar proyek terkait muncul lebih dulu di '
+          'Jelajahi. Ubah di Profil.',
       'p01.interests.save': 'Simpan minat',
       'p01.interests.saveError': 'Minat belum tersimpan. Coba lagi.',
-      'p01.interests.subtitle': 'Kami akan mengurutkan proyek sesuai minatmu.',
+      'p01.interests.subtitle': 'Pilih satu',
+      // DRAFT(P01-copy): category explanations await team approval. They name
+      // only the project categories currently mapped in InterestCategories;
+      // `sampah_laut` has no projects and `perikanan` still maps to `lamun`.
+      'p01.interests.info.title': 'Tentang Minat',
+      'p01.interests.info.button': 'Tentang minat',
+      'p01.interests.info.label': 'Informasi Detail',
+      'p01.interests.info.labelShort': 'Info Detail',
+      'p01.interests.info.sampah_laut':
+          'Belum ada proyek sampah laut di Jelajahi, jadi minat ini belum '
+          'mengubah urutan proyek.',
+      'p01.interests.info.terumbu_karang':
+          'Proyek pemulihan terumbu karang di Pramuka, Bunaken, dan '
+          'Karimunjawa akan muncul lebih dulu.',
+      'p01.interests.info.mangrove':
+          'Proyek konservasi mangrove di Muara Angke, Makassar, dan Delta '
+          'Mahakam akan muncul lebih dulu.',
+      'p01.interests.info.perikanan':
+          'Saat ini minat ini menampilkan proyek restorasi lamun; proyek '
+          'khusus perikanan belum tersedia di Jelajahi.',
+      'p01.interests.info.satwa_laut':
+          'Proyek penyu dan mamalia laut, dari peneluruhan hingga '
+          'penyelamatan paus dan lumba-lumba, akan muncul lebih dulu.',
       'p01.minOne': 'Pilih minimal satu',
 
       // --- Auth (P02) ---
       // The title lives in the body heading, not the app bar. Email and phone
       // share one page, so the heading is not tied to either field.
-      'auth.title': 'Selamat datang kembali',
-      'auth.subtitle': 'Pilih email atau nomor telepon.',
-      'auth.email.label': 'Email',
-      'auth.email.hint': 'nama@email.com',
+      'auth.title': 'Selamat datang di BlueTrack',
+      'auth.subtitle': 'Lanjutkan dengan email atau nomor telepon.',
+      'auth.identifier.countryCode': 'Kode negara',
+      'auth.identifier.label': 'Email atau nomor telepon',
+      'auth.identifier.hint': 'nama@email.com atau 8123456789',
       'auth.email.invalid': 'Format email tidak valid',
-      'auth.or': 'ATAU',
-      'auth.phone.label': 'Nomor telepon',
-      'auth.phone.hint': '8123456789',
       'auth.phone.invalid': 'Nomor telepon tidak valid',
       'auth.identifier.missing': 'Masukkan email atau nomor telepon.',
-      'auth.identifier.chooseOne': 'Pilih salah satu cara masuk.',
       'auth.otp.title': 'Masukkan kode verifikasi',
       'auth.otp.subtitle': 'Kode dikirim ke {target}',
       'auth.otp.mismatch': 'Kode tidak cocok',
@@ -354,19 +377,39 @@ class AppLocalizations {
       'my_reports.loading': 'Memuat laporan...',
       'my_reports.load_error':
           'Gagal memuat laporan. Periksa koneksi lalu coba lagi.',
-      'my_reports.empty': 'Kamu belum punya laporan. Laporkan temuan di sekitarmu untuk membantu menjaga laut tetap lestari.',
+      'my_reports.empty_title': 'Belum ada laporan',
+      'my_reports.empty': 'Laporkan temuan di sekitarmu untuk membantu menjaga laut tetap lestari.',
       'my_reports.create': 'Buat laporan',
       'my_reports.empty_filter': 'Tidak ada laporan berstatus {status}.',
+      'my_reports.filter_count': '{label} ({count})',
+      'my_reports.filter_title': 'Filter status laporan',
+      'my_reports.filter_hint': 'Pilih status laporan yang ingin ditampilkan.',
       'my_reports.tracker': 'Pelacak status',
       'my_reports.report_date': 'Tanggal laporan',
       'my_reports.waiting_verification': 'Menunggu verifikasi',
+      'my_reports.no_verifier_note': 'Tidak ada catatan dari verifikator.',
       'my_reports.severity_chip': 'Tingkat: {level}',
-      'my_reports.open_actions': 'Lihat aksi terkait',
+      'my_reports.completed_step_date': 'Selesai pada {date}',
+      'my_reports.tracker_step_current':
+          'Langkah {step} dari {total}: {status}, status saat ini',
+      'my_reports.tracker_step_reached':
+          'Langkah {step} dari {total}: {status}, sudah dilalui',
+      'my_reports.tracker_step_pending':
+          'Langkah {step} dari {total}: {status}, belum dicapai',
+      'my_reports.completion_proof': 'Bukti penyelesaian',
+      'my_reports.completion_proof_missing': 'Bukti belum diunggah.',
+      'my_reports.completion_photo_missing': 'Foto bukti belum tersedia.',
+      'my_reports.completion_proof_note': 'Catatan penyelesaian',
+      'my_reports.completion_proof_photo_caption': 'Foto bukti penyelesaian',
+      'my_reports.completion_date': 'Selesai pada',
+      'my_reports.completion_by': 'Pelaksana',
+      'my_reports.completion_proof_available': 'Bukti penyelesaian tersedia',
+      'my_reports.card_photo_semantics': 'Foto laporan',
+      'my_reports.open_actions': 'Lihat agenda aksi',
       'my_reports.open_actions_hint':
-          'Temukan kegiatan yang terhubung dengan laporan ini.',
+          'Jelajahi agenda kegiatan konservasi yang tersedia.',
       'my_reports.count': '{n} laporan',
       'my_reports.filtered_count': '{status} · {n} laporan',
-      'my_reports.filter_title': 'Filter status',
       'my_reports.show_all': 'Tampilkan semua',
       'my_reports.current_status': 'Status saat ini',
       'p04_photo_error': 'Foto tidak dapat dimuat.',
@@ -574,7 +617,9 @@ class AppLocalizations {
       'p08_receipt_unavailable_title': 'E-Receipt belum tersedia',
       'p08_receipt_unavailable_body':
           'E-Receipt baru tersedia setelah dukungan berhasil.',
-      'p08_view_reports': 'Lihat laporan proyek',
+      'p08_download_receipt': 'Unduh e-receipt',
+      'p08_download_receipt_hint': 'Simpan bukti donasi ini sebagai PDF.',
+      'p08_download_receipt_soon': 'Unduh e-receipt akan segera tersedia.',
 
       // --- Legal (Privacy Policy / Terms) ---
       'legal.privacy.title': 'Kebijakan Privasi',
@@ -655,6 +700,13 @@ class AppLocalizations {
       'report_step_review': 'Tinjau',
       'report_photos_title': 'Foto temuan',
       'report_photos_body': 'Tambahkan 1–3 foto temuanmu.',
+      'report_title_field': 'Judul laporan',
+      'report_title_hint': 'Contoh: Penyu terlilit jaring di Pantai Sukamade',
+      'report_title_error': 'Judul laporan wajib diisi.',
+      'report_description_title': 'Deskripsi temuan',
+      'report_description_hint':
+          'Ceritakan kondisi yang terlihat dan konteks foto.',
+      'report_description_error': 'Deskripsi temuan wajib diisi.',
       'report_photo_counter': '{n}/{max} foto',
       'report_add_photo': 'Tambah Foto',
       'report_remove_photo': 'Hapus foto',
@@ -696,10 +748,32 @@ class AppLocalizations {
           'titik temuan.',
       'report_location_hint': 'Geser pin ke lokasi temuan',
       'report_location_gps': 'Gunakan lokasi saya',
+      'report_location_gps_short': 'Lokasi saya',
       'report_location_gps_loading': 'Mengambil lokasi...',
+      'report_location_gps_loading_short': 'Mengambil...',
       'report_location_card_title': 'Koordinat temuan',
       'report_location_latitude': 'Lintang',
       'report_location_longitude': 'Bujur',
+      'report_location_detail_title': 'Patokan atau area sekitar (opsional)',
+      'report_location_detail_hint':
+          'Contoh: dekat dermaga utara atau terumbu karang.',
+      'report_area_hint': 'Tekan tombol untuk menampilkan nama area dari pin.',
+      'report_area_empty_hint': 'Tandai pin dulu untuk melihat nama area.',
+      'report_area_offline': 'Nama area butuh koneksi internet.',
+      'report_area_empty':
+          'Nama area tidak ditemukan. Geser pin lalu coba lagi.',
+      'report_area_error':
+          'Nama area tidak dapat diambil. Periksa koneksi lalu coba lagi.',
+      'report_address_title': 'Cari alamat',
+      'report_address_hint': 'Contoh: Pantai Sukamade',
+      'report_address_action': 'Cari',
+      'report_address_empty': 'Alamat tidak ditemukan. Coba kata kunci lain.',
+      'report_address_error':
+          'Pencarian gagal. Periksa koneksi lalu coba lagi.',
+      'report_geocoding_rate_limited':
+          'Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.',
+      'report_geocoding_offline': 'Pencarian lokasi butuh koneksi internet.',
+      'report_osm_attribution': 'Data © OpenStreetMap contributors',
       'report_location_empty_hint':
           'Ketuk peta atau gunakan lokasi saya untuk mengisi koordinat.',
       'report_location_error_title': 'Lokasi tidak tersedia',
@@ -749,7 +823,19 @@ class AppLocalizations {
       'report_type_severity_error': 'Pilih tingkat temuan terlebih dahulu.',
       'report_review_title': 'Tinjau laporan',
       'report_review_subtitle': 'Periksa kembali isianmu sebelum mengirim.',
+      'report_review_content_group': 'Foto dan keterangan',
+      'report_review_classification': 'Jenis dan tingkat',
+      'report_review_edit_report_hint': 'Ubah laporan',
+      'report_review_edit_location_hint': 'Ubah lokasi',
+      'report_review_edit_classification_hint': 'Ubah jenis dan tingkat',
       'report_review_photos': 'Foto',
+      'report_review_description': 'Deskripsi temuan',
+      'report_review_area': 'Nama area',
+      'report_review_details': 'Lihat rincian',
+      'report_review_more': 'Selengkapnya',
+      'report_review_less': 'Sembunyikan',
+      'report_review_hide_details': 'Sembunyikan rincian',
+      'report_review_landmark_label': 'Patokan atau area sekitar',
       'report_review_location': 'Lokasi',
       'report_review_type': 'Jenis temuan',
       'report_review_severity': 'Tingkat kerusakan',
@@ -771,24 +857,130 @@ class AppLocalizations {
       'report_submit_offline_body':
           'Sambungkan perangkat ke internet untuk mengirim laporan.',
       'report_submit_missing_photos': 'Lengkapi foto temuan terlebih dahulu.',
+      'report_submit_missing_title': 'Lengkapi judul laporan terlebih dahulu.',
+      'report_submit_missing_description':
+          'Lengkapi deskripsi temuan terlebih dahulu.',
       'report_submit_missing_location': 'Tandai lokasi temuan terlebih dahulu.',
       'report_submit_missing_type':
           'Pilih jenis dan tingkat temuan terlebih dahulu.',
+      'report_submit.generated_title': 'Laporan {category} · {date} · {id}',
       'report_success_title': 'Laporan terkirim',
-      'report_success_body':
-          'Terima kasih. Laporanmu akan diverifikasi sebelum tayang ke publik.',
+      'report_success_status_note': 'Menunggu verifikasi',
       'report_success_coordinates': 'Koordinat',
       'report_success_number': 'Nomor laporan',
       'report_success_status': 'Status',
       'report_success_view_reports': 'Lihat Laporan Saya',
       'report_success_new_report': 'Buat Laporan Lain',
       'report_success_not_found': 'Laporan tidak ditemukan di sesi ini.',
-      'report_mine_title': 'Laporan Saya',
-      'report_mine_empty':
-          'Belum ada laporan. Laporan yang kamu kirim akan muncul di sini.',
-      'report_mine_new': 'Buat Laporan',
       'report_photo_viewer_counter': '{current}/{total}',
       'report_photo_viewer_close': 'Tutup',
+
+      // --- Action Agenda (Aksi) ---
+      'action.type.beach_cleanup': 'Bersih Pantai',
+      'action.type.coral_restoration': 'Restorasi Karang',
+      'action.type.mangrove_planting': 'Tanam Mangrove',
+      'action.type.wildlife_monitoring': 'Pemantauan Satwa',
+      'action.type.education': 'Edukasi Bahari',
+      'action.quota': '{joined}/{total} peserta',
+      'action.quota.full': '{joined}/{total} peserta · Kuota penuh',
+      'action.status.open': 'Terbuka',
+      'action.status.full': 'Penuh',
+      'action.status.ongoing': 'Berlangsung',
+      'action.status.ended': 'Selesai',
+      'action.status.registered': 'Terdaftar',
+      'action.card.quota': '{joined} dari {total} · sisa {remaining}',
+      'action.card.quotaFull': '{joined} dari {total} · kuota penuh',
+      'action.card.viewDetail': 'Lihat detail',
+      'action.card.viewAndRegister': 'Lihat & daftar',
+      'action.empty': 'Belum ada aksi yang tersedia saat ini.',
+      'action.unavailable': 'Aksi tidak dapat dimuat.',
+      'action.tab.agenda': 'Agenda',
+      'action.tab.joined': 'Aksi yang Diikuti',
+      'action.joined.empty':
+          'Belum ada aksi yang kamu ikuti. Aksi dari tab Agenda akan muncul '
+          'di sini.',
+      'action.joined.viewAgenda': 'Lihat Agenda',
+      'action.detail.register': 'Daftar',
+      'action.detail.registered': 'Terdaftar',
+      'action.detail.registrationClosed': 'Pendaftaran ditutup',
+      'action.detail.description': 'Deskripsi',
+      'action.detail.date': 'Tanggal',
+      'action.detail.time': 'Waktu',
+      'action.detail.location': 'Lokasi',
+      'action.detail.meetingPoint': 'Titik kumpul',
+      'action.detail.map': 'Peta Lokasi',
+      'action.detail.equipment': 'Perlengkapan yang perlu dibawa',
+      'action.detail.equipmentIntro':
+          'Bawa semua perlengkapan ini saat kegiatan berlangsung.',
+      'action.detail.equipmentNone': 'Tidak ada perlengkapan khusus.',
+      'action.detail.quotaRemaining':
+          '{joined} dari {total} · sisa {remaining}',
+      'action.detail.quotaFull': '{joined} dari {total} · kuota penuh',
+      'action.detail.organizer': 'Penyelenggara',
+      'action.detail.viewOrganizer': 'Lihat profil penyelenggara',
+      'action.detail.reminder': 'Pengingat',
+      'action.detail.reminderBody':
+          'Ingatkan saya sebelum kegiatan dimulai (simulasi).',
+      'action.detail.reminderEnabled': 'Pengingat diaktifkan (simulasi).',
+      'action.detail.reminderDisabled': 'Pengingat dimatikan.',
+      'action.detail.confirmTitle': 'Konfirmasi Pendaftaran',
+      'action.detail.confirmBody':
+          'Pastikan data kegiatan sudah sesuai sebelum mendaftar.',
+      'action.detail.confirm': 'Konfirmasi',
+      'action.detail.registerSuccess':
+          'Pendaftaran berhasil. Sampai jumpa di lokasi!',
+      'action.detail.registerFailed': 'Pendaftaran gagal. Silakan coba lagi.',
+      'action.detail.cancel': 'Batalkan pendaftaran',
+      'action.detail.cancelTitle': 'Batalkan pendaftaran?',
+      'action.detail.cancelBody':
+          'Kursimu akan dilepas dan bisa diambil peserta lain.',
+      'action.detail.cancelConfirm': 'Ya, batalkan',
+      'action.detail.cancelKeep': 'Tetap terdaftar',
+      'action.detail.cancelSuccess': 'Pendaftaran dibatalkan.',
+      'action.detail.cancelFailed': 'Pembatalan gagal. Silakan coba lagi.',
+
+      // --- Registration wizard (Aksi) ---
+      'action.register.title': 'Daftar Aksi',
+      'action.register.step.equipment': 'Perlengkapan',
+      'action.register.step.participant': 'Peserta',
+      'action.register.step.review': 'Tinjau',
+      'action.register.step.success': 'Berhasil',
+      'action.register.summary': 'Ringkasan kegiatan',
+      'action.register.equipmentIntro':
+          'Pastikan kamu bisa membawa perlengkapan berikut.',
+      'action.register.equipmentReady': 'Saya siap membawanya',
+      'action.register.equipmentRequired':
+          'Centang pernyataan perlengkapan untuk melanjutkan.',
+      'action.register.participantTitle': 'Data peserta',
+      'action.register.participantName': 'Nama',
+      'action.register.participantNote':
+          'Pendaftaran dikirim dengan akun yang sedang masuk.',
+      'action.register.reviewTitle': 'Tinjau pendaftaran',
+      'action.register.change': 'Ubah',
+      'action.register.confirm': 'Konfirmasi pendaftaran',
+      'action.register.next': 'Lanjut',
+      'action.register.back': 'Kembali',
+      'action.register.equipmentAcked': 'Perlengkapan disanggupi',
+      'action.register.equipmentNotAcked': 'Perlengkapan belum disanggupi',
+      'action.register.successTitle': 'Pendaftaran berhasil',
+      'action.register.successBody':
+          'Kamu terdaftar di kegiatan ini. Detail kegiatan dan pengingat ada di '
+          'Aksi Saya.',
+      'action.register.goToMyActions': 'Ke Aksi Saya',
+      'action.register.backToDetail': 'Kembali ke detail',
+      'action.register.blockedFullTitle': 'Kuota sudah penuh',
+      'action.register.blockedFullBody':
+          'Pendaftaran tidak dikirim karena kuota kegiatan ini sudah penuh.',
+      'action.register.blockedClosedTitle': 'Pendaftaran ditutup',
+      'action.register.blockedClosedBody':
+          'Kegiatan ini sudah dimulai atau selesai, jadi pendaftaran tidak '
+          'dibuka.',
+      'action.register.failedTitle': 'Pendaftaran gagal',
+      'action.register.failedBody':
+          'Pendaftaran belum tersimpan. Periksa kuota lalu coba lagi.',
+      'action.register.loadFailed': 'Pendaftaran tidak dapat dimuat.',
+      'action.detail.loadFailed': 'Detail aksi gagal dimuat.',
+      'action.detail.notFound': 'Aksi tidak ditemukan.',
 
       // --- Notifications (P13) ---
       // TODO(P13, minggu 12-13): the list, mark-read and delete flows are fed
@@ -817,6 +1009,7 @@ class AppLocalizations {
       'common.continue': 'Continue',
       'common.next': 'Next',
       'common.cancel': 'Cancel',
+      'common.close': 'Close',
       'common.comingSoon':
           'This page will be available in the next subproject.',
       'common.error': 'Something went wrong.',
@@ -940,25 +1133,47 @@ class AppLocalizations {
       'p01.interests.manage': 'Interest Preferences',
       'p01.interests.later':
           'You can change your interests anytime from Profile.',
+      'p01.interests.intro':
+          'Pick your ocean topic so related projects show first in Explore. '
+          'Change it in Profile.',
       'p01.interests.save': 'Save interests',
       'p01.interests.saveError': 'Could not save your interests. Try again.',
-      'p01.interests.subtitle': "We'll sort projects to match your interests.",
+      'p01.interests.subtitle': 'Choose One',
+      // DRAFT(P01-copy): category explanations await team approval. They name
+      // only the project categories currently mapped in InterestCategories;
+      // `sampah_laut` has no projects and `perikanan` still maps to `lamun`.
+      'p01.interests.info.title': 'About Interests',
+      'p01.interests.info.button': 'About interests',
+      'p01.interests.info.label': 'Detail Information',
+      'p01.interests.info.labelShort': 'Detail Info',
+      'p01.interests.info.sampah_laut':
+          'No marine debris projects are in Explore yet, so this interest '
+          'does not change the project order for now.',
+      'p01.interests.info.terumbu_karang':
+          'Coral reef restoration projects in Pramuka, Bunaken, and '
+          'Karimunjawa will appear first.',
+      'p01.interests.info.mangrove':
+          'Mangrove conservation projects in Muara Angke, Makassar, and '
+          'Delta Mahakam will appear first.',
+      'p01.interests.info.perikanan':
+          'This interest currently shows seagrass restoration projects; '
+          'fishery-specific projects are not in Explore yet.',
+      'p01.interests.info.satwa_laut':
+          'Sea turtle and marine mammal projects, from nesting beaches to '
+          'whale and dolphin rescue, will appear first.',
       'p01.minOne': 'Pick at least one',
 
       // --- Auth (P02) ---
       // The title lives in the body heading, not the app bar. Email and phone
       // share one page, so the heading is not tied to either field.
-      'auth.title': 'Welcome back',
-      'auth.subtitle': 'Choose email or phone number.',
-      'auth.email.label': 'Email',
-      'auth.email.hint': 'name@email.com',
+      'auth.title': 'Welcome to BlueTrack',
+      'auth.subtitle': 'Continue with your email or phone number.',
+      'auth.identifier.countryCode': 'Country code',
+      'auth.identifier.label': 'Email or phone number',
+      'auth.identifier.hint': 'name@email.com or 8123456789',
       'auth.email.invalid': 'Invalid email format',
-      'auth.or': 'OR',
-      'auth.phone.label': 'Phone number',
-      'auth.phone.hint': '8123456789',
       'auth.phone.invalid': 'Invalid phone number',
       'auth.identifier.missing': 'Enter your email or phone number.',
-      'auth.identifier.chooseOne': 'Choose one sign-in method.',
       'auth.otp.title': 'Enter verification code',
       'auth.otp.subtitle': 'Code sent to {target}',
       'auth.otp.mismatch': "Code doesn't match",
@@ -1126,18 +1341,42 @@ class AppLocalizations {
       'my_reports.loading': 'Loading reports...',
       'my_reports.load_error':
           'Could not load reports. Check your connection and try again.',
-      'my_reports.empty': 'You have no reports yet. Report what you find around you to help keep the sea healthy.',
+      'my_reports.empty_title': 'No reports yet',
+      'my_reports.empty':
+          'Report what you find around you to help keep the sea healthy.',
       'my_reports.create': 'Create report',
       'my_reports.empty_filter': 'No reports with status {status}.',
+      'my_reports.filter_count': '{label} ({count})',
+      'my_reports.filter_title': 'Filter report status',
+      'my_reports.filter_hint': 'Choose which report statuses to display.',
       'my_reports.tracker': 'Status tracker',
       'my_reports.report_date': 'Report date',
       'my_reports.waiting_verification': 'Waiting for verification',
+      'my_reports.no_verifier_note': 'No note from the verifier.',
       'my_reports.severity_chip': 'Severity: {level}',
-      'my_reports.open_actions': 'View related actions',
-      'my_reports.open_actions_hint': 'Find activities linked to this report.',
+      'my_reports.completed_step_date': 'Completed on {date}',
+      'my_reports.tracker_step_current':
+          'Step {step} of {total}: {status}, current status',
+      'my_reports.tracker_step_reached':
+          'Step {step} of {total}: {status}, reached',
+      'my_reports.tracker_step_pending':
+          'Step {step} of {total}: {status}, not reached yet',
+      'my_reports.completion_proof': 'Completion proof',
+      'my_reports.completion_proof_missing':
+          'Completion proof has not been uploaded yet.',
+      'my_reports.completion_photo_missing':
+          'Completion proof photo is not available.',
+      'my_reports.completion_proof_note': 'Completion note',
+      'my_reports.completion_proof_photo_caption': 'Completion proof photo',
+      'my_reports.completion_date': 'Completed on',
+      'my_reports.completion_by': 'Completed by',
+      'my_reports.completion_proof_available': 'Completion proof available',
+      'my_reports.card_photo_semantics': 'Report photo',
+      'my_reports.open_actions': 'View the action agenda',
+      'my_reports.open_actions_hint':
+          'Browse available conservation activities.',
       'my_reports.count': '{n} reports',
       'my_reports.filtered_count': '{status} · {n} reports',
-      'my_reports.filter_title': 'Filter status',
       'my_reports.show_all': 'Show all',
       'my_reports.current_status': 'Current status',
       'p04_photo_error': 'Photo could not be loaded.',
@@ -1347,7 +1586,9 @@ class AppLocalizations {
       'p08_receipt_unavailable_title': 'E-Receipt not available yet',
       'p08_receipt_unavailable_body':
           'The E-Receipt becomes available once the support succeeds.',
-      'p08_view_reports': 'View project reports',
+      'p08_download_receipt': 'Download e-receipt',
+      'p08_download_receipt_hint': 'Save this donation proof as a PDF.',
+      'p08_download_receipt_soon': 'E-receipt download is coming soon.',
 
       // --- Legal (Privacy Policy / Terms) ---
       'legal.privacy.title': 'Privacy Policy',
@@ -1427,6 +1668,14 @@ class AppLocalizations {
       'report_step_review': 'Review',
       'report_photos_title': 'Photos of the finding',
       'report_photos_body': 'Add 1–3 photos of your finding.',
+      'report_title_field': 'Report title',
+      'report_title_hint':
+          'For example: Turtle entangled in netting at Sukamade',
+      'report_title_error': 'Add a report title.',
+      'report_description_title': 'Finding description',
+      'report_description_hint':
+          'Describe what you observed and the context shown in the photos.',
+      'report_description_error': 'Add a description of the finding.',
       'report_photo_counter': '{n}/{max} photos',
       'report_add_photo': 'Add Photo',
       'report_remove_photo': 'Remove photo',
@@ -1468,10 +1717,33 @@ class AppLocalizations {
           'finding.',
       'report_location_hint': 'Drag the pin to the finding location',
       'report_location_gps': 'Use my location',
+      'report_location_gps_short': 'My location',
       'report_location_gps_loading': 'Getting location...',
+      'report_location_gps_loading_short': 'Locating...',
       'report_location_card_title': 'Finding coordinates',
       'report_location_latitude': 'Latitude',
       'report_location_longitude': 'Longitude',
+      'report_location_detail_title': 'Nearby landmark or area (optional)',
+      'report_location_detail_hint':
+          'For example: near the north pier or coral reef.',
+      'report_area_hint': 'Tap the button to name the area around the pin.',
+      'report_area_empty_hint': 'Place the pin first to see the area name.',
+      'report_area_offline': 'The area name needs an internet connection.',
+      'report_area_empty': 'No area name found. Move the pin and try again.',
+      'report_area_error':
+          'The area name could not be loaded. Check your connection and try '
+          'again.',
+      'report_address_title': 'Search an address',
+      'report_address_hint': 'For example: Sukamade Beach',
+      'report_address_action': 'Search',
+      'report_address_empty': 'No address found. Try different words.',
+      'report_address_error':
+          'Search failed. Check your connection and try again.',
+      'report_geocoding_rate_limited':
+          'Too many requests. Wait a moment and try again.',
+      'report_geocoding_offline':
+          'Location search needs an internet connection.',
+      'report_osm_attribution': 'Data © OpenStreetMap contributors',
       'report_location_empty_hint':
           'Tap the map or use my location to fill in the coordinates.',
       'report_location_error_title': 'Location unavailable',
@@ -1522,7 +1794,19 @@ class AppLocalizations {
       'report_type_severity_error': 'Choose a severity level first.',
       'report_review_title': 'Review report',
       'report_review_subtitle': 'Check your answers before sending.',
+      'report_review_content_group': 'Photos and details',
+      'report_review_classification': 'Type and severity',
+      'report_review_edit_report_hint': 'Edit report',
+      'report_review_edit_location_hint': 'Edit location',
+      'report_review_edit_classification_hint': 'Edit type and severity',
       'report_review_photos': 'Photos',
+      'report_review_description': 'Finding description',
+      'report_review_area': 'Area name',
+      'report_review_details': 'Show details',
+      'report_review_more': 'Show more',
+      'report_review_less': 'Show less',
+      'report_review_hide_details': 'Hide details',
+      'report_review_landmark_label': 'Nearby landmark or area',
       'report_review_location': 'Location',
       'report_review_type': 'Finding type',
       'report_review_severity': 'Damage severity',
@@ -1544,12 +1828,15 @@ class AppLocalizations {
       'report_submit_offline_body':
           'Connect the device to the internet to send the report.',
       'report_submit_missing_photos': 'Add the finding photo first.',
+      'report_submit_missing_title': 'Add a report title first.',
+      'report_submit_missing_description':
+          'Add a description before sending the report.',
       'report_submit_missing_location': 'Mark the finding location first.',
       'report_submit_missing_type':
           'Choose the finding type and severity first.',
+      'report_submit.generated_title': '{category} report · {date} · {id}',
       'report_success_title': 'Report sent',
-      'report_success_body':
-          'Thank you. Your report will be verified before it is published.',
+      'report_success_status_note': 'Awaiting verification',
       'report_success_coordinates': 'Coordinates',
       'report_success_number': 'Report number',
       'report_success_status': 'Status',
@@ -1557,11 +1844,113 @@ class AppLocalizations {
       'report_success_new_report': 'Create Another Report',
       'report_success_not_found':
           'This report is no longer available in this session.',
-      'report_mine_title': 'My Reports',
-      'report_mine_empty': 'No reports yet. Reports you send will appear here.',
-      'report_mine_new': 'Create Report',
       'report_photo_viewer_counter': '{current}/{total}',
       'report_photo_viewer_close': 'Close',
+
+      // --- Action Agenda (Aksi) ---
+      'action.type.beach_cleanup': 'Beach Cleanup',
+      'action.type.coral_restoration': 'Coral Restoration',
+      'action.type.mangrove_planting': 'Mangrove Planting',
+      'action.type.wildlife_monitoring': 'Wildlife Monitoring',
+      'action.type.education': 'Marine Education',
+      'action.quota': '{joined}/{total} participants',
+      'action.quota.full': '{joined}/{total} participants · Fully booked',
+      'action.status.open': 'Open',
+      'action.status.full': 'Full',
+      'action.status.ongoing': 'Ongoing',
+      'action.status.ended': 'Ended',
+      'action.status.registered': 'Registered',
+      'action.card.quota': '{joined} of {total} · {remaining} left',
+      'action.card.quotaFull': '{joined} of {total} · fully booked',
+      'action.card.viewDetail': 'View details',
+      'action.card.viewAndRegister': 'View & register',
+      'action.empty': 'No actions available right now.',
+      'action.unavailable': 'Actions could not be loaded.',
+      'action.tab.agenda': 'Agenda',
+      'action.tab.joined': 'Participate Action',
+      'action.joined.empty':
+          'You have not joined any actions yet. Actions from the Agenda tab '
+          'will appear here.',
+      'action.joined.viewAgenda': 'View Agenda',
+      'action.detail.register': 'Register',
+      'action.detail.registered': 'Registered',
+      'action.detail.registrationClosed': 'Registration closed',
+      'action.detail.description': 'Description',
+      'action.detail.date': 'Date',
+      'action.detail.time': 'Time',
+      'action.detail.location': 'Location',
+      'action.detail.meetingPoint': 'Meeting point',
+      'action.detail.map': 'Location Map',
+      'action.detail.equipment': 'Needed equipment',
+      'action.detail.equipmentIntro':
+          'Bring every item below on the day of the activity.',
+      'action.detail.equipmentNone': 'No special equipment needed.',
+      'action.detail.quotaRemaining': '{joined} of {total} · {remaining} left',
+      'action.detail.quotaFull': '{joined} of {total} · fully booked',
+      'action.detail.organizer': 'Organizer',
+      'action.detail.viewOrganizer': 'View organizer profile',
+      'action.detail.reminder': 'Reminder',
+      'action.detail.reminderBody':
+          'Remind me before the activity starts (simulation).',
+      'action.detail.reminderEnabled': 'Reminder enabled (simulation).',
+      'action.detail.reminderDisabled': 'Reminder disabled.',
+      'action.detail.confirmTitle': 'Confirm Registration',
+      'action.detail.confirmBody':
+          'Please review the activity details before registering.',
+      'action.detail.confirm': 'Confirm',
+      'action.detail.registerSuccess':
+          'Registration successful. See you at the location!',
+      'action.detail.registerFailed': 'Registration failed. Please try again.',
+      'action.detail.cancel': 'Cancel registration',
+      'action.detail.cancelTitle': 'Cancel this registration?',
+      'action.detail.cancelBody':
+          'Your seat will be released and can be taken by someone else.',
+      'action.detail.cancelConfirm': 'Yes, cancel it',
+      'action.detail.cancelKeep': 'Keep my registration',
+      'action.detail.cancelSuccess': 'Registration cancelled.',
+      'action.detail.cancelFailed': 'Cancellation failed. Please try again.',
+
+      // --- Registration wizard (Actions) ---
+      'action.register.title': 'Register for Action',
+      'action.register.step.equipment': 'Equipment',
+      'action.register.step.participant': 'Participant',
+      'action.register.step.review': 'Review',
+      'action.register.step.success': 'Done',
+      'action.register.summary': 'Activity summary',
+      'action.register.equipmentIntro':
+          'Make sure you can bring the following items.',
+      'action.register.equipmentReady': 'I am ready to bring them',
+      'action.register.equipmentRequired':
+          'Tick the equipment statement to continue.',
+      'action.register.participantTitle': 'Participant details',
+      'action.register.participantName': 'Name',
+      'action.register.participantNote':
+          'This registration uses the account that is signed in.',
+      'action.register.reviewTitle': 'Review registration',
+      'action.register.change': 'Change',
+      'action.register.confirm': 'Confirm registration',
+      'action.register.next': 'Continue',
+      'action.register.back': 'Back',
+      'action.register.equipmentAcked': 'Equipment acknowledged',
+      'action.register.equipmentNotAcked': 'Equipment not acknowledged',
+      'action.register.successTitle': 'Registration complete',
+      'action.register.successBody':
+          'You are registered for this activity. The details and reminder live '
+          'in My Actions.',
+      'action.register.goToMyActions': 'Go to My Actions',
+      'action.register.backToDetail': 'Back to details',
+      'action.register.blockedFullTitle': 'This action is full',
+      'action.register.blockedFullBody':
+          'Nothing was sent because this activity has reached its quota.',
+      'action.register.blockedClosedTitle': 'Registration closed',
+      'action.register.blockedClosedBody':
+          'This activity has started or finished, so registration is closed.',
+      'action.register.failedTitle': 'Registration failed',
+      'action.register.failedBody':
+          'The registration was not saved. Check the quota and try again.',
+      'action.register.loadFailed': 'Registration could not be loaded.',
+      'action.detail.loadFailed': 'Action detail failed to load.',
+      'action.detail.notFound': 'Action not found.',
 
       // --- Notifications (P13) ---
       // TODO(P13, minggu 12-13): the list, mark-read and delete flows are fed

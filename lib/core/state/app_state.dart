@@ -44,6 +44,23 @@ class AuthRepository {
 
   Future<void> deleteToken() => SecureStorageService.instance.delete(_tokenKey);
 
+  /// The email or `+62` phone stored inside the mock token, when it carries
+  /// one. Read-only: the registration wizard shows which account it is
+  /// registering, nothing edits the session here.
+  Future<String?> readIdentifier() async => _identifierFrom(await readToken());
+
+  /// Pulls the subject out of `mock-token-<subject>-<timestamp>`.
+  static String? _identifierFrom(String? token) {
+    if (token == null || !token.startsWith('mock-token-')) return null;
+
+    final encoded = token.substring('mock-token-'.length);
+    final separator = encoded.lastIndexOf('-');
+    if (separator <= 0) return null;
+
+    final subject = encoded.substring(0, separator);
+    return subject.isEmpty ? null : subject;
+  }
+
   /// Best-effort display name for greetings (P09).
   ///
   /// The mock session stores the sign-in identifier inside the token, not a
@@ -54,14 +71,9 @@ class AuthRepository {
   /// TODO(auth): replace with the profile name once the API session exposes
   /// one.
   Future<String?> readDisplayName() async {
-    final token = await readToken();
-    if (token == null || !token.startsWith('mock-token-')) return null;
+    final subject = _identifierFrom(await readToken());
+    if (subject == null) return null;
 
-    final encoded = token.substring('mock-token-'.length);
-    final separator = encoded.lastIndexOf('-');
-    if (separator <= 0) return null;
-
-    final subject = encoded.substring(0, separator);
     final at = subject.indexOf('@');
     if (at <= 0) return null;
 

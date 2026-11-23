@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:blue_track/core/state/app_state.dart';
+import 'package:blue_track/features/report_submit/data/geocoding_service.dart';
+import 'package:blue_track/features/report_submit/domain/geocoding.dart';
 import 'package:blue_track/features/report_submit/domain/report_location.dart';
 import 'package:blue_track/features/report_submit/presentation/widgets/report_location_step.dart';
 import 'package:flutter/material.dart';
@@ -15,16 +17,60 @@ import 'support/test_harness.dart';
 const _gpsKey = ValueKey('report_location_gps');
 const _pinKey = ValueKey('report_location_pin_drag');
 const _hintKey = ValueKey('report_location_hint');
+const _addressFieldKey = ValueKey('report_address_field');
+const _addressSearchKey = ValueKey('report_address_search');
+const _addressSheetSearchKey = ValueKey('report_address_sheet_search');
+
+class _FakeGeocodingService implements GeocodingService {
+  GeocodingSearchResult searchResult = const GeocodingSearchResult.failed(
+    GeocodingFailure.empty,
+  );
+  GeocodingPlaceResult reverseResult = const GeocodingPlaceResult.failed(
+    GeocodingFailure.empty,
+  );
+
+  int searchCalls = 0;
+  int reverseCalls = 0;
+  String? lastQuery;
+  double? lastLatitude;
+  double? lastLongitude;
+
+  @override
+  Future<GeocodingSearchResult> search(
+    String query, {
+    String languageCode = 'id',
+  }) async {
+    searchCalls++;
+    lastQuery = query;
+    return searchResult;
+  }
+
+  @override
+  Future<GeocodingPlaceResult> reverse({
+    required double latitude,
+    required double longitude,
+    String languageCode = 'id',
+  }) async {
+    reverseCalls++;
+    lastLatitude = latitude;
+    lastLongitude = longitude;
+    return reverseResult;
+  }
+}
 
 void main() {
   late FakeReportLocationService locationService;
   late FakeTileProvider tileProvider;
   late List<LatLng> reportedLocations;
+  late List<String> reportedLocationDetails;
+  late List<String> reportedAreaNames;
 
   setUp(() {
     locationService = FakeReportLocationService();
     tileProvider = FakeTileProvider();
     reportedLocations = [];
+    reportedLocationDetails = [];
+    reportedAreaNames = [];
   });
 
   void phoneSurface(WidgetTester tester) {
@@ -37,6 +83,9 @@ void main() {
     WidgetTester tester, {
     double? latitude,
     double? longitude,
+    String locationDetail = '',
+    String areaName = '',
+    GeocodingService? geocoding,
   }) async {
     phoneSurface(tester);
     await tester.pumpWidget(
@@ -46,11 +95,16 @@ void main() {
           child: ReportLocationStep(
             latitude: latitude,
             longitude: longitude,
+            locationDetail: locationDetail,
+            areaName: areaName,
+            geocodingService: geocoding ?? _FakeGeocodingService(),
             locationService: locationService,
             tileProvider: tileProvider,
             onLocationChanged: (lat, lng) {
               reportedLocations.add(LatLng(lat, lng));
             },
+            onLocationDetailChanged: reportedLocationDetails.add,
+            onAreaChanged: reportedAreaNames.add,
           ),
         ),
       ),
@@ -85,13 +139,36 @@ void main() {
     expect(find.text('Geser pin ke lokasi temuan'), findsOneWidget);
     expect(find.byKey(_pinKey), findsNothing);
     expect(
-      find.text('Ketuk peta atau gunakan lokasi saya untuk mengisi koordinat.'),
+      find.text('Tandai pin dulu untuk melihat nama area.'),
       findsOneWidget,
     );
 
     final gps = find.byKey(_gpsKey);
     expect(tester.getSize(gps).height, greaterThanOrEqualTo(48));
-    expect(find.text('Gunakan lokasi saya'), findsOneWidget);
+    expect(find.text('Lokasi saya'), findsOneWidget);
+    expect(find.byTooltip('Gunakan lokasi saya'), findsOneWidget);
+  });
+
+  testWidgets('lets the reporter enter an optional nearby landmark', (
+    tester,
+  ) async {
+    await pumpStep(tester, locationDetail: 'Near the north pier.');
+
+    final field = find.byKey(const ValueKey('report_location_detail_field'));
+    expect(field, findsOneWidget);
+    expect(
+      tester.widget<TextField>(field).controller?.text,
+      'Near the north pier.',
+    );
+
+    await tester.ensureVisible(field);
+    await tester.enterText(
+      field,
+      'About 2 nautical miles north of the island.',
+    );
+    expect(reportedLocationDetails, [
+      'About 2 nautical miles north of the island.',
+    ]);
   });
 
   testWidgets('shows the OSM attribution from the map', (tester) async {
@@ -194,7 +271,7 @@ void main() {
     await tester.tap(find.byKey(_gpsKey));
     await tester.pump();
 
-    expect(find.text('Mengambil lokasi...'), findsOneWidget);
+    expect(find.text('Mengambil...'), findsOneWidget);
     expect(
       find.descendant(
         of: find.byKey(_gpsKey),
@@ -213,9 +290,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Mengambil lokasi...'), findsNothing);
+    expect(find.text('Mengambil...'), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsNothing);
-    expect(find.text('Gunakan lokasi saya'), findsOneWidget);
+    expect(find.text('Lokasi saya'), findsOneWidget);
   });
 
   const failureMessages = [
@@ -324,5 +401,282 @@ void main() {
       coordinate(tester, 'report_location_latitude_value'),
       reportedLocations.single.latitude.toStringAsFixed(6),
     );
+  });
+
+  testWidgets('names the area without writing into the landmark', (
+    tester,
+  ) async {
+    final geocoding = _FakeGeocodingService()
+      ..reverseResult = const GeocodingPlaceResult.success(
+        GeocodingPlace(
+          displayName: 'Pantai Sukamade, Banyuwangi',
+          latitude: -8.5236,
+          longitude: 114.6131,
+        ),
+      );
+    await pumpStep(
+      tester,
+      latitude: -8.5236,
+      longitude: 114.6131,
+      geocoding: geocoding,
+    );
+
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pantai Sukamade, Banyuwangi'), findsOneWidget);
+    expect(find.text('Data © OpenStreetMap contributors'), findsOneWidget);
+    expect(geocoding.reverseCalls, 1);
+    expect(geocoding.lastLatitude, -8.5236);
+    expect(reportedAreaNames.last, 'Pantai Sukamade, Banyuwangi');
+    expect(reportedLocationDetails, isEmpty);
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('report_location_detail_field')),
+          )
+          .controller
+          ?.text,
+      isEmpty,
+    );
+  });
+
+  testWidgets('never overwrites a landmark the reporter typed', (tester) async {
+    final geocoding = _FakeGeocodingService()
+      ..reverseResult = const GeocodingPlaceResult.success(
+        GeocodingPlace(
+          displayName: 'Pantai Sukamade, Banyuwangi',
+          latitude: -8.5236,
+          longitude: 114.6131,
+        ),
+      );
+    await pumpStep(
+      tester,
+      latitude: -8.5236,
+      longitude: 114.6131,
+      locationDetail: 'Dekat dermaga utara',
+      geocoding: geocoding,
+    );
+
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    expect(reportedLocationDetails, isEmpty);
+    expect(reportedAreaNames.last, 'Pantai Sukamade, Banyuwangi');
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('report_location_detail_field')),
+          )
+          .controller
+          ?.text,
+      'Dekat dermaga utara',
+    );
+  });
+
+  testWidgets('searching an address moves the pin to the chosen result', (
+    tester,
+  ) async {
+    final geocoding = _FakeGeocodingService()
+      ..searchResult = const GeocodingSearchResult.success([
+        GeocodingPlace(
+          displayName: 'Taman Nasional Meru Betiri',
+          latitude: -8.6,
+          longitude: 113.9,
+        ),
+      ]);
+    await pumpStep(tester, geocoding: geocoding);
+
+    final openSearch = find.byKey(_addressSearchKey);
+    await tester.ensureVisible(openSearch);
+    await tester.pumpAndSettle();
+    await tester.tap(openSearch);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(_addressFieldKey), 'Meru Betiri');
+    await tester.tap(find.byKey(_addressSheetSearchKey));
+    await tester.pumpAndSettle();
+
+    expect(geocoding.lastQuery, 'Meru Betiri');
+    final result = find.byKey(const ValueKey('report_address_result_0'));
+    expect(result, findsOneWidget);
+
+    await tester.tap(result);
+    await tester.pumpAndSettle();
+
+    expect(reportedLocations, isNotEmpty);
+    expect(reportedLocations.last.latitude, closeTo(-8.6, 0.0001));
+    expect(reportedLocations.last.longitude, closeTo(113.9, 0.0001));
+    expect(find.text('Taman Nasional Meru Betiri'), findsWidgets);
+    expect(reportedAreaNames.last, 'Taman Nasional Meru Betiri');
+    expect(reportedLocationDetails, isEmpty);
+  });
+
+  testWidgets('offline disables both lookups and explains why', (tester) async {
+    OfflineController.instance.setOffline(true);
+    addTearDown(() => OfflineController.instance.setOffline(false));
+    await pumpStep(tester, latitude: -8.5, longitude: 114.6);
+
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(find.text('Nama area butuh koneksi internet.'), findsOneWidget);
+    expect(
+      tester.widget<OutlinedButton>(find.byKey(_addressSearchKey)).onPressed,
+      isNull,
+    );
+    expect(
+      tester.widget<OutlinedButton>(find.byKey(_gpsKey)).onPressed,
+      isNull,
+    );
+    expect(find.textContaining('Lokasi saya butuh'), findsNothing);
+    expect(
+      find.text('Pencarian lokasi butuh koneksi internet.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('aligns the empty hint with the pin icon', (tester) async {
+    await pumpStep(tester);
+
+    final icon = tester.getRect(find.byKey(const ValueKey('report_area_icon')));
+    final hint = tester.getRect(
+      find.text('Tandai pin dulu untuk melihat nama area.'),
+    );
+
+    expect((icon.center.dy - hint.center.dy).abs(), lessThan(2));
+  });
+
+  testWidgets('names the area again after the pin moves', (tester) async {
+    final geocoding = _FakeGeocodingService()
+      ..reverseResult = const GeocodingPlaceResult.success(
+        GeocodingPlace(
+          displayName: 'Pantai Sukamade, Banyuwangi',
+          latitude: -8.5236,
+          longitude: 114.6131,
+        ),
+      );
+    await pumpStep(
+      tester,
+      latitude: -8.5236,
+      longitude: 114.6131,
+      geocoding: geocoding,
+    );
+
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(geocoding.reverseCalls, 1);
+
+    // Dragging the pin to a new point must refresh the name on its own.
+    await tester.drag(find.byKey(_pinKey), const Offset(0, 60));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    expect(geocoding.reverseCalls, 2);
+  });
+
+  testWidgets('drops the old area name when the new point is not found', (
+    tester,
+  ) async {
+    final geocoding = _FakeGeocodingService()
+      ..reverseResult = const GeocodingPlaceResult.success(
+        GeocodingPlace(
+          displayName: 'Pantai Sukamade, Banyuwangi',
+          latitude: -8.5,
+          longitude: 114.6,
+        ),
+      );
+    await pumpStep(
+      tester,
+      latitude: -8.5,
+      longitude: 114.6,
+      geocoding: geocoding,
+    );
+
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(find.text('Pantai Sukamade, Banyuwangi'), findsOneWidget);
+
+    geocoding.reverseResult = const GeocodingPlaceResult.failed(
+      GeocodingFailure.empty,
+    );
+    await tester.drag(find.byKey(_pinKey), const Offset(0, 60));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pantai Sukamade, Banyuwangi'), findsNothing);
+    expect(find.byKey(const ValueKey('report_area_error')), findsOneWidget);
+    expect(reportedAreaNames.last, isEmpty);
+  });
+
+  testWidgets('shows full-width labels without truncating them', (
+    tester,
+  ) async {
+    await pumpStep(tester);
+
+    expect(find.text('Lokasi saya'), findsOneWidget);
+    expect(find.text('Cari'), findsOneWidget);
+    expect(find.byTooltip('Gunakan lokasi saya'), findsOneWidget);
+  });
+
+  testWidgets('offers a retry when the area lookup fails', (tester) async {
+    final geocoding = _FakeGeocodingService()
+      ..reverseResult = const GeocodingPlaceResult.failed(
+        GeocodingFailure.timeout,
+      );
+    await pumpStep(
+      tester,
+      latitude: -8.5,
+      longitude: 114.6,
+      geocoding: geocoding,
+    );
+
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('report_area_error')), findsOneWidget);
+    final retry = find.byKey(const ValueKey('report_area_retry'));
+    expect(retry, findsOneWidget);
+
+    geocoding.reverseResult = const GeocodingPlaceResult.success(
+      GeocodingPlace(
+        displayName: 'Pantai Sukamade, Banyuwangi',
+        latitude: -8.5,
+        longitude: 114.6,
+      ),
+    );
+    await tester.ensureVisible(retry);
+    await tester.tap(retry);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pantai Sukamade, Banyuwangi'), findsOneWidget);
+  });
+
+  testWidgets('explains a rate-limited search and keeps the pin usable', (
+    tester,
+  ) async {
+    final geocoding = _FakeGeocodingService()
+      ..searchResult = const GeocodingSearchResult.failed(
+        GeocodingFailure.rateLimited,
+      );
+    await pumpStep(tester, geocoding: geocoding);
+
+    final openSearch = find.byKey(_addressSearchKey);
+    await tester.ensureVisible(openSearch);
+    await tester.pumpAndSettle();
+    await tester.tap(openSearch);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(_addressFieldKey), 'Pantai');
+    await tester.tap(find.byKey(_addressSheetSearchKey));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.'),
+      findsOneWidget,
+    );
+
+    // The sheet is modal, so close it before touching the map again.
+    await tester.tap(find.byKey(const ValueKey('report_address_sheet_close')));
+    await tester.pumpAndSettle();
+    await tapMap(tester);
+    expect(reportedLocations, isNotEmpty);
   });
 }

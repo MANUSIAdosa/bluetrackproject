@@ -22,4 +22,9 @@ abstract final class AppDimens {
   static const double padding = 16;
   static const double cardRadius = 16;
   static const double gap = 12;
+
+  /// Dialog actions must keep a finite minimum width. The global button themes
+  /// use `Size.fromHeight`, i.e. an unbounded width, which makes `AlertDialog`
+  /// stack its actions vertically instead of placing them side by side.
+  static const Size dialogActionMinSize = Size(64, 44);
 }

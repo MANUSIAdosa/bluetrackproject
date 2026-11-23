@@ -10,9 +10,5 @@ Widget reportPhotoImage({
   required String path,
   required ImageErrorWidgetBuilder errorBuilder,
 }) {
-  return Image.network(
-    path,
-    fit: BoxFit.cover,
-    errorBuilder: errorBuilder,
-  );
+  return Image.network(path, fit: BoxFit.cover, errorBuilder: errorBuilder);
 }

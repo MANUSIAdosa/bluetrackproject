@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 
-/// Shared empty state with icon, message and optional action.
+/// Shared empty state with icon, optional title, message and action.
 class EmptyState extends StatelessWidget {
   const EmptyState({
     super.key,
     this.icon = Icons.inbox_outlined,
     required this.message,
+    this.title,
     this.actionLabel,
     this.onAction,
     this.secondaryLabel,
@@ -16,6 +17,7 @@ class EmptyState extends StatelessWidget {
 
   final IconData icon;
   final String message;
+  final String? title;
   final String? actionLabel;
   final VoidCallback? onAction;
 
@@ -46,6 +48,17 @@ class EmptyState extends StatelessWidget {
                 child: Icon(icon, size: 36, color: AppColors.ocean),
               ),
               const SizedBox(height: 16),
+              if (title != null) ...[
+                Text(
+                  title!,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
               Text(
                 message,
                 textAlign: TextAlign.center,

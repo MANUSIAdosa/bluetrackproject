@@ -15,7 +15,13 @@
     "photos": ["assets/mock/report_photo_wildlife.png"],
     "verifierNote": "Diverifikasi oleh tim Yayasan Laut Biru; dua tukik dilepas kembali setelah observasi 24 jam.",
     "wasteKg": null,
-    "areaM2": null
+    "areaM2": null,
+    "completionProof": {
+      "photoPaths": ["assets/mock/report_photo_wildlife.png"],
+      "note": "Dua tukik pulih setelah observasi dan dilepas kembali ke habitatnya.",
+      "completedAt": "2026-05-14T08:00:00Z",
+      "completedBy": "Tim Konservasi Pantai Sukamade"
+    }
   },
   {
     "id": "r002",

@@ -178,9 +178,9 @@ class _TraceContent extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           EReceiptSection(trace: trace),
-          if (trace.projectId.isNotEmpty) ...[
-            const SizedBox(height: 32),
-            _ReportLink(projectId: trace.projectId),
+          if (trace.status == DonationStatus.success) ...[
+            const SizedBox(height: 24),
+            const _ReceiptDownloadButton(),
           ],
         ],
       ),
@@ -236,25 +236,35 @@ class _TraceContent extends StatelessWidget {
 /// secondary navigation row rather than a filled CTA: it sits last on the
 /// page, keeps a full-width tap target, and signals "opens another page" with
 /// its trailing chevron without competing with the donation summary.
-class _ReportLink extends StatelessWidget {
-  const _ReportLink({required this.projectId});
-
-  final String projectId;
+/// Receipt action shown below the E-Receipt card for successful donations.
+///
+/// The download itself is not wired yet (the mock has no PDF generator), so
+/// the tap only confirms that the feature is coming. The row keeps the same
+/// card styling the page used for its previous link.
+class _ReceiptDownloadButton extends StatelessWidget {
+  const _ReceiptDownloadButton();
 
   @override
   Widget build(BuildContext context) {
     final borderRadius = BorderRadius.circular(AppDimens.cardRadius);
+    final textTheme = Theme.of(context).textTheme;
 
     return Material(
       color: AppColors.surface,
       borderRadius: borderRadius,
       child: InkWell(
-        key: const ValueKey('p08-view-reports'),
-        onTap: () => context.push(
-          '${Routes.projectDetailUrl(projectId)}?tab=reports',
-        ),
+        key: const ValueKey('p08-download-receipt'),
+        onTap: () {
+          final messenger = ScaffoldMessenger.of(context);
+          messenger
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(content: Text(context.tr('p08_download_receipt_soon'))),
+            );
+        },
         borderRadius: borderRadius,
         child: Container(
+          constraints: const BoxConstraints(minHeight: 56),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             borderRadius: borderRadius,
@@ -270,20 +280,33 @@ class _ReportLink extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
-                  Icons.description_outlined,
+                  Icons.download_outlined,
                   size: 18,
                   color: AppColors.ocean,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  context.tr('p08_view_reports'),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      context.tr('p08_download_receipt'),
+                      style: textTheme.titleSmall?.copyWith(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      context.tr('p08_download_receipt_hint'),
+                      style: textTheme.bodySmall?.copyWith(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 8),

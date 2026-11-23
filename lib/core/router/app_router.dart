@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/routes.dart';
 import '../../core/state/app_state.dart';
 import '../../features/actions/presentation/action_detail_page.dart';
+import '../../features/actions/presentation/action_registration_page.dart';
 import '../../features/actions/presentation/actions_page.dart';
 import '../../features/auth/presentation/login_page.dart';
 import '../../features/community_action/presentation/community_action_apply_page.dart';
@@ -143,6 +144,16 @@ GoRouter createRouter({required bool onboardingDone}) {
         parentNavigatorKey: rootKey,
         builder: (context, state) =>
             ActionDetailPage(actionId: state.pathParameters['id'] ?? ''),
+      ),
+      GoRoute(
+        path: Routes.actionRegister,
+        parentNavigatorKey: rootKey,
+        builder: (context, state) => ActionRegistrationPage(
+          actionId: state.pathParameters['id'] ?? '',
+          // Set by the login round trip so the wizard reopens on the step the
+          // user was on, with the equipment acknowledgement restored.
+          resume: state.uri.queryParameters['resume'] == '1',
+        ),
       ),
       GoRoute(
         path: Routes.report,

@@ -14,12 +14,15 @@ class Report {
     required this.reportedAt,
     required this.title,
     required this.description,
+    this.locationDetail,
+    this.areaName,
     required this.latitude,
     required this.longitude,
     required this.photoPaths,
     required this.verifierNote,
     required this.wasteKg,
     required this.areaM2,
+    this.completionProof,
   });
 
   /// Unique report id, for example `r001`.
@@ -41,6 +44,13 @@ class Report {
   final DateTime reportedAt;
   final String title;
   final String description;
+
+  /// Optional free-text landmark or nearby area supplied with a field report.
+  final String? locationDetail;
+
+  /// Human-readable area resolved through geocoding, when one was available.
+  final String? areaName;
+
   final double latitude;
   final double longitude;
 
@@ -57,6 +67,12 @@ class Report {
   /// Affected area in square metres, required for
   /// [ReportCategory.damagedReef] and [ReportCategory.deforestedMangrove].
   final double? areaM2;
+
+  /// Optional evidence attached after the reported action is completed.
+  final CompletionProof? completionProof;
+
+  /// Whether completion evidence is attached.
+  bool get hasCompletionProof => completionProof != null;
 
   /// Whether the report has at least one photo.
   bool get hasPhoto => photoPaths.isNotEmpty;
@@ -82,12 +98,19 @@ class Report {
     reportedAt: DateTime.parse(json['reportedAt'] as String).toUtc(),
     title: json['title'] as String,
     description: json['description'] as String,
+    locationDetail: json['locationDetail'] as String?,
+    areaName: json['areaName'] as String?,
     latitude: (json['latitude'] as num).toDouble(),
     longitude: (json['longitude'] as num).toDouble(),
     photoPaths: (json['photos'] as List<dynamic>).cast<String>(),
     verifierNote: json['verifierNote'] as String?,
     wasteKg: (json['wasteKg'] as num?)?.toDouble(),
     areaM2: (json['areaM2'] as num?)?.toDouble(),
+    completionProof: json['completionProof'] == null
+        ? null
+        : CompletionProof.fromJson(
+            json['completionProof'] as Map<String, dynamic>,
+          ),
   );
 
   /// Serializes this report back to the mock JSON shape.
@@ -102,12 +125,52 @@ class Report {
     'reportedAt': reportedAt.toUtc().toIso8601String(),
     'title': title,
     'description': description,
+    'locationDetail': locationDetail,
+    'areaName': areaName,
     'latitude': latitude,
     'longitude': longitude,
     'photos': photoPaths,
     'verifierNote': verifierNote,
     'wasteKg': wasteKg,
     'areaM2': areaM2,
+    'completionProof': completionProof?.toJson(),
+  };
+}
+
+/// Evidence recorded after a report's action has been completed.
+class CompletionProof {
+  const CompletionProof({
+    required this.photoPaths,
+    required this.note,
+    required this.completedAt,
+    required this.completedBy,
+  });
+
+  /// Existing local photo assets documenting the completed action.
+  final List<String> photoPaths;
+
+  /// Summary of the completion work.
+  final String note;
+
+  /// Completion time, stored in UTC.
+  final DateTime completedAt;
+
+  /// Display name of the person or team that completed the action.
+  final String completedBy;
+
+  factory CompletionProof.fromJson(Map<String, dynamic> json) =>
+      CompletionProof(
+        photoPaths: (json['photoPaths'] as List<dynamic>).cast<String>(),
+        note: json['note'] as String,
+        completedAt: DateTime.parse(json['completedAt'] as String).toUtc(),
+        completedBy: json['completedBy'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+    'photoPaths': photoPaths,
+    'note': note,
+    'completedAt': completedAt.toUtc().toIso8601String(),
+    'completedBy': completedBy,
   };
 }
 

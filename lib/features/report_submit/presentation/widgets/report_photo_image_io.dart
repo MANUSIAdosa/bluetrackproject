@@ -14,9 +14,5 @@ Widget reportPhotoImage({
   required String path,
   required ImageErrorWidgetBuilder errorBuilder,
 }) {
-  return Image.file(
-    File(path),
-    fit: BoxFit.cover,
-    errorBuilder: errorBuilder,
-  );
+  return Image.file(File(path), fit: BoxFit.cover, errorBuilder: errorBuilder);
 }
