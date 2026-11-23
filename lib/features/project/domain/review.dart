@@ -9,6 +9,7 @@ class Review {
     required this.authorName,
     required this.rating,
     required this.comment,
+    this.commentEn,
     required this.createdAt,
   });
 
@@ -27,8 +28,12 @@ class Review {
   /// Rating from 1 to 5.
   final int rating;
 
-  /// Review text shown on P04.
+  /// Review text shown on P04 in Indonesian.
   final String comment;
+
+  /// English translation of [comment]. Falls back to [comment] when absent so
+  /// older mock data and test fixtures stay valid.
+  final String? commentEn;
 
   /// Review time in UTC. Serialized as ISO 8601 in the mock JSON.
   final DateTime createdAt;
@@ -49,6 +54,7 @@ class Review {
       authorName: json['authorName'] as String,
       rating: rating,
       comment: json['comment'] as String,
+      commentEn: json['commentEn'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String).toUtc(),
     );
   }
@@ -61,6 +67,7 @@ class Review {
     'authorName': authorName,
     'rating': rating,
     'comment': comment,
+    if (commentEn != null) 'commentEn': commentEn,
     'createdAt': createdAt.toUtc().toIso8601String(),
   };
 }

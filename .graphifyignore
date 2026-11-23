@@ -1,0 +1,20 @@
+# Graphify scan scope for BlueTrack.
+# Keep the graph focused on Dart source (lib/ + test/) and mock data (assets/).
+
+# Never index the generated graph into itself.
+graphify-out/
+
+# Flutter/Dart build output.
+build/
+.dart_tool/
+coverage/
+
+# Platform shells and generated targets (also excluded from flutter analyze).
+android/
+web/
+
+# Local tooling, editor config, and raw screenshots.
+.claude/
+.opencode/
+.vscode/
+screenshoot/

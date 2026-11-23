@@ -44,3 +44,12 @@ class MockRepositoryException extends RepositoryException {
   const MockRepositoryException()
     : super('The mock repository is configured to fail.');
 }
+
+/// Thrown when a disbursement id does not exist in `disbursements.json`.
+class DisbursementNotFoundException extends RepositoryException {
+  const DisbursementNotFoundException(this.disbursementId)
+    : super('Disbursement "$disbursementId" was not found.');
+
+  /// The unknown disbursement id that was requested.
+  final String disbursementId;
+}

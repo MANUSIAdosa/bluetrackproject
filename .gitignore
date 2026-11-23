@@ -49,3 +49,9 @@ app.*.map.json
 
 # OpenCode / AI agent local config
 .opencode/
+
+# Graphify generated knowledge graph (local dev tool).
+# To share it with the team, remove this line and commit
+# graphify-out/graph.json + graphify-out/GRAPH_REPORT.md
+# (not cache/ or graph.html).
+graphify-out/

@@ -1,5 +1,6 @@
 import 'package:blue_track/features/project/data/report_repository.dart';
 import 'package:blue_track/features/project/presentation/project_detail_page.dart';
+import 'package:blue_track/shared/widgets/skeleton.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -11,8 +12,10 @@ Future<void> _pumpDetail(
   String projectId = 'p01',
   ReportRepository? repository,
   Locale locale = const Locale('id'),
+  String initialReportSection = 'kondisi',
+  Size size = const Size(420, 950),
 }) async {
-  tester.view.physicalSize = const Size(420, 950);
+  tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -25,6 +28,7 @@ Future<void> _pumpDetail(
           buildProject(location: 'Pantai Sukamade, Jawa Timur'),
         ]),
         reportRepository: repository ?? InMemoryReportRepository(),
+        initialReportSection: initialReportSection,
       ),
       locale: locale,
     ),
@@ -53,6 +57,13 @@ Future<void> _scrollToReportCount(WidgetTester tester) async {
     300,
     scrollable: _reportsScrollable(),
   );
+  await tester.pumpAndSettle();
+}
+
+/// The tab body only fills the viewport once the header slivers above it have
+/// scrolled away, so collapse them before asserting on the reports content.
+Future<void> _collapseHeader(WidgetTester tester) async {
+  await tester.drag(find.text('Target'), const Offset(0, -700));
   await tester.pumpAndSettle();
 }
 
@@ -106,10 +117,36 @@ void main() {
     expect(find.text('Share'), findsOneWidget);
   });
 
+  testWidgets('reports tab owns the space above the donate bar', (tester) async {
+    tester.view.physicalSize = const Size(393, 852);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await _pumpDetail(tester, initialReportSection: 'penyaluran');
+    await tester.tap(find.text('Laporan'));
+    await tester.pumpAndSettle();
+
+    // Collapse the header slivers so the whole tab body is on screen.
+    await _collapseHeader(tester);
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(Skeleton), findsNothing);
+
+    // The tab body must fill everything above the donate bar. A half-height
+    // body clipped the last disbursement card and left dead space below it.
+    final listHeight = tester
+        .getSize(find.byKey(const PageStorageKey('p04-reports-scroll')))
+        .height;
+    final donateTop = tester.getRect(find.text('Donasi')).top;
+    expect(listHeight, greaterThan(donateTop * 0.7));
+  });
+
   testWidgets('keeps the selected report period after switching tabs', (
     tester,
   ) async {
-    await _pumpDetail(tester);
+    // Tall viewport: the period chips sit directly below the pinned tab bar, so
+    // they are reachable without the fragile header-collapse dance.
+    await _pumpDetail(tester, size: const Size(420, 1600));
 
     await tester.tap(find.text('Laporan'));
     await tester.pumpAndSettle();
